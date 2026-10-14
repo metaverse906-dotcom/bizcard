@@ -430,9 +430,8 @@ function renderMe(){
     + '<div class="grid2">'+field("me-phone","電話",m.phone,"tel")+field("me-email","Email",m.email,"email")+'</div>'
     + '<div class="grid2">'+field("me-line","LINE ID",m.line)+field("me-web","網站",m.web,"url","https://")+'</div>'
     + '<div class="row"><button class="pill strong" type="submit">儲存名片</button><button type="button" class="pill line" data-act="cancelEdit">取消</button></div></form></section>' : "";
-  const tip = TIP_URL
-    ? '<a class="mini coffee" href="'+esc(TIP_URL)+'" target="_blank" rel="noopener">'+ICON.cup+'<span>請我喝咖啡</span></a>'
-    : '<button type="button" class="mini coffee" data-act="noTip">'+ICON.cup+'<span>請我喝咖啡</span></button>';
+  // 打賞：填了 TIP_URL 才會出現
+  const tip = TIP_URL ? '<a class="mini coffee" href="'+esc(TIP_URL)+'" target="_blank" rel="noopener">'+ICON.cup+'<span>請我喝咖啡</span></a>' : '';
   return '<div class="head"><div><div class="eyebrow">'+greeting()+(m.name?'，'+esc(m.name):'')+'</div><h1>'+(m.name?'今天要遞名片嗎？':'先填上你的名片')+'</h1></div>'
     + (ui.editing?'':'<button type="button" class="pill" data-act="edit">編輯</button>')+'</div>'
     + '<div class="stackwrap">'+cardHTML(m)+'</div>'
@@ -697,7 +696,6 @@ document.addEventListener("click", e=>{
   else if(a==="closePresent"){ closePresent(); }
   else if(a==="flip"){ data.settings.presentFlip=!data.settings.presentFlip; save(); document.getElementById("present").classList.toggle("flip", data.settings.presentFlip); el.textContent=flipLabel(); }
   else if(a==="copyMe"){ copy(plainText(visible(data.me))); }
-  else if(a==="noTip"){ toast("打賞連結還沒設定，部署時再接上"); }
   else if(a==="copy"){ copy(el.dataset.text); }
   else if(a==="add"){ ui.adding=true; ui.editId=null; ui.draft={}; ui.draftPhoto=""; ui.draftBack=""; render(); document.getElementById("add-name")?.focus(); }
   else if(a==="cancelAdd"){ ui.adding=false; ui.editId=null; ui.draft=null; ui.draftPhoto=""; ui.draftBack=""; render(); }

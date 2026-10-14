@@ -1,6 +1,6 @@
 // 離線快取：沒有網路時也能打開 app、遞名片。
 // 改版時把 CACHE 的版本號 +1，手機下次連線就會換成新版。
-const CACHE = "bizcard-v3";
+const CACHE = "bizcard-v4";
 const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./apple-touch-icon.png"];
 
 self.addEventListener("install", (e) => {
