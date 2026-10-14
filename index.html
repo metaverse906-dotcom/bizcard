@@ -142,6 +142,15 @@ textarea{min-height:68px;resize:vertical}
 .kv dd{margin:0;min-width:0;overflow-wrap:anywhere;user-select:text}
 .acts{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px}
 .acts button,.acts a{min-height:44px;border-radius:12px;border:none;background:var(--soft);color:var(--ink);font-size:.84rem;display:grid;place-items:center;text-decoration:none}
+.quick{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.quick .mini{min-height:88px}
+.photobtns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.scanner{position:fixed;inset:0;z-index:25;background:#000000;color:#FFFFFF}
+.scanner video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.scanner .frame{position:absolute;left:50%;top:44%;width:min(70vw,280px);aspect-ratio:1;transform:translate(-50%,-50%);border:3px solid rgba(255,255,255,.92);border-radius:24px;box-shadow:0 0 0 100vmax rgba(0,0,0,.5)}
+.scanner .bar{position:absolute;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;
+  padding:16px max(20px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) max(20px,env(safe-area-inset-left,0px))}
+.scanner .bar .pill{background:#FFFFFF;color:#1F3530;min-width:140px}
 .importbox{background:var(--soft);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px}
 .photo{width:100%;border-radius:12px}
 .del{display:flex;gap:8px;justify-content:flex-end}
@@ -218,6 +227,8 @@ textarea.fallback{font-size:12px;min-height:120px}
 <body>
 <main id="app"></main>
 <input type="file" id="importFile" accept=".json,application/json" hidden>
+<input type="file" id="snapFile" accept="image/*" capture="environment" hidden>
+<input type="file" id="pickFile" accept="image/*" hidden>
 <nav class="tabs" aria-label="主選單">
   <button type="button" data-act="tab" data-tab="me" id="tab-me" aria-label="我的名片">
     <svg class="i" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="6" width="18" height="12" rx="3"/><path d="M7 11h6M7 14h4"/></svg><span>我的名片</span></button>
@@ -227,6 +238,11 @@ textarea.fallback{font-size:12px;min-height:120px}
     <svg class="i" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg><span>設定</span></button>
 </nav>
 <div class="present" id="present" role="dialog" aria-modal="true" aria-label="遞名片" hidden></div>
+<div class="scanner" id="scanner" role="dialog" aria-modal="true" aria-label="掃描 QR code" hidden>
+  <video id="scanVideo" playsinline muted></video>
+  <div class="frame" aria-hidden="true"></div>
+  <div class="bar"><p>把對方名片上的 QR code 放進框裡</p><button type="button" class="pill" data-act="scanStop">取消</button></div>
+</div>
 <div class="toast" id="toast" role="status" hidden></div>
 
 <script>
@@ -386,6 +402,8 @@ const ICON = {
   copy:'<svg class="i" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg>',
   cup:'<svg class="i" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M5 9h11v5a5 5 0 0 1-5 5H10a5 5 0 0 1-5-5zM16 10h1.5a2.5 2.5 0 0 1 0 5H16"/></svg>',
   plus:'<svg class="i" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>',
+  cam:'<svg class="i" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>',
+  qr:'<svg class="i" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><path d="M14 14h2v2h-2zM18 18h2v2h-2zM14 20h2M20 14v2"/></svg>',
   search:'<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg>'
 };
 
@@ -450,15 +468,22 @@ function renderCards(){
 }
 function renderBook(){
   const n=data.cards.length, samples=data.cards.filter(c=>c.sample).length;
+  const d=ui.draft||{};
   const add = ui.adding ? '<section class="tile"><form id="addForm"><h2>新增名片</h2>'
-    + '<div class="photoin"><label for="add-photo" style="flex:1 1 200px">名片照片（選填，縮小後存在這裡，不留在相簿）<input id="add-photo" type="file" accept="image/*"></label>'+(ui.draftPhoto?'<img src="'+ui.draftPhoto+'" alt="照片預覽">':'')+'</div>'
-    + field("add-name","姓名","") + '<div class="grid2">'+field("add-title","職稱","")+field("add-org","單位","")+'</div>'
-    + '<div class="grid2">'+field("add-phone","電話","","tel")+field("add-email","Email","","email")+'</div>'
-    + field("add-line","LINE ID","")
-    + '<label for="add-note">在哪裡認識、聊了什麼<textarea id="add-note" name="add-note"></textarea></label>'
+    + '<div class="photoin">'+(ui.draftPhoto?'<img src="'+ui.draftPhoto+'" alt="名片照片預覽">':'')
+    + '<div style="display:flex;flex-direction:column;gap:8px;flex:1 1 180px;min-width:0"><span class="sub">名片照片（選填）。縮小後存在 app 裡，不會留在相簿。</span><div class="photobtns">'
+    + '<button type="button" class="pill line" data-act="snap">'+ICON.cam+(ui.draftPhoto?'重拍':'拍照')+'</button>'
+    + '<button type="button" class="pill line" data-act="pickPhoto">從相簿選</button>'
+    + (ui.draftPhoto?'<button type="button" class="textbtn" data-act="clearPhoto">移除照片</button>':'')+'</div></div></div>'
+    + field("add-name","姓名",d.name||"") + '<div class="grid2">'+field("add-title","職稱",d.title||"")+field("add-org","單位",d.org||"")+'</div>'
+    + '<div class="grid2">'+field("add-phone","電話",d.phone||"","tel")+field("add-email","Email",d.email||"","email")+'</div>'
+    + field("add-line","LINE ID",d.line||"")
+    + '<label for="add-note">在哪裡認識、聊了什麼<textarea id="add-note" name="add-note">'+esc(d.note||"")+'</textarea></label>'
     + '<div class="row"><button class="pill strong" type="submit">存入名片夾</button><button type="button" class="pill line" data-act="cancelAdd">取消</button></div></form></section>' : "";
   return '<div class="head"><div><div class="eyebrow">'+n+' 張'+(samples?'・含 '+samples+' 張範例':'')+'</div><h1>名片夾</h1></div>'
-    + (ui.adding?'':'<button type="button" class="round" data-act="add" aria-label="新增名片">'+ICON.plus+'</button>')+'</div>'
+    + (ui.adding?'':'<button type="button" class="round" data-act="add" aria-label="手動新增名片">'+ICON.plus+'</button>')+'</div>'
+    + (ui.adding?'':'<div class="quick"><button type="button" class="mini" data-act="snap">'+ICON.cam+'<span>拍名片</span></button>'
+      + (CAN_SCAN?'<button type="button" class="mini" data-act="scan">'+ICON.qr+'<span>掃 QR code</span></button>':'<button type="button" class="mini" data-act="add">'+ICON.plus+'<span>手動輸入</span></button>')+'</div>')
     + add
     + '<label class="search">'+ICON.search+'<input id="q" type="search" placeholder="搜尋姓名、單位、在哪認識" value="'+esc(ui.query)+'" aria-label="搜尋名片"></label>'
     + '<div class="chips"><button type="button" class="chip" data-act="sort" data-key="recent" aria-pressed="'+(ui.sort==="recent")+'">最近收到</button>'
@@ -558,7 +583,86 @@ function closePresent(){
   p.hidden=true; p.innerHTML=""; p.classList.remove("flip"); document.body.style.overflow="";
   try{ ui.lock && ui.lock.release().catch(()=>{}); }catch(e){} ui.lock=null;
 }
-document.addEventListener("keydown", e=>{ if(e.key==="Escape" && !document.getElementById("present").hidden) closePresent(); });
+document.addEventListener("keydown", e=>{ if(e.key!=="Escape") return;
+  if(!document.getElementById("present").hidden) closePresent();
+  if(!document.getElementById("scanner").hidden) stopScan(); });
+
+/* ---------- 新增名片：草稿、拍照、掃 QR code ---------- */
+function syncDraft(){   // 重新繪製表單前，先把已經打的字存起來
+  if(!document.getElementById("add-name")) return;
+  ui.draft={name:val("add-name"),title:val("add-title"),org:val("add-org"),phone:val("add-phone"),email:val("add-email"),line:val("add-line"),note:val("add-note")};
+}
+const CAN_SCAN = ("BarcodeDetector" in window) && !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+const scan={stream:null, timer:null};
+async function startScan(){
+  let det;
+  try{ det=new BarcodeDetector({formats:["qr_code"]}); }catch(e){ toast("這個瀏覽器不支援掃描 QR code"); return; }
+  try{ scan.stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"},audio:false}); }
+  catch(e){ toast(e && e.name==="NotAllowedError" ? "相機權限被拒絕了。請到 Chrome 的網站設定，允許這個網站使用相機。" : "打不開相機，請再試一次"); return; }
+  const v=document.getElementById("scanVideo");
+  v.srcObject=scan.stream; document.getElementById("scanner").hidden=false; document.body.style.overflow="hidden";
+  try{ await v.play(); }catch(e){}
+  const tick=async()=>{
+    if(!scan.stream) return;
+    try{ const r=await det.detect(v); if(r && r.length && r[0].rawValue){ const raw=r[0].rawValue; stopScan(); onScanned(raw); return; } }catch(e){}
+    scan.timer=setTimeout(tick, 250);
+  };
+  tick();
+}
+function stopScan(){
+  clearTimeout(scan.timer);
+  if(scan.stream){ scan.stream.getTracks().forEach(t=>t.stop()); scan.stream=null; }
+  document.getElementById("scanVideo").srcObject=null;
+  document.getElementById("scanner").hidden=true; document.body.style.overflow="";
+}
+document.addEventListener("visibilitychange", ()=>{ if(document.hidden && scan.stream) stopScan(); });
+
+// 讀懂 QR code 裡的名片：vCard（大多數數位名片）與 MECARD（部分手機產生的格式）
+function parseContact(raw){
+  const t=String(raw).trim(), o={};
+  const un=s=>s.replace(/\\n/gi,"\n").replace(/\\([,;:\\])/g,"$1").trim();
+  const joinName=(fam,giv)=>{ fam=(fam||"").trim(); giv=(giv||"").trim(); return /^[\x00-\x7F]*$/.test(fam+giv) ? [giv,fam].filter(Boolean).join(" ") : fam+giv; };
+  if(/^BEGIN:VCARD/i.test(t)){
+    const lines=t.replace(/\r?\n[ \t]/g,"").split(/\r?\n/);
+    for(const ln of lines){
+      const i=ln.indexOf(":"); if(i<0) continue;
+      const key=ln.slice(0,i).split(";")[0].replace(/^item\d+\./i,"").toUpperCase(), v=ln.slice(i+1);
+      if(key==="FN") o.name=un(v);
+      else if(key==="N" && !o.name){ const p=v.split(";"); o.name=joinName(un(p[0]||""),un(p[1]||"")); }
+      else if(key==="ORG") o.org=un(v.split(";")[0]);
+      else if(key==="TITLE") o.title=un(v);
+      else if(key==="TEL" && !o.phone) o.phone=un(v);
+      else if(key==="EMAIL" && !o.email) o.email=un(v);
+      else if(key==="URL" && !o.web) o.web=un(v);
+      else if(key==="NOTE") o.noteRaw=un(v);
+    }
+  } else if(/^MECARD:/i.test(t)){
+    t.slice(7).split(/(?<!\\);/).forEach(part=>{
+      const i=part.indexOf(":"); if(i<0) return;
+      const k=part.slice(0,i).toUpperCase(), v=un(part.slice(i+1));
+      if(k==="N"){ const p=v.split(","); o.name=joinName(p[0],p[1]); }
+      else if(k==="TEL" && !o.phone) o.phone=v;
+      else if(k==="EMAIL" && !o.email) o.email=v;
+      else if(k==="ORG") o.org=v;
+      else if(k==="URL") o.web=v;
+      else if(k==="NOTE") o.noteRaw=v;
+    });
+  } else return null;
+  if(o.noteRaw){
+    const m=o.noteRaw.match(/LINE[:：]\s*([^\s\/]+)/i); if(m) o.line=m[1];
+    const rest=o.noteRaw.replace(/LINE[:：]\s*[^\s\/]+\s*\/?\s*/i,"").trim(); if(rest) o.note=rest;
+    delete o.noteRaw;
+  }
+  if(o.web){ o.note=[o.note,o.web].filter(Boolean).join("\n"); delete o.web; }
+  Object.keys(o).forEach(k=>o[k]=str(o[k]));
+  return o;
+}
+function onScanned(raw){
+  const c=parseContact(raw);
+  if(c && c.name){ ui.draft=c; toast("讀到「"+c.name+"」的名片，確認後按存入"); }
+  else { ui.draft={note:str(raw)}; toast("這不是名片格式的 QR code，內容先放在備註裡"); }
+  ui.tab="book"; ui.adding=true; ui.draftPhoto=""; render(); window.scrollTo(0,0);
+}
 
 document.addEventListener("click", e=>{
   const el=e.target.closest("[data-act]"); if(!el) return;
@@ -572,8 +676,13 @@ document.addEventListener("click", e=>{
   else if(a==="copyMe"){ copy(plainText(visible(data.me))); }
   else if(a==="noTip"){ toast("打賞連結還沒設定，部署時再接上"); }
   else if(a==="copy"){ copy(el.dataset.text); }
-  else if(a==="add"){ ui.adding=true; ui.draftPhoto=""; render(); document.getElementById("add-name")?.focus(); }
-  else if(a==="cancelAdd"){ ui.adding=false; ui.draftPhoto=""; render(); }
+  else if(a==="add"){ ui.adding=true; ui.draft={}; ui.draftPhoto=""; render(); document.getElementById("add-name")?.focus(); }
+  else if(a==="cancelAdd"){ ui.adding=false; ui.draft=null; ui.draftPhoto=""; render(); }
+  else if(a==="snap"){ syncDraft(); document.getElementById("snapFile").click(); }
+  else if(a==="pickPhoto"){ syncDraft(); document.getElementById("pickFile").click(); }
+  else if(a==="clearPhoto"){ syncDraft(); ui.draftPhoto=""; keepScroll(render); }
+  else if(a==="scan"){ startScan(); }
+  else if(a==="scanStop"){ stopScan(); }
   else if(a==="pick"){ ui.openId = (data.settings.bookView==="list" && ui.openId===id) ? null : id; ui.confirmId=null; ui.showPhoto=false; rerenderCards(); }
   else if(a==="photo"){ ui.showPhoto=!ui.showPhoto; rerenderCards(); }
   else if(a==="sort"){ ui.sort=el.dataset.key; keepScroll(render); }
@@ -617,7 +726,7 @@ document.addEventListener("submit", e=>{
     const card={id:"c"+Date.now().toString(36),name,title:val("add-title"),org:val("add-org"),phone:val("add-phone"),email:val("add-email"),line:val("add-line"),note:val("add-note"),added:today(),photo:ui.draftPhoto};
     data.cards.push(card);
     if(!save()){ data.cards.pop(); return; }
-    ui.adding=false; ui.draftPhoto=""; ui.openId=card.id; ui.query=""; render(); toast("已存入名片夾");
+    ui.adding=false; ui.draft=null; ui.draftPhoto=""; ui.openId=card.id; ui.query=""; render(); toast("已存入名片夾");
   }
 });
 document.addEventListener("input", e=>{ if(e.target.id==="q"){ ui.query=e.target.value; rerenderCards(); } });
@@ -632,10 +741,11 @@ document.addEventListener("change", async e=>{
     const cards=d.cards.filter(c=>c&&typeof c==="object"&&c.name).map(cleanCard);
     ui.importing={cards, fresh:cards.filter(c=>!have.has(c.id)), me:d.me?cleanMe(d.me):null, settings:d.settings||null};
     keepScroll(render);
-  } else if(e.target.id==="add-photo" && e.target.files[0]){
-    const keep={}; ["add-name","add-title","add-org","add-phone","add-email","add-line","add-note"].forEach(k=>keep[k]=document.getElementById(k)?.value||"");
-    try{ ui.draftPhoto=await compress(e.target.files[0]); }catch(err){ toast("這個檔案讀不出來，請換一張照片"); return; }
-    render(); Object.entries(keep).forEach(([k,v])=>{ const el=document.getElementById(k); if(el) el.value=v; });
+  } else if((e.target.id==="snapFile"||e.target.id==="pickFile") && e.target.files[0]){
+    const file=e.target.files[0]; e.target.value="";
+    try{ ui.draftPhoto=await compress(file); }catch(err){ toast("這張照片讀不出來，請再拍一次"); return; }
+    if(!ui.adding){ ui.adding=true; ui.draft={}; }
+    ui.tab="book"; render(); window.scrollTo(0,0); document.getElementById("add-name")?.focus();
   }
 });
 
