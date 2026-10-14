@@ -1,0 +1,655 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>隨身名片夾</title>
+<meta name="description" content="自己用的數位名片與名片夾：QR code 交換名片，收到的名片疊成一盒，資料只存在你的手機裡。">
+<meta name="theme-color" content="#E3EBE6" id="themeColor">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- 每個字體分開載入：一個失敗不影響其他。中文字體依 unicode-range 分片，只下載用到的字。 -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chiron+Sung+HK:wght@500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chiron+Hei+HK:wght@400;500;700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<style>
+/* Layout: phone app on a soft sage ground, rounded white tiles; my card is the one dark object on the page,
+   collected cards stack like a card box. --card and --f-card are set from settings by JS. */
+:root{
+  --card:#2F5F51;
+  /* 四組字體由設定改寫：名字、名片內文、介面標題、介面內文 */
+  --f-card:"Noto Serif TC","Songti TC",serif;
+  --f-cardtext:"Noto Sans TC","PingFang TC",sans-serif;
+  --f-head:"Noto Sans TC","PingFang TC",sans-serif;
+  --f-ui:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  /* 介面色系跟著名片顏色走：JS 依設定改寫 --L-*（淺色）與 --D-*（深色），這裡是深綠的預設值 */
+  --L-bg:#E3EBE6; --L-soft:#EEF3F0; --L-ink:#1F3530; --L-muted:#5B7069; --L-line:#C2D0C8; --L-link:#2F5F51; --L-stack1:#C7D6CD; --L-stack2:#D6E2DA;
+  --D-bg:#131A18; --D-surface:#1D2725; --D-soft:#253230; --D-ink:#E4ECE8; --D-muted:#9DB0A9; --D-line:#33423E; --D-link:#8CC4B1; --D-stack1:#2A3835; --D-stack2:#33433F;
+  --bg:var(--L-bg); --surface:#FFFFFF; --soft:var(--L-soft); --ink:var(--L-ink); --muted:var(--L-muted); --line:var(--L-line);
+  --strong:var(--L-ink); --strong-ink:#FFFFFF; --link:var(--L-link); --danger:#A23E37;
+  --sand:#F3E9D6; --sand-ink:#5A4318; --stack1:var(--L-stack1); --stack2:var(--L-stack2);
+  --t0:#F3E9D6; --t0i:#3D3020; --t1:#DCE6F0; --t1i:#1F2E3D; --t2:#E6DFF0; --t2i:#2E2440; --t3:#D3E0D8; --t3i:#1F3530; --t4:#F2DEDB; --t4i:#45231F;
+  --brass:#E8C98A;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:var(--D-bg); --surface:var(--D-surface); --soft:var(--D-soft); --ink:var(--D-ink); --muted:var(--D-muted); --line:var(--D-line);
+  --strong:var(--D-ink); --strong-ink:var(--D-bg); --link:var(--D-link); --danger:#E7877E;
+  --sand:#3A3122; --sand-ink:#EBD3A5; --stack1:var(--D-stack1); --stack2:var(--D-stack2);
+  --t0:#3A3122; --t0i:#F0E2C6; --t1:#243241; --t1i:#D6E3F0; --t2:#30283D; --t2i:#E2D8F0; --t3:#22312B; --t3i:#D3E5DB; --t4:#3D2A28; --t4i:#F2D9D5;
+  color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:var(--D-bg); --surface:var(--D-surface); --soft:var(--D-soft); --ink:var(--D-ink); --muted:var(--D-muted); --line:var(--D-line);
+  --strong:var(--D-ink); --strong-ink:var(--D-bg); --link:var(--D-link); --danger:#E7877E;
+  --sand:#3A3122; --sand-ink:#EBD3A5; --stack1:var(--D-stack1); --stack2:var(--D-stack2);
+  --t0:#3A3122; --t0i:#F0E2C6; --t1:#243241; --t1i:#D6E3F0; --t2:#30283D; --t2i:#E2D8F0; --t3:#22312B; --t3i:#D3E5DB; --t4:#3D2A28; --t4i:#F2D9D5;
+  color-scheme:dark }
+
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-ui);font-size:15px;line-height:1.6;font-variant-numeric:tabular-nums;
+  padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px))}
+main{max-width:520px;margin:0 auto;padding-block:calc(28px + env(safe-area-inset-top,0px)) calc(96px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:18px}
+h1{font-family:var(--f-head);font-size:1.65rem;font-weight:700;margin:0;text-wrap:balance;letter-spacing:.02em;line-height:1.3}
+h2{font-size:.8rem;font-weight:500;color:var(--muted);letter-spacing:.12em;margin:0}
+p{margin:0}
+a{color:var(--link)}
+.head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.eyebrow{font-size:.9rem;color:var(--muted)}
+.sub{color:var(--muted);font-size:.86rem}
+button{font:inherit;cursor:pointer;color:inherit}
+.pill{border:none;border-radius:999px;background:var(--surface);color:var(--ink);min-height:44px;padding:0 18px;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none}
+.pill.strong{background:var(--strong);color:var(--strong-ink);font-weight:700}
+.pill.big{min-height:56px;font-size:1.06rem;width:100%}
+.pill.line{background:transparent;border:1px solid var(--line)}
+.pill.danger{background:transparent;border:1px solid var(--danger);color:var(--danger)}
+.pill:disabled{opacity:.5;cursor:not-allowed}
+.round{width:52px;height:52px;border-radius:50%;border:none;background:var(--strong);color:var(--strong-ink);display:grid;place-items:center;flex:none}
+:focus-visible{outline:2px solid var(--link);outline-offset:3px}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.tile{background:var(--surface);border-radius:22px;padding:16px}
+svg.i{width:22px;height:22px;flex:none}
+
+/* ---------- my card ---------- */
+.stackwrap{position:relative;padding-top:26px}
+.stackwrap::before,.stackwrap::after{content:"";position:absolute;height:60px;border-radius:16px}
+.stackwrap::before{left:26px;right:26px;top:0;background:var(--stack1)}
+.stackwrap::after{left:13px;right:13px;top:12px;background:var(--stack2)}
+.bcard{position:relative;z-index:1;width:100%;max-width:100%;aspect-ratio:91/54;border-radius:16px;background:var(--card);container-type:inline-size;overflow:hidden;
+  box-shadow:0 20px 34px -20px rgba(20,40,35,.75)}
+.bcard::after{content:"";position:absolute;right:-12cqw;top:-12cqw;width:44cqw;height:44cqw;border-radius:50%;background:#FFFFFF;opacity:.07}
+.bcard .in{position:absolute;inset:0;padding:6cqw 6.5cqw;display:flex;flex-direction:column;justify-content:space-between;color:#F4F1EA;font-family:var(--f-cardtext)}
+.bcard .org{display:flex;justify-content:space-between;gap:3cqw;font-size:3.1cqw;letter-spacing:.1em;color:rgba(255,255,255,.72)}
+.bcard .org i{font-style:normal;color:var(--brass)}
+.bcard .nm{font-family:var(--f-card);font-weight:700;font-size:8.8cqw;line-height:1.2;letter-spacing:.1em}
+.bcard .tt{font-size:3.6cqw;color:var(--brass);letter-spacing:.18em}
+.bcard .tg{font-size:3.2cqw;color:rgba(255,255,255,.74);margin-top:1cqw}
+.bcard .ct{font-size:3.1cqw;color:rgba(255,255,255,.88);border-top:1px solid rgba(232,201,138,.5);padding-top:2.2cqw;display:flex;flex-wrap:wrap;justify-content:space-between;gap:.4cqw 4cqw;min-width:0;overflow-wrap:anywhere}
+
+.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.qrtile{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center}
+.qrtile svg{width:100%;max-width:140px;height:auto;display:block;border-radius:6px}
+.stackcol{display:flex;flex-direction:column;gap:12px}
+.mini{flex:1;border:none;border-radius:22px;padding:16px;text-align:left;display:flex;flex-direction:column;justify-content:space-between;gap:12px;background:var(--surface);color:var(--ink);text-decoration:none;min-height:96px}
+.mini.coffee{background:var(--sand);color:var(--sand-ink)}
+.mini span{font-size:.92rem;font-weight:500}
+
+form{display:flex;flex-direction:column;gap:12px}
+label{display:flex;flex-direction:column;gap:4px;font-size:.84rem;color:var(--muted)}
+input[type=text],input[type=tel],input[type=email],input[type=url],input[type=search],textarea{font:inherit;font-size:16px;color:var(--ink);background:var(--soft);border:1px solid transparent;border-radius:12px;padding:10px 12px;width:100%}
+input:focus,textarea:focus{border-color:var(--link);outline:none}
+textarea{min-height:68px;resize:vertical}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:420px){.grid2{grid-template-columns:1fr}}
+
+/* ---------- card box ---------- */
+.search{display:flex;align-items:center;gap:10px;background:var(--surface);border-radius:999px;padding:0 18px;min-height:48px;color:var(--muted)}
+.search input{flex:1;min-width:0;border:none;background:transparent;padding:0;border-radius:0}
+.search input:focus{border:none}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{min-height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--ink);font-size:.84rem}
+.chip[aria-pressed="true"]{background:var(--strong);color:var(--strong-ink);border-color:var(--strong)}
+.box{display:flex;flex-direction:column;padding-top:4px}
+.strip{all:unset;box-sizing:border-box;cursor:pointer;height:78px;margin-top:-14px;border-radius:16px 16px 0 0;padding:13px 20px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;
+  box-shadow:0 -6px 12px -8px rgba(20,40,35,.35)}
+.strip:first-child{margin-top:0;box-shadow:none}
+.strip:focus-visible{outline:2px solid var(--link);outline-offset:-3px}
+.strip .o{display:block;font-size:.7rem;opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.strip .n{display:block;font-family:var(--f-card);font-size:1.13rem;font-weight:700;letter-spacing:.04em}
+.strip .d{font-size:.76rem;opacity:.75;flex:none}
+.strip>span:first-child{min-width:0}
+.t0{background:var(--t0);color:var(--t0i)} .t1{background:var(--t1);color:var(--t1i)} .t2{background:var(--t2);color:var(--t2i)} .t3{background:var(--t3);color:var(--t3i)} .t4{background:var(--t4);color:var(--t4i)}
+.open{margin-top:-14px;border-radius:16px;background:var(--surface);padding:18px 20px;display:flex;flex-direction:column;gap:12px;position:relative;
+  box-shadow:0 -6px 14px -8px rgba(20,40,35,.4),0 18px 30px -22px rgba(20,40,35,.5)}
+.box .open:first-child,.list .open{margin-top:0}
+.open .top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.open .top>div{min-width:0}
+.open .o{font-size:.74rem;color:var(--muted)}
+.open .n{font-family:var(--f-card);font-size:1.5rem;font-weight:700;letter-spacing:.04em;line-height:1.3}
+.open .n small{font-family:var(--f-ui);font-size:.82rem;font-weight:500;color:var(--muted);letter-spacing:0;margin-left:6px}
+.badge{display:inline-block;font-family:var(--f-ui);font-size:.66rem;font-weight:500;border-radius:999px;padding:0 7px;background:var(--sand);color:var(--sand-ink);vertical-align:3px;margin-left:6px;letter-spacing:0}
+.memo{font-size:.86rem;background:var(--soft);border-radius:12px;padding:10px 12px}
+.kv{display:grid;grid-template-columns:3.6em 1fr;gap:4px 10px;margin:0;font-size:.9rem}
+.kv dt{color:var(--muted);font-size:.8rem;padding-top:2px}
+.kv dd{margin:0;min-width:0;overflow-wrap:anywhere;user-select:text}
+.acts{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px}
+.acts button,.acts a{min-height:44px;border-radius:12px;border:none;background:var(--soft);color:var(--ink);font-size:.84rem;display:grid;place-items:center;text-decoration:none}
+.importbox{background:var(--soft);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.photo{width:100%;border-radius:12px}
+.del{display:flex;gap:8px;justify-content:flex-end}
+.del button{min-height:36px;font-size:.8rem;padding:0 12px}
+.textbtn{background:none;border:none;color:var(--muted);font-size:.8rem;text-decoration:underline;text-underline-offset:3px;min-height:36px;padding:0 4px}
+.list{display:flex;flex-direction:column;gap:10px}
+.lrow{all:unset;box-sizing:border-box;cursor:pointer;display:grid;grid-template-columns:44px 1fr auto;gap:12px;align-items:center;background:var(--surface);border-radius:16px;padding:10px 14px;width:100%}
+.lrow:focus-visible{outline:2px solid var(--link)}
+.av{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-family:var(--f-card);font-size:1.15rem;font-weight:700;overflow:hidden}
+.av img{width:100%;height:100%;object-fit:cover}
+.lrow .who{min-width:0}
+.lrow .who strong{display:block;font-weight:500}
+.lrow .who span{display:block;color:var(--muted);font-size:.82rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lrow .d{font-size:.74rem;color:var(--muted)}
+.empty{text-align:center;color:var(--muted);padding:32px 12px;background:var(--surface);border-radius:22px}
+.photoin{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.photoin img{width:96px;border-radius:10px}
+
+/* ---------- settings ---------- */
+.set{display:flex;flex-direction:column;gap:12px}
+.choices{display:grid;gap:8px}
+.choices.fonts{grid-template-columns:repeat(2,minmax(0,1fr))}
+.choices.seg{grid-template-columns:repeat(3,minmax(0,1fr))}
+.choices.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.opt{all:unset;box-sizing:border-box;cursor:pointer;border-radius:16px;padding:12px 14px;background:var(--soft);display:flex;flex-direction:column;gap:2px;min-width:0;border:2px solid transparent}
+.opt:focus-visible{outline:2px solid var(--link);outline-offset:2px}
+.opt[aria-pressed="true"]{border-color:var(--strong)}
+.opt .big{font-size:1.3rem;font-weight:700;line-height:1.35}
+.opt .lbl{font-size:.76rem;color:var(--muted)}
+.seg .opt,.two .opt{align-items:center;text-align:center;font-size:.9rem;min-height:48px;justify-content:center}
+.swatches{display:flex;gap:14px;flex-wrap:wrap}
+.sw{all:unset;cursor:pointer;width:44px;height:44px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.15)}
+.sw[aria-pressed="true"]{outline:2px solid var(--strong);outline-offset:3px}
+.sw:focus-visible{outline:2px solid var(--link);outline-offset:3px}
+.frole{display:flex;flex-direction:column;gap:8px}
+.frole+.frole{border-top:1px solid var(--line);padding-top:14px}
+.frow{display:flex;gap:4px 10px;align-items:baseline;flex-wrap:wrap}
+.flbl{font-weight:500;font-size:.95rem}
+.fchips{display:flex;flex-wrap:wrap;gap:8px}
+.fchip{min-height:40px;padding:0 14px;border-radius:999px;border:2px solid transparent;background:var(--soft);color:var(--ink);font-size:.95rem}
+.fchip[aria-pressed="true"]{border-color:var(--strong);font-weight:700}
+.check{flex-direction:row;align-items:center;gap:12px;color:var(--ink);font-size:.95rem;min-height:44px;cursor:pointer}
+.check input{width:22px;height:22px;accent-color:var(--card);margin:0}
+.preview-sticky{position:sticky;top:env(safe-area-inset-top,0px);z-index:3;background:var(--bg);padding-block:10px 14px;margin-block:-10px 0}
+.preview-sticky .bcard{max-width:340px;margin:0 auto;display:block}
+
+/* ---------- bottom nav ---------- */
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:5;background:var(--bg);display:flex;justify-content:center;gap:10px;
+  padding:10px max(20px,env(safe-area-inset-right,0px)) calc(14px + env(safe-area-inset-bottom,0px)) max(20px,env(safe-area-inset-left,0px))}
+nav.tabs button{border:none;background:transparent;color:var(--muted);min-height:44px;min-width:44px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 12px}
+nav.tabs button span{display:none;font-size:.9rem;font-weight:500}
+nav.tabs button[aria-current="page"]{background:var(--surface);color:var(--ink);padding:0 18px}
+nav.tabs button[aria-current="page"] span{display:inline}
+
+/* ---------- give card ---------- */
+.present{position:fixed;inset:0;z-index:20;background:var(--bg);display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px)}
+.present .stage{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;
+  padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px));transition:transform .6s cubic-bezier(.3,.7,.2,1)}
+.present.flip .stage{transform:rotate(180deg)}
+.pcard{width:min(100%,520px)}
+.pqr{width:min(50vw,200px);background:#FFFFFF;border-radius:16px;padding:10px}
+.pqr svg{width:100%;height:auto;display:block}
+.pctrl{display:flex;gap:10px;justify-content:center;
+  padding:12px max(20px,env(safe-area-inset-right,0px)) calc(14px + env(safe-area-inset-bottom,0px)) max(20px,env(safe-area-inset-left,0px))}
+.pctrl .pill{flex:1;max-width:220px}
+
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));background:var(--strong);color:var(--strong-ink);padding:9px 18px;border-radius:999px;font-size:.86rem;z-index:30;max-width:calc(100% - 40px)}
+textarea.fallback{font-size:12px;min-height:120px}
+@media (prefers-reduced-motion:no-preference){.open{animation:rise .22s ease-out}@keyframes rise{from{transform:translateY(8px);opacity:.6}to{transform:none;opacity:1}}}
+@media (prefers-reduced-motion:reduce){.present .stage{transition:none}}
+</style>
+
+</head>
+<body>
+<main id="app"></main>
+<input type="file" id="importFile" accept=".json,application/json" hidden>
+<nav class="tabs" aria-label="主選單">
+  <button type="button" data-act="tab" data-tab="me" id="tab-me" aria-label="我的名片">
+    <svg class="i" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="6" width="18" height="12" rx="3"/><path d="M7 11h6M7 14h4"/></svg><span>我的名片</span></button>
+  <button type="button" data-act="tab" data-tab="book" id="tab-book" aria-label="名片夾">
+    <svg class="i" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="5" y="3.5" width="14" height="17" rx="3"/><path d="M9 8h6M9 11.5h6M9 15h3"/></svg><span>名片夾</span></button>
+  <button type="button" data-act="tab" data-tab="set" id="tab-set" aria-label="設定">
+    <svg class="i" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg><span>設定</span></button>
+</nav>
+<div class="present" id="present" role="dialog" aria-modal="true" aria-label="遞名片" hidden></div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+// ===== 上線前要填的地方 =====
+const TIP_URL = "";        // 打賞頁網址，例如 Buy Me a Coffee、Ko-fi、Portaly
+const STORE_KEY = "bizcard.v1";
+
+// ===== 個人化選項 =====
+// 每種名片色配一套介面色：L = 淺色模式、D = 深色模式
+const CARD_COLORS = {
+  green:{name:"深綠", c:"#2F5F51",
+    L:{bg:"#E3EBE6",soft:"#EEF3F0",ink:"#1F3530",muted:"#5B7069",line:"#C2D0C8",link:"#2F5F51",stack1:"#C7D6CD",stack2:"#D6E2DA"},
+    D:{bg:"#131A18",surface:"#1D2725",soft:"#253230",ink:"#E4ECE8",muted:"#9DB0A9",line:"#33423E",link:"#8CC4B1",stack1:"#2A3835",stack2:"#33433F"}},
+  navy:{name:"藏青", c:"#2A3F5F",
+    L:{bg:"#E2E8F0",soft:"#EDF1F6",ink:"#1E2B3D",muted:"#5A6A80",line:"#C1CCDA",link:"#2A3F5F",stack1:"#C6D1E0",stack2:"#D5DEEA"},
+    D:{bg:"#12161D",surface:"#1B222C",soft:"#232C38",ink:"#E3E9F1",muted:"#9AA8BB",line:"#313C4B",link:"#9DB6DA",stack1:"#28323F",stack2:"#313C4B"}},
+  plum:{name:"紫檀", c:"#4A3A5C",
+    L:{bg:"#E9E4EE",soft:"#F2EFF5",ink:"#2E2440",muted:"#6A5F7A",line:"#D0C7DA",link:"#4A3A5C",stack1:"#D4CADF",stack2:"#E0D8E8"},
+    D:{bg:"#17131C",surface:"#211B28",soft:"#2A2333",ink:"#ECE6F2",muted:"#AA9EBA",line:"#3A3147",link:"#C3AEDD",stack1:"#2E2639",stack2:"#383045"}},
+  brown:{name:"可可", c:"#5C4425",
+    L:{bg:"#ECE6DC",soft:"#F4F0E9",ink:"#3A2C1C",muted:"#77695A",line:"#D6CCBC",link:"#5C4425",stack1:"#DACFBE",stack2:"#E5DCCD"},
+    D:{bg:"#1A1612",surface:"#25201A",soft:"#2E2820",ink:"#F0E9DF",muted:"#B3A592",line:"#40372C",link:"#DDBF8F",stack1:"#332C23",stack2:"#3D352B"}},
+  ink:{name:"墨黑", c:"#2B2F33",
+    L:{bg:"#E6E7E8",soft:"#F0F1F2",ink:"#202326",muted:"#62676D",line:"#C9CCCF",link:"#2B2F33",stack1:"#CDD0D3",stack2:"#DADCDE"},
+    D:{bg:"#141516",surface:"#1E2022",soft:"#26292B",ink:"#E8EAEC",muted:"#A0A5AA",line:"#36393C",link:"#C9CED3",stack1:"#2B2E31",stack2:"#35383B"}}
+};
+const FONTS = {
+  sans:  {name:"思源黑體", stack:'"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif'},
+  hei:   {name:"昭源黑體", stack:'"Chiron Hei HK","Noto Sans TC","PingFang TC",sans-serif'},
+  serif: {name:"思源明體", stack:'"Noto Serif TC","Songti TC",serif'},
+  sung:  {name:"昭源宋體", stack:'"Chiron Sung HK","Noto Serif TC",serif'},
+  wenkai:{name:"文楷", stack:'"LXGW WenKai TC","Noto Serif TC",serif'}
+};
+const FONT_ROLES = [
+  {key:"name", label:"名字", hint:"名片和名片夾裡的姓名", cssVar:"--f-card"},
+  {key:"cardText", label:"名片內文", hint:"單位、職稱、聯絡方式", cssVar:"--f-cardtext"},
+  {key:"head", label:"介面標題", hint:"每一頁的大標題", cssVar:"--f-head"},
+  {key:"body", label:"介面內文", hint:"按鈕、說明、表單", cssVar:"--f-ui"}
+];
+const THEMES = {system:"跟隨系統", light:"淺色", dark:"深色"};
+const VIEWS = {box:"卡盒", list:"清單"};
+const SHOW_FIELDS = [["phone","電話"],["email","Email"],["line","LINE ID"],["web","網站"],["tagline","一句話介紹"]];
+const DEFAULT_SETTINGS = {cardColor:"green", fonts:{name:"serif",cardText:"sans",head:"sans",body:"sans"}, theme:"system", bookView:"box", presentFlip:true,
+  show:{phone:true,email:true,line:true,web:true,tagline:true}};
+
+const DEFAULT = {
+  me:{name:"",title:"",org:"",tagline:"",phone:"",email:"",line:"",web:""},
+  cards:[
+    {id:"s1",sample:true,name:"陳志明",title:"產品經理",org:"範例科技股份有限公司",phone:"0912-000-000",email:"chen@example.com",line:"chenpm",note:"開發者聚會認識",added:"2026-09-18",photo:""},
+    {id:"s2",sample:true,name:"林怡君",title:"社工督導",org:"士林區家庭服務中心",phone:"02-2800-0000",email:"lin@example.org",line:"",note:"跨網絡個案會議認識",added:"2026-10-02",photo:""},
+    {id:"s3",sample:true,name:"李佩珊",title:"個管師",org:"範例健康服務中心",phone:"02-2890-0000",email:"lee@example.org",line:"",note:"轉介聯繫會議認識，負責長照個案",added:"2026-10-11",photo:""}
+  ],
+  settings:DEFAULT_SETTINGS
+};
+const clone = o => JSON.parse(JSON.stringify(o));
+let data = null;   // 由 boot() 從 IndexedDB 載入
+const ui = {tab:"me", editing:false, adding:false, draftPhoto:"", query:"", sort:"recent", photoOnly:false,
+  openId:null, confirmId:null, showPhoto:false, confirmReset:false, lock:null, importing:null};
+const hostTheme = null;
+
+/* ---------- 儲存：IndexedDB，容量比 localStorage 大很多，照片放得下 ---------- */
+let _db=null;
+function idb(){
+  if(_db) return Promise.resolve(_db);
+  return new Promise((res,rej)=>{ const r=indexedDB.open("bizcard",1);
+    r.onupgradeneeded=()=>r.result.createObjectStore("kv");
+    r.onsuccess=()=>{ _db=r.result; res(_db); }; r.onerror=()=>rej(r.error); });
+}
+async function idbGet(k){ const db=await idb(); return new Promise((res,rej)=>{ const q=db.transaction("kv").objectStore("kv").get(k); q.onsuccess=()=>res(q.result); q.onerror=()=>rej(q.error); }); }
+async function idbSet(k,v){ const db=await idb(); return new Promise((res,rej)=>{ const tx=db.transaction("kv","readwrite"); tx.objectStore("kv").put(v,k); tx.oncomplete=()=>res(); tx.onerror=tx.onabort=()=>rej(tx.error); }); }
+
+const str = v => typeof v==="string" ? v.slice(0,500) : "";
+const PHOTO_RE = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/;
+function cleanCard(c){   // 匯入的檔案不可信：只留已知欄位、只接受圖片格式的照片
+  return {id:str(c.id).replace(/[^\w-]/g,"").slice(0,40)||("c"+Math.random().toString(36).slice(2)), sample:!!c.sample,
+    name:str(c.name), title:str(c.title), org:str(c.org), phone:str(c.phone), email:str(c.email), line:str(c.line),
+    note:str(c.note), added:/^\d{4}-\d{2}-\d{2}$/.test(c.added)?c.added:today(), photo:(typeof c.photo==="string"&&PHOTO_RE.test(c.photo))?c.photo:""};
+}
+function cleanMe(m){ const o={}; ["name","title","org","tagline","phone","email","line","web"].forEach(k=>o[k]=str(m&&m[k])); return o; }
+
+function normalize(d){
+  if(!d || !d.me || !Array.isArray(d.cards)) d=clone(DEFAULT);
+  d={me:cleanMe(d.me), cards:d.cards.filter(c=>c&&typeof c==="object").map(cleanCard), settings:d.settings};
+  const s=Object.assign(clone(DEFAULT_SETTINGS), d.settings||{});
+  s.show=Object.assign(clone(DEFAULT_SETTINGS.show), (d.settings&&d.settings.show)||{});
+  if(!CARD_COLORS[s.cardColor]) s.cardColor=DEFAULT_SETTINGS.cardColor;   // 舊版設定遷移
+  s.fonts=Object.assign(clone(DEFAULT_SETTINGS.fonts), (d.settings&&d.settings.fonts)||{});
+  if(d.settings && d.settings.cardFont && !d.settings.fonts && FONTS[d.settings.cardFont]) s.fonts.name=d.settings.cardFont; // 舊版只有名字字體
+  Object.keys(s.fonts).forEach(k=>{ if(!FONTS[s.fonts[k]]) s.fonts[k]=DEFAULT_SETTINGS.fonts[k]; });
+  delete s.cardFont;
+  if(!VIEWS[s.bookView]) s.bookView="box";
+  d.settings=s; return d;
+}
+function save(){
+  idbSet("data", data).catch(()=>toast("沒存進去：手機空間不足或瀏覽器不允許儲存。"));
+  return true;
+}
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const vesc = s => String(s ?? "").replace(/\\/g,"\\\\").replace(/[,;]/g, m => "\\"+m).replace(/\n/g,"\\n");
+const today = () => { const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); };
+const short = d => (d||"").slice(5);
+function toast(msg){ const t=document.getElementById("toast"); t.textContent=msg; t.hidden=false; clearTimeout(toast._t); toast._t=setTimeout(()=>t.hidden=true, 2600); }
+function greeting(){ const h=new Date().getHours(); return h<5?"夜深了":h<11?"早安":h<14?"午安":h<18?"午後好":"晚安"; }
+function tint(id){ let n=0; for(const ch of String(id)) n+=ch.charCodeAt(0); return "t"+(n%5); }
+
+function applySettings(){
+  const s=data.settings, r=document.documentElement;
+  const pal=CARD_COLORS[s.cardColor];
+  r.style.setProperty("--card", pal.c);
+  Object.entries(pal.L).forEach(([k,v])=>r.style.setProperty("--L-"+k, v));
+  Object.entries(pal.D).forEach(([k,v])=>r.style.setProperty("--D-"+k, v));
+  FONT_ROLES.forEach(role=>r.style.setProperty(role.cssVar, FONTS[s.fonts[role.key]].stack));
+  if(s.theme==="system"){ hostTheme ? r.setAttribute("data-theme",hostTheme) : r.removeAttribute("data-theme"); }
+  else r.setAttribute("data-theme", s.theme);
+  // 手機狀態列的顏色跟著底色
+  const dark = s.theme==="dark" || (s.theme==="system" && matchMedia("(prefers-color-scheme: dark)").matches);
+  const meta=document.getElementById("themeColor"); if(meta) meta.content = dark ? pal.D.bg : pal.L.bg;
+}
+matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", ()=>{ if(data) applySettings(); });
+function visible(m){ const s=data.settings.show, o={...m}; SHOW_FIELDS.forEach(([k])=>{ if(!s[k]) o[k]=""; }); return o; }
+
+function vcard(m){
+  const L=["BEGIN:VCARD","VERSION:3.0","N:;"+vesc(m.name)+";;;","FN:"+vesc(m.name)];
+  if(m.org) L.push("ORG:"+vesc(m.org));
+  if(m.title) L.push("TITLE:"+vesc(m.title));
+  if(m.phone) L.push("TEL;TYPE=CELL:"+m.phone.replace(/[^\d+]/g,""));
+  if(m.email) L.push("EMAIL:"+vesc(m.email));
+  if(m.web) L.push("URL:"+vesc(m.web));
+  const note=[m.line&&("LINE: "+m.line), m.note].filter(Boolean).join(" / ");
+  if(note) L.push("NOTE:"+vesc(note));
+  L.push("END:VCARD"); return L.join("\r\n");
+}
+function plainText(m){
+  return [m.name+(m.title?"｜"+m.title:""), m.org, m.tagline, m.phone&&("電話 "+m.phone), m.email&&("Email "+m.email), m.line&&("LINE "+m.line), m.web].filter(Boolean).join("\n");
+}
+function qrSvg(text){
+  if(!window.qrcode) return '<p class="sub">QR code 元件沒有載入，請重新整理頁面。</p>';
+  try{
+    if(qrcode.stringToBytesFuncs && qrcode.stringToBytesFuncs["UTF-8"]) qrcode.stringToBytes=qrcode.stringToBytesFuncs["UTF-8"];
+    const q=qrcode(0,"M"); q.addData(text,"Byte"); q.make();
+    const n=q.getModuleCount(); let d="";
+    for(let r=0;r<n;r++) for(let c=0;c<n;c++) if(q.isDark(r,c)) d+="M"+c+" "+r+"h1v1h-1z";
+    return '<svg viewBox="-2 -2 '+(n+4)+' '+(n+4)+'" role="img" aria-label="名片 QR code" shape-rendering="crispEdges"><rect x="-2" y="-2" width="'+(n+4)+'" height="'+(n+4)+'" fill="#FFFFFF"/><path d="'+d+'" fill="#1F3530"/></svg>';
+  }catch(e){ return '<p class="sub">資料太長，QR code 放不下。請縮短網站或介紹。</p>'; }
+}
+function cardHTML(m){
+  m=visible(m);
+  const ct=[m.phone, m.email, m.line&&("LINE "+m.line), m.web].filter(Boolean).map(x=>'<span>'+esc(x)+'</span>').join("");
+  return '<div class="bcard"><div class="in"><div class="org"><span>'+esc(m.org)+'</span><i>●</i></div>'
+    +'<div><div class="nm">'+esc(m.name||"（未填姓名）")+'</div><div class="tt">'+esc(m.title)+'</div>'+(m.tagline?'<div class="tg">'+esc(m.tagline)+'</div>':'')+'</div>'
+    +'<div class="ct">'+ct+'</div></div></div>';
+}
+function field(id,label,val,type="text",ph=""){
+  return '<label for="'+id+'">'+label+'<input id="'+id+'" name="'+id+'" type="'+type+'" value="'+esc(val)+'" placeholder="'+esc(ph)+'" autocomplete="off"></label>';
+}
+const ICON = {
+  copy:'<svg class="i" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg>',
+  cup:'<svg class="i" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M5 9h11v5a5 5 0 0 1-5 5H10a5 5 0 0 1-5-5zM16 10h1.5a2.5 2.5 0 0 1 0 5H16"/></svg>',
+  plus:'<svg class="i" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>',
+  search:'<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg>'
+};
+
+/* ---------- 我的名片 ---------- */
+function renderMe(){
+  const m=data.me;
+  const editor = ui.editing ? '<section class="tile"><form id="meForm"><h2>編輯名片內容</h2>'
+    + field("me-name","姓名",m.name) + '<div class="grid2">'+field("me-title","職稱",m.title)+field("me-org","單位",m.org)+'</div>'
+    + field("me-tagline","一句話介紹（選填）",m.tagline,"text","例如：陪你把卡住的事慢慢說清楚")
+    + '<div class="grid2">'+field("me-phone","電話",m.phone,"tel")+field("me-email","Email",m.email,"email")+'</div>'
+    + '<div class="grid2">'+field("me-line","LINE ID",m.line)+field("me-web","網站",m.web,"url","https://")+'</div>'
+    + '<div class="row"><button class="pill strong" type="submit">儲存名片</button><button type="button" class="pill line" data-act="cancelEdit">取消</button></div></form></section>' : "";
+  const tip = TIP_URL
+    ? '<a class="mini coffee" href="'+esc(TIP_URL)+'" target="_blank" rel="noopener">'+ICON.cup+'<span>請我喝咖啡</span></a>'
+    : '<button type="button" class="mini coffee" data-act="noTip">'+ICON.cup+'<span>請我喝咖啡</span></button>';
+  return '<div class="head"><div><div class="eyebrow">'+greeting()+(m.name?'，'+esc(m.name):'')+'</div><h1>'+(m.name?'今天要遞名片嗎？':'先填上你的名片')+'</h1></div>'
+    + (ui.editing?'':'<button type="button" class="pill" data-act="edit">編輯</button>')+'</div>'
+    + '<div class="stackwrap">'+cardHTML(m)+'</div>'
+    + editor
+    + (ui.editing?'':'<button type="button" class="pill strong big" data-act="present">遞名片給對方</button>')
+    + '<div class="tiles"><div class="tile qrtile">'+qrSvg(vcard(visible(m)))+'<span class="sub">相機掃描就能存聯絡人</span></div>'
+    + '<div class="stackcol"><button type="button" class="mini" data-act="copyMe">'+ICON.copy+'<span>複製文字版</span></button>'+tip+'</div></div>'
+    + '<p class="sub" style="text-align:center">名片和 QR code 只包含設定裡打開的欄位，不經過任何伺服器。</p>';
+}
+
+/* ---------- 名片夾 ---------- */
+function filtered(){
+  const q=ui.query.trim().toLowerCase();
+  let list=data.cards.filter(c=>!ui.photoOnly || c.photo);
+  if(q) list=list.filter(c=>[c.name,c.org,c.title,c.note,c.phone,c.email,c.line].join(" ").toLowerCase().includes(q));
+  if(ui.sort==="org") list.sort((a,b)=>(a.org||"").localeCompare(b.org||"","zh-Hant")||(a.name||"").localeCompare(b.name||"","zh-Hant"));
+  else list.sort((a,b)=>(a.added||"").localeCompare(b.added||"")); // 舊的在上，最新的在最下面展開
+  return list;
+}
+function openHTML(c){
+  const kv=[["電話",c.phone],["Email",c.email],["LINE",c.line]].filter(x=>x[1]).map(([k,v])=>'<dt>'+k+'</dt><dd>'+esc(v)+'</dd>').join("");
+  const acts=[c.phone&&'<a href="tel:'+esc(c.phone.replace(/[^\d+]/g,""))+'">撥電話</a>',
+    c.email&&'<button type="button" data-act="copy" data-text="'+esc(c.email)+'">複製 Email</button>',
+    c.photo&&'<button type="button" data-act="photo">'+(ui.showPhoto?"收起照片":"看照片")+'</button>'].filter(Boolean).join("");
+  return '<div class="open"><div class="top"><div><div class="o">'+esc(c.org)+'</div><div class="n">'+esc(c.name)+'<small>'+esc(c.title)+'</small>'+(c.sample?'<span class="badge">範例</span>':'')+'</div></div><span class="sub">'+short(c.added)+'</span></div>'
+    + (kv?'<dl class="kv">'+kv+'</dl>':'')
+    + (c.note?'<div class="memo">'+esc(c.note)+'</div>':'')
+    + (ui.showPhoto&&c.photo?'<img class="photo" src="'+c.photo+'" alt="'+esc(c.name)+' 的名片照片">':'')
+    + (acts?'<div class="acts">'+acts+'</div>':'')
+    + '<div class="del">'+(ui.confirmId===c.id
+        ? '<button type="button" class="pill danger" data-act="del" data-id="'+c.id+'">確定刪除</button><button type="button" class="pill line" data-act="noDel">保留</button>'
+        : '<button type="button" class="textbtn" data-act="askDel" data-id="'+c.id+'">刪除這張</button>')+'</div></div>';
+}
+function renderCards(){
+  const list=filtered();
+  if(!list.length) return '<div class="empty">'+(data.cards.length?"找不到符合的名片。":"名片夾是空的。按右上角的 ＋ 存下第一張。")+'</div>';
+  if(data.settings.bookView==="list"){
+    return '<div class="list">'+list.slice().reverse().map(c=>{
+      if(ui.openId===c.id) return openHTML(c);
+      const t=tint(c.id);
+      return '<button type="button" class="lrow" data-act="pick" data-id="'+c.id+'"><span class="av '+t+'">'+(c.photo?'<img src="'+c.photo+'" alt="">':esc((c.name||"?").slice(0,1)))+'</span><span class="who"><strong>'+esc(c.name)+(c.sample?'<span class="badge">範例</span>':'')+'</strong><span>'+esc([c.org,c.title].filter(Boolean).join("・"))+'</span></span><span class="d">'+short(c.added)+'</span></button>';
+    }).join("")+'</div>';
+  }
+  const sel = list.find(c=>c.id===ui.openId) || list[list.length-1];
+  const strips = list.filter(c=>c!==sel).map(c=>'<button type="button" class="strip '+tint(c.id)+'" data-act="pick" data-id="'+c.id+'"><span><span class="o">'+esc(c.org||" ")+'</span><span class="n">'+esc(c.name)+'</span></span><span class="d">'+short(c.added)+'</span></button>').join("");
+  return '<div class="box">'+strips+openHTML(sel)+'</div>';
+}
+function renderBook(){
+  const n=data.cards.length, samples=data.cards.filter(c=>c.sample).length;
+  const add = ui.adding ? '<section class="tile"><form id="addForm"><h2>新增名片</h2>'
+    + '<div class="photoin"><label for="add-photo" style="flex:1 1 200px">名片照片（選填，縮小後存在這裡，不留在相簿）<input id="add-photo" type="file" accept="image/*"></label>'+(ui.draftPhoto?'<img src="'+ui.draftPhoto+'" alt="照片預覽">':'')+'</div>'
+    + field("add-name","姓名","") + '<div class="grid2">'+field("add-title","職稱","")+field("add-org","單位","")+'</div>'
+    + '<div class="grid2">'+field("add-phone","電話","","tel")+field("add-email","Email","","email")+'</div>'
+    + field("add-line","LINE ID","")
+    + '<label for="add-note">在哪裡認識、聊了什麼<textarea id="add-note" name="add-note"></textarea></label>'
+    + '<div class="row"><button class="pill strong" type="submit">存入名片夾</button><button type="button" class="pill line" data-act="cancelAdd">取消</button></div></form></section>' : "";
+  return '<div class="head"><div><div class="eyebrow">'+n+' 張'+(samples?'・含 '+samples+' 張範例':'')+'</div><h1>名片夾</h1></div>'
+    + (ui.adding?'':'<button type="button" class="round" data-act="add" aria-label="新增名片">'+ICON.plus+'</button>')+'</div>'
+    + add
+    + '<label class="search">'+ICON.search+'<input id="q" type="search" placeholder="搜尋姓名、單位、在哪認識" value="'+esc(ui.query)+'" aria-label="搜尋名片"></label>'
+    + '<div class="chips"><button type="button" class="chip" data-act="sort" data-key="recent" aria-pressed="'+(ui.sort==="recent")+'">最近收到</button>'
+    + '<button type="button" class="chip" data-act="sort" data-key="org" aria-pressed="'+(ui.sort==="org")+'">依單位</button>'
+    + '<button type="button" class="chip" data-act="photoOnly" aria-pressed="'+ui.photoOnly+'">有照片</button></div>'
+    + '<div id="cards">'+renderCards()+'</div>';
+}
+
+/* ---------- 設定 ---------- */
+function opt(group,key,inner,cur){ return '<button type="button" class="opt" data-act="set" data-group="'+group+'" data-key="'+key+'" aria-pressed="'+(cur===key)+'">'+inner+'</button>'; }
+function renderSettings(){
+  const s=data.settings, nm=esc(data.me.name||"名字");
+  const imp=ui.importing;
+  const importBox = imp ? '<div class="importbox"><p>檔案裡有 '+imp.cards.length+' 張名片，其中 <b>'+imp.fresh.length+'</b> 張是名片夾裡還沒有的。</p><div class="row">'
+    + (imp.fresh.length?'<button type="button" class="pill strong" data-act="importCards">加入 '+imp.fresh.length+' 張新名片</button>':'')
+    + (imp.me&&imp.me.name?'<button type="button" class="pill line" data-act="importAll">加入新名片，並套用檔案裡的我的名片與外觀</button>':'')
+    + '<button type="button" class="pill line" data-act="importCancel">取消</button></div></div>' : '';
+  const sw=Object.entries(CARD_COLORS).map(([k,c])=>'<button type="button" class="sw" data-act="set" data-group="cardColor" data-key="'+k+'" aria-pressed="'+(s.cardColor===k)+'" aria-label="'+c.name+'" title="'+c.name+'" style="background:'+c.c+'"></button>').join("");
+  const fonts=FONT_ROLES.map(r=>'<div class="frole"><div class="frow"><span class="flbl">'+r.label+'</span><span class="sub">'+r.hint+'</span></div><div class="fchips">'
+    + Object.entries(FONTS).map(([k,f])=>'<button type="button" class="fchip" data-act="font" data-role="'+r.key+'" data-key="'+k+'" aria-pressed="'+(s.fonts[r.key]===k)+'" style="font-family:'+esc(f.stack)+'">'+(r.key==="name"?nm+'・':'')+f.name+'</button>').join("")
+    + '</div></div>').join("");
+  const checks=SHOW_FIELDS.map(([k,n])=>'<label class="check" for="show-'+k+'"><input type="checkbox" id="show-'+k+'" data-show="'+k+'"'+(s.show[k]?" checked":"")+'>'+n+(data.me[k]?'':'<span class="sub">（尚未填寫）</span>')+'</label>').join("");
+  return '<div class="head"><div><div class="eyebrow">改了馬上套用</div><h1>設定</h1></div></div>'
+    + '<div class="preview-sticky">'+cardHTML(data.me)+'</div>'
+    + '<section class="tile set"><h2>主題顏色</h2><div class="swatches">'+sw+'</div><p class="sub">'+CARD_COLORS[s.cardColor].name+'。名片、底色和按鈕會一起換成同一個色系。</p></section>'
+    + '<section class="tile set"><h2>字體</h2>'+fonts+'</section>'
+    + '<section class="tile set"><h2>名片上顯示的資料</h2><p class="sub">關掉的項目不會出現在名片上，也不會放進 QR code。私人手機可以只在需要時打開。</p><div>'+checks+'</div></section>'
+    + '<section class="tile set"><h2>名片夾檢視</h2><div class="choices two">'+Object.entries(VIEWS).map(([k,n])=>opt("bookView",k,n,s.bookView)).join("")+'</div><p class="sub">卡盒適合幾十張以內；名片多了，清單比較好找。</p></section>'
+    + '<section class="tile set"><h2>深淺色</h2><div class="choices seg">'+Object.entries(THEMES).map(([k,n])=>opt("theme",k,n,s.theme)).join("")+'</div></section>'
+    + '<section class="tile set"><h2>備份與搬家</h2><p class="sub">名片只存在這支手機裡，不會上傳到任何伺服器。建議偶爾匯出一份備份，存到你自己的 Google Drive；換手機或想在電腦上用時，匯入這份檔案就好。</p>'
+      + '<div class="row"><button type="button" class="pill strong" data-act="exportJson">匯出備份（含照片）</button>'
+      + '<button type="button" class="pill line" data-act="importPick">匯入備份</button>'
+      + '<button type="button" class="pill line" data-act="exportVcf">匯出成聯絡人檔（.vcf）</button></div>'
+      + importBox
+      + '<p class="sub">.vcf 可以直接匯入 Google 聯絡人。範例名片不會被匯出。</p></section>'
+    + '<section class="tile set"><h2>其他</h2>'
+      + '<div class="row">'
+      + (data.cards.some(c=>c.sample)?'<button type="button" class="pill line" data-act="clearSamples">移除範例名片</button>':'')
+      + (ui.confirmReset?'<button type="button" class="pill danger" data-act="resetLook">確定還原外觀</button><button type="button" class="pill line" data-act="noReset">取消</button>':'<button type="button" class="pill line" data-act="askReset">外觀還原預設</button>')
+      + '</div><div id="fb"></div></section>';
+}
+
+function render(){
+  document.getElementById("app").innerHTML = ui.tab==="me" ? renderMe() : ui.tab==="book" ? renderBook() : renderSettings();
+  ["me","book","set"].forEach(t=>document.getElementById("tab-"+t).setAttribute("aria-current", ui.tab===t?"page":"false"));
+}
+const rerenderCards = () => { const el=document.getElementById("cards"); if(el) el.innerHTML=renderCards(); };
+function keepScroll(fn){ const y=window.scrollY; fn(); window.scrollTo(0,y); }
+
+async function copy(text){
+  try{ await navigator.clipboard.writeText(text); toast("已複製"); }
+  catch(e){
+    const box=document.getElementById("fb")||document.getElementById("app");
+    const ta=document.createElement("textarea"); ta.className="fallback"; ta.value=text; ta.readOnly=true;
+    box.appendChild(ta); ta.focus(); ta.select(); toast("無法自動複製，已選取文字，請手動複製");
+  }
+}
+function compress(file){
+  return new Promise((res,rej)=>{
+    const fr=new FileReader();
+    fr.onload=()=>{ const img=new Image();
+      img.onload=()=>{ const s=Math.min(1,900/Math.max(img.width,img.height));
+        const c=document.createElement("canvas"); c.width=Math.round(img.width*s); c.height=Math.round(img.height*s);
+        c.getContext("2d").drawImage(img,0,0,c.width,c.height); res(c.toDataURL("image/jpeg",0.7)); };
+      img.onerror=rej; img.src=fr.result; };
+    fr.onerror=rej; fr.readAsDataURL(file);
+  });
+}
+const val = id => (document.getElementById(id)?.value||"").trim();
+
+// 交出檔案：手機上跳出分享選單（可以直接存到 Google Drive），不支援的瀏覽器就直接下載
+async function deliver(filename, text, mime){
+  const blob=new Blob([text],{type:mime});
+  try{
+    const file=new File([blob], filename, {type:mime});
+    if(navigator.canShare && navigator.canShare({files:[file]})){ await navigator.share({files:[file], title:filename}); return; }
+  }catch(e){ if(e && e.name==="AbortError") return; }
+  const url=URL.createObjectURL(blob), a=document.createElement("a");
+  a.href=url; a.download=filename; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 4000);
+  toast("已下載 "+filename);
+}
+
+/* ---------- 遞名片模式 ---------- */
+const flipLabel = () => data.settings.presentFlip ? "改成朝向自己" : "轉向對面";
+function openPresent(){
+  const p=document.getElementById("present"), m=data.me;
+  p.innerHTML='<div class="stage"><div class="pcard">'+cardHTML(m)+'</div><div class="pqr">'+qrSvg(vcard(visible(m)))+'</div><p class="sub">用手機相機掃描，就能存入聯絡人</p></div>'
+    +'<div class="pctrl"><button type="button" class="pill line" data-act="flip" id="flipBtn">'+flipLabel()+'</button><button type="button" class="pill strong" data-act="closePresent">收起</button></div>';
+  p.classList.remove("flip"); p.hidden=false; document.body.style.overflow="hidden";
+  requestAnimationFrame(()=>requestAnimationFrame(()=>p.classList.toggle("flip", !!data.settings.presentFlip)));
+  try{ navigator.wakeLock && navigator.wakeLock.request("screen").then(l=>ui.lock=l).catch(()=>{}); }catch(e){}
+  document.getElementById("flipBtn").focus();
+}
+function closePresent(){
+  const p=document.getElementById("present");
+  p.hidden=true; p.innerHTML=""; p.classList.remove("flip"); document.body.style.overflow="";
+  try{ ui.lock && ui.lock.release().catch(()=>{}); }catch(e){} ui.lock=null;
+}
+document.addEventListener("keydown", e=>{ if(e.key==="Escape" && !document.getElementById("present").hidden) closePresent(); });
+
+document.addEventListener("click", e=>{
+  const el=e.target.closest("[data-act]"); if(!el) return;
+  const a=el.dataset.act, id=el.dataset.id;
+  if(a==="tab"){ ui.tab=el.dataset.tab; ui.editing=false; ui.confirmReset=false; render(); window.scrollTo(0,0); }
+  else if(a==="edit"){ ui.editing=true; render(); document.getElementById("me-name")?.focus(); }
+  else if(a==="cancelEdit"){ ui.editing=false; render(); }
+  else if(a==="present"){ openPresent(); }
+  else if(a==="closePresent"){ closePresent(); }
+  else if(a==="flip"){ data.settings.presentFlip=!data.settings.presentFlip; save(); document.getElementById("present").classList.toggle("flip", data.settings.presentFlip); el.textContent=flipLabel(); }
+  else if(a==="copyMe"){ copy(plainText(visible(data.me))); }
+  else if(a==="noTip"){ toast("打賞連結還沒設定，部署時再接上"); }
+  else if(a==="copy"){ copy(el.dataset.text); }
+  else if(a==="add"){ ui.adding=true; ui.draftPhoto=""; render(); document.getElementById("add-name")?.focus(); }
+  else if(a==="cancelAdd"){ ui.adding=false; ui.draftPhoto=""; render(); }
+  else if(a==="pick"){ ui.openId = (data.settings.bookView==="list" && ui.openId===id) ? null : id; ui.confirmId=null; ui.showPhoto=false; rerenderCards(); }
+  else if(a==="photo"){ ui.showPhoto=!ui.showPhoto; rerenderCards(); }
+  else if(a==="sort"){ ui.sort=el.dataset.key; keepScroll(render); }
+  else if(a==="photoOnly"){ ui.photoOnly=!ui.photoOnly; keepScroll(render); }
+  else if(a==="askDel"){ ui.confirmId=id; rerenderCards(); }
+  else if(a==="noDel"){ ui.confirmId=null; rerenderCards(); }
+  else if(a==="del"){ data.cards=data.cards.filter(c=>c.id!==id); ui.openId=null; ui.confirmId=null; save(); keepScroll(render); toast("已刪除"); }
+  else if(a==="set"){ data.settings[el.dataset.group]=el.dataset.key; save(); applySettings(); keepScroll(render); }
+  else if(a==="font"){ data.settings.fonts[el.dataset.role]=el.dataset.key; save(); applySettings(); keepScroll(render); }
+  else if(a==="exportJson"){
+    const payload={app:"bizcard",version:1,exported:new Date().toISOString(),me:data.me,settings:data.settings,cards:data.cards.filter(c=>!c.sample)};
+    deliver("名片夾備份-"+today()+".json", JSON.stringify(payload), "application/json");
+  }
+  else if(a==="exportVcf"){
+    const real=data.cards.filter(c=>!c.sample);
+    if(!real.length){ toast("名片夾裡還沒有自己存的名片"); return; }
+    deliver("名片夾聯絡人-"+today()+".vcf", real.map(vcard).join("\r\n")+"\r\n", "text/vcard");
+  }
+  else if(a==="importPick"){ document.getElementById("importFile").click(); }
+  else if(a==="importCancel"){ ui.importing=null; keepScroll(render); }
+  else if(a==="importCards"||a==="importAll"){
+    const imp=ui.importing; if(!imp) return;
+    data.cards=data.cards.concat(imp.fresh);
+    if(a==="importAll"){ data.me=imp.me; if(imp.settings) data.settings=normalize({me:data.me,cards:[],settings:imp.settings}).settings; applySettings(); }
+    ui.importing=null; save(); keepScroll(render); toast("已匯入 "+imp.fresh.length+" 張名片");
+  }
+  else if(a==="clearSamples"){ data.cards=data.cards.filter(c=>!c.sample); ui.openId=null; save(); keepScroll(render); toast("已移除範例名片"); }
+  else if(a==="askReset"){ ui.confirmReset=true; keepScroll(render); }
+  else if(a==="noReset"){ ui.confirmReset=false; keepScroll(render); }
+  else if(a==="resetLook"){ data.settings=clone(DEFAULT_SETTINGS); ui.confirmReset=false; save(); applySettings(); keepScroll(render); toast("外觀已還原"); }
+});
+
+document.addEventListener("submit", e=>{
+  e.preventDefault();
+  if(e.target.id==="meForm"){
+    data.me={name:val("me-name"),title:val("me-title"),org:val("me-org"),tagline:val("me-tagline"),phone:val("me-phone"),email:val("me-email"),line:val("me-line"),web:val("me-web")};
+    if(save()) toast("名片已更新"); ui.editing=false; render();
+  } else if(e.target.id==="addForm"){
+    const name=val("add-name");
+    if(!name){ toast("至少要填姓名"); document.getElementById("add-name").focus(); return; }
+    const card={id:"c"+Date.now().toString(36),name,title:val("add-title"),org:val("add-org"),phone:val("add-phone"),email:val("add-email"),line:val("add-line"),note:val("add-note"),added:today(),photo:ui.draftPhoto};
+    data.cards.push(card);
+    if(!save()){ data.cards.pop(); return; }
+    ui.adding=false; ui.draftPhoto=""; ui.openId=card.id; ui.query=""; render(); toast("已存入名片夾");
+  }
+});
+document.addEventListener("input", e=>{ if(e.target.id==="q"){ ui.query=e.target.value; rerenderCards(); } });
+document.addEventListener("change", async e=>{
+  if(e.target.dataset && e.target.dataset.show){
+    const k=e.target.dataset.show; data.settings.show[k]=e.target.checked; save(); keepScroll(render); document.getElementById("show-"+k)?.focus();
+  } else if(e.target.id==="importFile" && e.target.files[0]){
+    const file=e.target.files[0]; e.target.value="";
+    let d=null; try{ d=JSON.parse(await file.text()); }catch(err){}
+    if(!d || !Array.isArray(d.cards)){ toast("這個檔案不是名片夾的備份"); return; }
+    const have=new Set(data.cards.map(c=>c.id));
+    const cards=d.cards.filter(c=>c&&typeof c==="object"&&c.name).map(cleanCard);
+    ui.importing={cards, fresh:cards.filter(c=>!have.has(c.id)), me:d.me?cleanMe(d.me):null, settings:d.settings||null};
+    keepScroll(render);
+  } else if(e.target.id==="add-photo" && e.target.files[0]){
+    const keep={}; ["add-name","add-title","add-org","add-phone","add-email","add-line","add-note"].forEach(k=>keep[k]=document.getElementById(k)?.value||"");
+    try{ ui.draftPhoto=await compress(e.target.files[0]); }catch(err){ toast("這個檔案讀不出來，請換一張照片"); return; }
+    render(); Object.entries(keep).forEach(([k,v])=>{ const el=document.getElementById(k); if(el) el.value=v; });
+  }
+});
+
+/* ---------- 啟動：從 IndexedDB 讀資料（舊版 localStorage 會自動搬過來） ---------- */
+(async function boot(){
+  let raw=null;
+  try{ raw=await idbGet("data"); }catch(e){}
+  if(!raw){ try{ const ls=localStorage.getItem(STORE_KEY); if(ls){ raw=JSON.parse(ls); await idbSet("data", raw); } }catch(e){} }
+  data=normalize(raw);
+  ui.editing=!data.me.name;   // 第一次打開：直接進入填寫自己的名片
+  applySettings(); render();
+  try{ navigator.storage && navigator.storage.persist && navigator.storage.persist(); }catch(e){} // 請瀏覽器不要自動清掉資料
+})();
+if("serviceWorker" in navigator){ addEventListener("load", ()=>navigator.serviceWorker.register("./sw.js").catch(()=>{})); }
+</script>
+</body>
+</html>
