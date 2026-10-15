@@ -20,6 +20,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script src="cardparse.js"></script>
 <script src="crop.js"></script>
+<script src="paddle.js"></script>
 <style>
 /* Layout: phone app on a soft sage ground, rounded white tiles; my card is the one dark object on the page,
    collected cards stack like a card box. --card and --f-card are set from settings by JS. */
@@ -172,6 +173,10 @@ textarea{min-height:68px;resize:vertical}
 .pwho{margin:0;text-align:center;font-size:.85rem;color:var(--muted)}
 .pwho.personal{color:var(--strong-ink);background:var(--card);border-radius:999px;padding:6px 12px;font-weight:700;align-self:center}
 .supportnote p{margin:0 0 6px}
+.eng{border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin:8px 0}
+.eng.on{border-color:var(--strong);box-shadow:0 0 0 1px var(--strong) inset}
+.eng p{margin:4px 0}
+.engst{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
 .memo{font-size:.86rem;background:var(--soft);border-radius:12px;padding:10px 12px}
 .kv{display:grid;grid-template-columns:3.6em 1fr;gap:4px 10px;margin:0;font-size:.9rem}
 .kv dt{color:var(--muted);font-size:.8rem;padding-top:2px}
@@ -500,7 +505,8 @@ function normalize(d){
      meta:{cloudConnected:!!mt.cloudConnected, lastCloud:str(mt.lastCloud), lastChange:str(mt.lastChange), supportShown:!!mt.supportShown}};
   const s=Object.assign(clone(DEFAULT_SETTINGS), d.settings||{});
   s.show=Object.assign(clone(DEFAULT_SETTINGS.show), (d.settings&&d.settings.show)||{});
-  s.ocr=Object.assign({enabled:true, ready:false, jpn:false, chi_sim:false}, (d.settings&&d.settings.ocr)||{});
+  s.ocr=Object.assign({enabled:true, ready:false, jpn:false, chi_sim:false, engine:"paddle", paddleReady:false}, (d.settings&&d.settings.ocr)||{});
+  if(s.ocr.engine!=="tess") s.ocr.engine="paddle";
   if(!CARD_COLORS[s.cardColor]) s.cardColor=DEFAULT_SETTINGS.cardColor;   // 舊版設定遷移
   if(!d.settings || !CARD_COLORS[d.settings.cardColorPersonal]) s.cardColorPersonal = s.cardColor==="plum"?"navy":"plum";   // 個人版預設和工作版不同色
   ["qrWork","qrPersonal"].forEach(k=>{ if(s[k]!=="vcard" && s[k]!=="ecard") s[k]=DEFAULT_SETTINGS[k]; });
@@ -823,6 +829,56 @@ function supportNote(){
     + '<p class="sub">隨身名片夾不收費、沒有廣告。如果它有幫上忙，可以到「設定 → 關於」看看。</p>'
     + '<div class="row"><button type="button" class="pill line" data-act="supportOk">知道了</button><button type="button" class="textbtn" data-act="supportGo">看看「關於」</button></div></section>';
 }
+/* ---------- 辨識引擎與資料管理 ----------
+   兩種引擎的檔案都放在獨立快取「bizcard-ocr」（Tesseract 的語言檔另外存在它自己的資料庫 keyval-store），
+   app 改版不會清掉；這裡可以各自下載、刪除，名片資料完全不受影響。 */
+const ENGINES={
+  paddle:{name:"高準確度", sub:"PaddleOCR", size:"約 25MB", desc:"認字最準，手機照片、有底紋的證件、深色或直式名片都適用。每張約幾秒。辨識繁中、簡中、英文、日文。"},
+  tess:{name:"輕量", sub:"Tesseract", size:"約 7MB", desc:"下載小，適合印刷清楚的名片；照片模糊、字很小或字體特殊時比較容易認錯。"}
+};
+function ocrSettingsHTML(){
+  const o=data.settings.ocr, dl=ui.ocrDl;
+  const row=k=>{ const e=ENGINES[k], have=k==="paddle"?o.paddleReady:o.ready, busy=dl&&dl.engine===k;
+    return '<div class="eng'+(o.engine===k?' on':'')+'"><label class="check" for="eng-'+k+'"><input type="radio" name="engine" id="eng-'+k+'" data-engine="'+k+'"'+(o.engine===k?' checked':'')+'><b>'+e.name+'</b><span class="sub">（'+e.sub+'）</span></label>'
+      + '<p class="sub">'+e.desc+'</p>'
+      + '<div class="engst"><span class="sub" id="engsize-'+k+'">'+(busy?'下載中 '+Math.round(dl.p*100)+'%':have?'已下載・計算大小中…':'未下載・'+e.size)+'</span>'
+      + (busy?'':have?'<button type="button" class="pill line small" data-act="engDel" data-key="'+k+'">刪除</button>':(k==="paddle"?'<button type="button" class="pill line small" data-act="engGet" data-key="paddle">下載</button>':''))+'</div></div>'; };
+  return '<section class="tile set"><h2>名片文字辨識</h2>'
+    + '<label class="check" for="ocr-enabled"><input type="checkbox" id="ocr-enabled" data-ocr="enabled"'+(o.enabled?' checked':'')+'>拍完名片自動辨識文字</label>'
+    + '<p class="sub">辨識在手機上進行，照片不會上傳。辨識資料第一次使用時下載，之後離線也能用；不需要時可以刪除，名片不受影響。</p>'
+    + row("paddle") + row("tess")
+    + (o.engine==="tess"?'<p class="sub">輕量版預設辨識繁體中文和英文，可以加上：</p><label class="check" for="ocr-jpn"><input type="checkbox" id="ocr-jpn" data-ocr="jpn"'+(o.jpn?' checked':'')+'>日文</label>'
+      + '<label class="check" for="ocr-chi_sim"><input type="checkbox" id="ocr-chi_sim" data-ocr="chi_sim"'+(o.chi_sim?' checked':'')+'>簡體中文</label>':'')
+    + '<p class="sub" id="appUsage">這個 app 目前在手機上使用的空間：計算中…</p></section>';
+}
+const mb = b => b>=1048576 ? (b/1048576).toFixed(1)+"MB" : Math.max(1,Math.round(b/1024))+"KB";
+async function tessUsage(){
+  let b=0;
+  try{ for(const n of await caches.keys()){ const c=await caches.open(n); for(const r of await c.keys()){ if(/tesseract/i.test(r.url)){ const x=await c.match(r); b+=+(x.headers.get("Content-Length")||0)||(await x.blob()).size; } } } }catch(e){}
+  try{ b+=await new Promise(res=>{ const q=indexedDB.open("keyval-store"); q.onerror=()=>res(0);
+    q.onsuccess=()=>{ const db=q.result; if(!db.objectStoreNames.contains("keyval")){ db.close(); return res(0); }
+      let t=0; const cur=db.transaction("keyval").objectStore("keyval").openCursor();
+      cur.onsuccess=()=>{ const c=cur.result; if(!c){ db.close(); return res(t); } const v=c.value; t+=v&&(v.byteLength||v.length||v.size)||0; c.continue(); };
+      cur.onerror=()=>{ db.close(); res(t); }; }; }); }catch(e){}
+  return b;
+}
+async function refreshOcrUsage(){
+  const o=data.settings.ocr;
+  const set=(id,t)=>{ const el=document.getElementById(id); if(el) el.textContent=t; };
+  if(o.paddleReady){ const ok=window.PaddleOCR&&await PaddleOCR.isReady(); if(!ok){ o.paddleReady=false; save({quiet:true}); set("engsize-paddle","未下載・"+ENGINES.paddle.size); } else set("engsize-paddle","已下載・"+mb(await PaddleOCR.usage())); }
+  if(o.ready){ const b=await tessUsage(); set("engsize-tess", b?"已下載・"+mb(b):"已下載"); }
+  try{ const e=await navigator.storage.estimate(); set("appUsage","這個 app 目前在手機上使用的空間：約 "+mb(e.usage||0)+"（含名片照片和辨識資料）"); }catch(e){ set("appUsage",""); }
+}
+async function deleteTess(){
+  if(ocr.worker){ try{ await ocr.worker.terminate(); }catch(e){} ocr.worker=null; }
+  try{ for(const n of await caches.keys()){ const c=await caches.open(n); for(const r of await c.keys()) if(/tesseract/i.test(r.url)) await c.delete(r); } }catch(e){}
+  await new Promise(res=>{ try{ const q=indexedDB.deleteDatabase("keyval-store"); q.onsuccess=q.onerror=q.onblocked=()=>res(); }catch(e){ res(); } });
+  data.settings.ocr.ready=false; save({quiet:true});
+}
+async function downloadPaddle(onP){
+  await PaddleOCR.download(onP);
+  data.settings.ocr.paddleReady=true; save({quiet:true});
+}
 function renderSettings(){
   const s=data.settings, nm=esc(me().name||"名字");
   const imp=ui.importing;
@@ -843,12 +899,7 @@ function renderSettings(){
       + '<p class="sub">名片、底色和按鈕會一起換成同一個色系。兩張用不同顏色，切換時一眼就看得出現在是哪一張。</p></section>'
     + '<section class="tile set"><h2>字體</h2>'+fonts+'</section>'
     + '<section class="tile set"><h2>名片上顯示的資料</h2><p class="sub">關掉的項目不會出現在名片上，也不會放進 QR code。私人手機可以只在需要時打開。</p><div>'+checks+'</div></section>'
-    + '<section class="tile set"><h2>名片文字辨識</h2>'
-      + '<label class="check" for="ocr-enabled"><input type="checkbox" id="ocr-enabled" data-ocr="enabled"'+(s.ocr.enabled?' checked':'')+'>拍完名片自動辨識文字</label>'
-      + '<p class="sub">辨識在手機上進行，照片不會上傳。第一次使用需要下載約 7MB 的辨識資料，之後離線也能用。'+(s.ocr.ready?'目前已下載。':'')+'</p>'
-      + '<p class="sub">預設辨識繁體中文和英文。需要的話可以加上其他語言，但速度會變慢，也要多下載資料：</p>'
-      + '<label class="check" for="ocr-jpn"><input type="checkbox" id="ocr-jpn" data-ocr="jpn"'+(s.ocr.jpn?' checked':'')+'>日文</label>'
-      + '<label class="check" for="ocr-chi_sim"><input type="checkbox" id="ocr-chi_sim" data-ocr="chi_sim"'+(s.ocr.chi_sim?' checked':'')+'>簡體中文</label></section>'
+    + ocrSettingsHTML()
     + '<section class="tile set"><h2>名片夾檢視</h2><div class="choices two">'+Object.entries(VIEWS).map(([k,n])=>opt("bookView",k,n,s.bookView)).join("")+'</div><p class="sub">卡盒適合幾十張以內；名片多了，清單比較好找。</p></section>'
     + '<section class="tile set"><h2>深淺色</h2><div class="choices seg">'+Object.entries(THEMES).map(([k,n])=>opt("theme",k,n,s.theme)).join("")+'</div></section>'
     + '<section class="tile set"><h2>備份與搬家</h2><p class="sub">名片只存在這支手機裡，不會上傳到任何伺服器。建議定期備份到你自己的雲端；換手機或想在電腦上用時，還原這份備份就好。</p>'
@@ -869,6 +920,7 @@ function renderSettings(){
 
 function render(){
   document.getElementById("app").innerHTML = ui.tab==="me" ? renderMe() : ui.tab==="book" ? renderBook() : renderSettings();
+  if(ui.tab==="set") refreshOcrUsage();
   ["me","book","set"].forEach(t=>document.getElementById("tab-"+t).setAttribute("aria-current", ui.tab===t?"page":"false"));
 }
 const rerenderCards = () => { const el=document.getElementById("cards"); if(el) el.innerHTML=renderCards(); };
@@ -1129,7 +1181,10 @@ function cloudHTML(){
 }
 
 /* ---------- 名片文字辨識（OCR，全部在手機上進行） ----------
-   引擎：Tesseract.js 5.1.1，第一次使用時從 jsDelivr 下載程式與精簡版語言資料（繁中 1.7MB＋英文 3MB），之後存在手機上。
+   兩種引擎可選（設定頁）：
+   ・高準確度（預設）：PaddleOCR PP-OCRv5 行動版，程式在 paddle.js，約 25MB。照片、底紋、深色、直式都認得出來。
+   ・輕量：Tesseract.js，以下說明。
+   輕量引擎：Tesseract.js 5.1.1，第一次使用時從 jsDelivr 下載程式與精簡版語言資料（繁中 1.7MB＋英文 3MB），之後存在手機上。
    做法：同一張照片辨識兩次再合併——大圖（長邊 1500）讀小字、小圖（長邊 850，稀疏文字模式）讀大字，
    同一個位置取信心比較高的那一行。Tesseract 不擅長特別大的字，而名片上的姓名通常最大，所以需要第二次。
    拆欄位規則在 cardparse.js。辨識結果只填進還空著的欄位，並標上「請確認」。 */
@@ -1157,19 +1212,30 @@ function ocrCancel(){
   if(ui.ocr && ui.ocr.status!=="error" && ocr.worker){ ocr.worker.terminate().catch(()=>{}); ocr.worker=null; }   // 正在跑的才終止
   ui.ocr=null;
 }
-// 縮放、灰階、拉高對比；手機照片的方向依 EXIF 轉正
+// 給輕量引擎（Tesseract）的前處理：縮放、灰階、深色底反相、區域自適應黑白化（Bradley 法）、清掉邊緣。
+// 實測：只拉對比時，有底紋的證件、直式名片、有光線漸層的照片幾乎認不出來（約 47%）；改成區域黑白化後約 98%。
 async function prepImage(file, maxSide){
   const bmp=await createImageBitmap(file, {imageOrientation:"from-image"});
   const r=Math.min(1, maxSide/Math.max(bmp.width,bmp.height));
-  const c=document.createElement("canvas"); c.width=Math.round(bmp.width*r); c.height=Math.round(bmp.height*r);
-  const g=c.getContext("2d",{willReadFrequently:true}); g.drawImage(bmp,0,0,c.width,c.height); bmp.close&&bmp.close();
-  const im=g.getImageData(0,0,c.width,c.height), d=im.data, hist=new Uint32Array(256);
-  for(let i=0;i<d.length;i+=4){ const y=(d[i]*299+d[i+1]*587+d[i+2]*114)/1000|0; d[i]=y; hist[y]++; }
-  const n=d.length/4; let lo=0, hi=255, acc=0;
-  for(;lo<255;lo++){ acc+=hist[lo]; if(acc>n*0.02) break; } acc=0;
-  for(;hi>0;hi--){ acc+=hist[hi]; if(acc>n*0.02) break; }
-  const span=Math.max(1,hi-lo);
-  for(let i=0;i<d.length;i+=4){ const v=Math.max(0,Math.min(255,(d[i]-lo)*255/span)); d[i]=d[i+1]=d[i+2]=v; }
+  const c=document.createElement("canvas"), W=c.width=Math.round(bmp.width*r), H=c.height=Math.round(bmp.height*r);
+  const g=c.getContext("2d",{willReadFrequently:true}); g.drawImage(bmp,0,0,W,H); bmp.close&&bmp.close();
+  const im=g.getImageData(0,0,W,H), d=im.data, n=W*H, y=new Float32Array(n); let sum=0;
+  for(let i=0;i<n;i++){ y[i]=(d[i*4]*299+d[i*4+1]*587+d[i*4+2]*114)/1000; sum+=y[i]; }
+  if(sum/n<110) for(let i=0;i<n;i++) y[i]=255-y[i];          // 深色名片、淺色字：先反過來
+  // 積分圖算每個點周圍的平均亮度；比周圍暗 15% 以上就是字
+  const I=new Float64Array((W+1)*(H+1));
+  for(let yy=0;yy<H;yy++){ let row=0; for(let x=0;x<W;x++){ row+=y[yy*W+x]; I[(yy+1)*(W+1)+x+1]=I[yy*(W+1)+x+1]+row; } }
+  const half=Math.max(7, Math.round(Math.max(W,H)/48)), m=Math.round(Math.min(W,H)*0.015);
+  for(let yy=0;yy<H;yy++){
+    const y0=Math.max(0,yy-half), y1=Math.min(H,yy+half+1);
+    for(let x=0;x<W;x++){
+      const x0=Math.max(0,x-half), x1=Math.min(W,x+half+1), cnt=(y1-y0)*(x1-x0);
+      const mean=(I[y1*(W+1)+x1]-I[y0*(W+1)+x1]-I[y1*(W+1)+x0]+I[y0*(W+1)+x0])/cnt;
+      const edge=x<m||yy<m||x>=W-m||yy>=H-m;               // 照片邊緣常有一條桌面或陰影，Tesseract 會被它干擾
+      const v=(!edge && y[yy*W+x]<mean*0.85)?0:255, k=(yy*W+x)*4;
+      d[k]=d[k+1]=d[k+2]=v;
+    }
+  }
   g.putImageData(im,0,0); return c;
 }
 function mergeLines(A, B, k, W, H){
@@ -1262,8 +1328,28 @@ function renderReview(){
 
 function startOCR(side, file){
   const o=data.settings.ocr;
-  if(!o.ready && !o.consented){ ui.ocrAsk={side, file}; render(); window.scrollTo(0,0); return; }
+  const have = o.engine==="paddle" ? o.paddleReady : (o.ready || o.consented);
+  if(!have){ ui.ocrAsk={side, file}; render(); window.scrollTo(0,0); return; }
   runOCR(side, file);
+}
+async function fileCanvas(file, maxSide){
+  const bmp=await createImageBitmap(file,{imageOrientation:"from-image"});
+  const r=Math.min(1,maxSide/Math.max(bmp.width,bmp.height)), c=document.createElement("canvas");
+  c.width=Math.round(bmp.width*r); c.height=Math.round(bmp.height*r); c.getContext("2d").drawImage(bmp,0,0,c.width,c.height); bmp.close&&bmp.close();
+  return c;
+}
+async function paddleLines(file, side, alive){
+  const label=side==="back"?"背面":"正面", o=data.settings.ocr;
+  if(!o.paddleReady || !(await PaddleOCR.isReady())){
+    setOcrStatus("下載高準確度辨識資料 0%（只有第一次）");
+    await downloadPaddle(p=>{ if(alive()) setOcrStatus("下載高準確度辨識資料 "+Math.round(p*100)+"%（只有第一次）"); });
+  }
+  if(!alive()) return null;
+  setOcrStatus("載入辨識引擎…"); await PaddleOCR.init();
+  if(!alive()) return null;
+  setOcrStatus("辨識"+label+"文字…");
+  const c=await fileCanvas(file, 1500);
+  return PaddleOCR.recognize(c, (i,n)=>{ if(alive()) setOcrStatus("辨識"+label+"文字…（"+i+" / "+n+"）"); });
 }
 function setOcrStatus(text){ if(!ui.ocr) return; ui.ocr.status=text; const box=document.getElementById("ocrbox"); if(box) box.outerHTML=ocrBox(); }
 async function runOCR(side, file){
@@ -1271,6 +1357,11 @@ async function runOCR(side, file){
   ui.ocr={side, status:"準備辨識"+label+"…"}; render(); window.scrollTo(0,0);
   const alive=()=>my===ocr.seq;
   try{
+   let lines;
+   if(data.settings.ocr.engine==="paddle"){
+    lines=await paddleLines(file, side, alive);
+    if(!lines || !alive()) return;
+   } else {
     const w=await getWorker(m=>{
       if(!alive()) return;
       if(m.status==="loading language traineddata") setOcrStatus("下載辨識資料 "+Math.round((m.progress||0)*100)+"%（只有第一次）");
@@ -1284,10 +1375,11 @@ async function runOCR(side, file){
     const A=(await w.recognize(big)).data.lines; if(!alive()) return;
     await w.setParameters({preserve_interword_spaces:"1", tessedit_pageseg_mode:"11"});
     const B=(await w.recognize(small)).data.lines; if(!alive()) return;
-    const lines=mergeLines(A, B, big.width/small.width, big.width, big.height);
+    lines=mergeLines(A, B, big.width/small.width, big.width, big.height);
+    data.settings.ocr.ready=true; save({quiet:true});
+   }
     if(!ui.adding) return;            // 使用者已經離開表單
     syncDraft();
-    data.settings.ocr.ready=true; save({quiet:true});
     ui.ocr=null;
     const parsed=CardParse.parse(lines,{side});
     if(!parsed.tokens.length){ keepScroll(render); toast("沒有認出可用的文字，可以改用貼上文字或手動輸入"); return; }
@@ -1298,7 +1390,8 @@ async function runOCR(side, file){
   }catch(e){
     if(!alive()) return;
     if(ocr.worker){ ocr.worker.terminate().catch(()=>{}); ocr.worker=null; }
-    ui.ocr={side, status:"error", msg: navigator.onLine===false && !data.settings.ocr.ready ? "第一次辨識需要網路下載辨識資料，請連上網路後重試。" : "辨識沒有完成，可以重試，或改用貼上文字、手動輸入。"};
+    const o=data.settings.ocr, first=o.engine==="paddle"?!o.paddleReady:!o.ready;
+    ui.ocr={side, status:"error", msg: navigator.onLine===false && first ? "第一次辨識需要網路下載辨識資料，請連上網路後重試。" : "辨識沒有完成，可以重試，或改用貼上文字、手動輸入。"};
     syncDraft(); keepScroll(render);
   }finally{ ocrIdle(); }
 }
@@ -1306,9 +1399,12 @@ function ocrBox(){
   const d=ui.draft||{};
   let inner="";
   if(ui.ocrAsk){
-    inner='<p><b>要自動辨識名片上的文字嗎？</b></p><p class="sub">辨識在手機上進行，照片不會上傳。第一次需要下載約 7MB 的辨識資料，建議在 Wi-Fi 下進行；之後離線也能用。</p>'
-      +'<div class="row"><button type="button" class="pill strong small" data-act="ocrYes">下載並辨識</button><button type="button" class="pill line small" data-act="ocrNo">這次手動輸入</button></div>'
-      +'<p class="sub">可以在「設定 → 名片文字辨識」關掉這個功能。</p>';
+    const p=data.settings.ocr.engine==="paddle";
+    inner='<p><b>要自動辨識名片上的文字嗎？</b></p><p class="sub">辨識在手機上進行，照片不會上傳。第一次需要下載'+(p?'約 25MB 的高準確度辨識資料':'約 7MB 的輕量辨識資料')+'，建議在 Wi-Fi 下進行；之後離線也能用，不需要時可以在設定裡刪除。</p>'
+      +'<div class="row"><button type="button" class="pill strong small" data-act="ocrYes">下載並辨識</button>'
+      +(p?'<button type="button" class="pill line small" data-act="ocrLite">改用輕量版（約 7MB）</button>':'')
+      +'<button type="button" class="pill line small" data-act="ocrNo">這次手動輸入</button></div>'
+      +'<p class="sub">可以在「設定 → 名片文字辨識」切換引擎或關掉這個功能。</p>';
   } else if(ui.ocr && ui.ocr.status==="error"){
     inner='<p>'+esc(ui.ocr.msg)+'</p><div class="row"><button type="button" class="pill line small" data-act="ocrRetry" data-side="'+ui.ocr.side+'">重試</button><button type="button" class="pill line small" data-act="ocrStop">關閉</button></div>';
   } else if(ui.ocr){
@@ -1523,6 +1619,20 @@ document.addEventListener("click", e=>{
   else if(a==="add"){ ui.adding=true; ui.editId=null; ui.draft={}; ui.draftPhoto=""; ui.draftBack=""; ui.auto=new Set(); ui.ocrAsk=null; resetReview(); render(); document.getElementById("add-name")?.focus(); }
   else if(a==="cancelAdd"){ cropKeep.src={}; ui.newFor=null; ui.same=null; ocrCancel(); resetReview(); ui.adding=false; ui.editId=null; ui.draft=null; ui.draftPhoto=""; ui.draftBack=""; ui.auto=new Set(); ui.ocrAsk=null; render(); }
   else if(a==="ocrYes"){ const ask=ui.ocrAsk; ui.ocrAsk=null; data.settings.ocr.consented=true; save({quiet:true}); if(ask) runOCR(ask.side, ask.file); }
+  else if(a==="ocrLite"){ const ask=ui.ocrAsk; ui.ocrAsk=null; data.settings.ocr.engine="tess"; data.settings.ocr.consented=true; save({quiet:true}); if(ask) runOCR(ask.side, ask.file); }
+  else if(a==="engGet"){
+    if(ui.ocrDl) return;
+    ui.ocrDl={engine:"paddle", p:0}; keepScroll(render);
+    downloadPaddle(p=>{ ui.ocrDl.p=p; const el=document.getElementById("engsize-paddle"); if(el) el.textContent="下載中 "+Math.round(p*100)+"%"; })
+      .then(()=>{ ui.ocrDl=null; toast("高準確度辨識資料已下載"); })
+      .catch(()=>{ ui.ocrDl=null; toast("下載沒有完成，請確認網路後再試一次"); })
+      .finally(()=>{ if(ui.tab==="set") keepScroll(render); });
+  }
+  else if(a==="engDel"){
+    const k=el.dataset.key;
+    (k==="paddle" ? PaddleOCR.remove().then(()=>{ data.settings.ocr.paddleReady=false; save({quiet:true}); }) : deleteTess())
+      .then(()=>{ toast("已刪除"+ENGINES[k].name+"辨識資料，名片沒有受影響"); if(ui.tab==="set") keepScroll(render); });
+  }
   else if(a==="ocrNo"){ syncDraft(); ui.ocrAsk=null; keepScroll(render); }
   else if(a==="ocrStop"){ ocrCancel(); syncDraft(); keepScroll(render); toast("已停止辨識"); }
   else if(a==="ocrRetry"){ const side=el.dataset.side; const f=ui.ocrFiles&&ui.ocrFiles[side]; if(f) startOCR(side, f); }
@@ -1678,7 +1788,9 @@ document.addEventListener("input", e=>{
   }
 });
 document.addEventListener("change", async e=>{
-  if(e.target.dataset && e.target.dataset.ocr){
+  if(e.target.dataset && e.target.dataset.engine){
+    data.settings.ocr.engine=e.target.dataset.engine; save({quiet:true}); keepScroll(render); document.getElementById("eng-"+data.settings.ocr.engine)?.focus();
+  } else if(e.target.dataset && e.target.dataset.ocr){
     const k=e.target.dataset.ocr; data.settings.ocr[k]=e.target.checked;
     if(k!=="enabled" && ocr.worker){ ocr.worker.terminate().catch(()=>{}); ocr.worker=null; }   // 換語言要重新載入
     save({quiet:true}); keepScroll(render); document.getElementById("ocr-"+k)?.focus();

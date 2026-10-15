@@ -34,6 +34,8 @@
     ["address", /^(地址|住址|通訊處|add(ress)?|addr|a)(?![A-Za-z])\.?/i],
     ["web", /^(網站|網址|官網|web(site)?|url|w)(?![A-Za-z])\.?(?!\.)/i],
     ["line", /^(line\s*id|line)(?![A-Za-z])\.?/i],
+    ["name", /^(姓名|名字)/],
+    ["title", /^(職稱|職位|職務)/],
   ];
   const ORG_RE = /(中心|醫院|診所|院區|醫學中心|衛生所|心理治療所|心理諮商所|諮商所|治療所|協會|學會|公會|基金會|股份有限公司|有限公司|公司|企業社|商行|工作室|大學|學院|學校|高中|國中|國小|幼兒園|事務所|政府|市政府|縣政府|區公所|公所|法院|地檢署|檢察署|警察局|分局|派出所|消防局|局|處|署|委員會|議會|教會|聯盟|銀行|集團|部|科|課|組|室|系|所|社|館|園)$|\b(inc\.?|ltd\.?|co\.?,? ?ltd|corp(oration)?|company|center|centre|hospital|clinic|university|college|school|association|foundation|institute|department|bureau|office|bank|group|studio|llc)\b/i;
   const TITLE_WORDS = "心理師|臨床心理師|諮商心理師|社會工作師|社工師|社工員|社工督導|社工|督導|個案管理師|個管師|管理師|主任委員|副主任|主任|執行長|董事長|副總經理|總經理|總監|協理|經理|副理|襄理|專案經理|專員|組長|課長|科長|股長|處長|局長|署長|院長|副院長|校長|所長|隊長|理事長|秘書長|秘書|總幹事|幹事|護理長|護理師|醫師|主治醫師|住院醫師|藥師|營養師|職能治療師|物理治療師|語言治療師|治療師|教授|副教授|助理教授|講師|老師|教師|導師|研究員|助理|律師|會計師|代書|法官|檢察官|書記官|觀護人|警員|巡佐|工程師|設計師|顧問|創辦人|負責人|業務|店長|志工";
@@ -44,6 +46,7 @@
   const PAIR_REV = new RegExp("^(" + TITLE_WORDS + ")\\s*([" + CJK + "]{2,4})$");
   const TITLE_EN = /\b(manager|director|engineer|officer|president|vice president|ceo|cto|cfo|coo|founder|co-founder|assistant|consultant|designer|psychologist|counsel+or|therapist|social worker|case manager|supervisor|coordinator|professor|lecturer|teacher|nurse|doctor|physician|pharmacist|specialist|researcher|attorney|lawyer|accountant|secretary|chairman|executive|representative|sales|lead|head|chief|partner|owner)\b/i;
   const ADDR_STRONG = new RegExp("[" + CJK + "]{1,8}(路|街|大道)|[\\d一二三四五六七八九十]+(段|巷|弄|號|樓)|\\bNo\\.\\s*\\d+|\\b(Rd|Road|St|Street|Ave|Avenue|Blvd|Lane|Ln|Aly|Alley|Sec)\\.?(\\s|,|$)", "i");
+  const NOT_ADDR = /(字號|證號|編號|證書|執照|號碼|字第)/;   // 證件上的「第…號」不是地址
   const ADDR_CONT = new RegExp("^[\\d" + CJK + "-]{0,12}(號|樓|室|F|之\\d)");
   const EMAIL_RE = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/;
   const URL_RE = /\b((https?:\/\/)?(www\.)?[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.(com|net|org|gov|edu|tw|io|co|info|biz|me|app|cc|hk|jp|cn|us|uk)(\.[a-z]{2})?(\/[^\s]*)?)/i;
@@ -124,10 +127,15 @@
       t.kind = label === "phone" || (!label && isMobile(p)) ? "phone" : "tel"; return;
     }
     if (label === "web" || (URL_RE.test(v) && !reCJK.test(v))) { const u = v.match(URL_RE); t.kind = "web"; t.value = u ? u[0] : v; return; }
-    if (label === "address" || ADDR_STRONG.test(v)) { t.kind = "address"; return; }
+    if (label === "name" && v) { t.kind = "nameLabel"; return; }
+    if (label === "title" && v) { t.kind = "title"; return; }
+    if (label === "address" || (ADDR_STRONG.test(v) && !NOT_ADDR.test(v))) { t.kind = "address"; return; }
     if (prev && prev.kind === "address" && prev.side === t.side && ADDR_CONT.test(v)) { t.kind = "address"; return; }
     if (label === "tel" || label === "phone") { t.kind = label; return; }
     const cjk = reCJK.test(v);
+    // 「主治醫師 Attending Psychiatrist」：中文職稱後面接英文，只取中文部分
+    const mix = cjk && v.match(new RegExp("^([" + CJK + "\\s]{2,14}?)\\s+([A-Za-z].*)$"));
+    if (mix && TITLE_RE.test(mix[1])) { t.kind = "title"; t.value = tidy(mix[1]); return; }
     const isTitle = (cjk && TITLE_RE.test(v) && v.length <= 14) || (!cjk && TITLE_EN.test(v) && v.split(" ").length <= 6 && !ORG_RE.test(v));
     const isOrg = ORG_RE.test(v) && v.length >= 3;
     if (isTitle && !(isOrg && v.length > 8)) { t.kind = cjk ? "title" : "enTitle"; return; }
@@ -150,9 +158,10 @@
     const zhOrg = tokens.filter(t => t.kind === "org").slice(0, 3);
     if (zhOrg.length) zhOrg.forEach(t => t.field = "org"); else firstOf("orgEn", "org");
     tokens.filter(t => t.kind === "title").slice(0, 2).forEach(t => t.field = "title");
+    firstOf("nameLabel", "name");
     const cands = tokens.filter(t => t.kind === "nameCand");
     const best = cands.slice().sort((a, b) => (b.pairName ? 1 : 0) - (a.pairName ? 1 : 0) || (b.h || 0) - (a.h || 0) || a.line - b.line)[0];
-    if (best) best.field = "name";
+    if (best && !has("name")) best.field = "name";
     const pick = arr => arr.slice().sort((a, b) => (b.h || 0) - (a.h || 0) || a.line - b.line)[0];
     const en = pick(tokens.filter(t => t.kind === "enName")), enT = tokens.find(t => t.kind === "enTitle");
     const backLatin = opts.side === "back" && latinShare(tokens.map(t => t.text).join(" ")) > 0.6;

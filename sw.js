@@ -1,7 +1,10 @@
 // 離線快取：沒有網路時也能打開 app、遞名片。
 // 改版時把 CACHE 的版本號 +1，手機下次連線就會換成新版。
-const CACHE = "bizcard-v9";
-const SHELL = ["./", "./index.html", "./cardparse.js", "./crop.js", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./apple-touch-icon.png"];
+// 文字辨識的檔案（Tesseract、PaddleOCR、ONNX Runtime）放在另一個快取 OCR_CACHE：
+// 改版時不會被清掉，也不用重新下載；只有使用者在設定頁按「刪除」才會移除。
+const CACHE = "bizcard-v10";
+const OCR_CACHE = "bizcard-ocr";
+const SHELL = ["./", "./index.html", "./cardparse.js", "./crop.js", "./paddle.js", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./apple-touch-icon.png"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)));
@@ -9,7 +12,7 @@ self.addEventListener("install", (e) => {
 });
 
 self.addEventListener("activate", (e) => {
-  e.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))));
+  e.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE && k !== OCR_CACHE).map((k) => caches.delete(k)))));
   self.clients.claim();
 });
 
@@ -27,12 +30,16 @@ self.addEventListener("fetch", (e) => {
   }
   // 只快取 app 自己的檔案、字體、QR code 與文字辨識元件；Google 登入與 Drive 的請求一律直接上網、不留存
   const url = new URL(req.url);
-  const cacheable = url.origin === self.location.origin ||
-    ["fonts.googleapis.com", "fonts.gstatic.com", "cdnjs.cloudflare.com", "cdn.jsdelivr.net"].includes(url.hostname);
+  const isOcr = url.hostname === "cdn.jsdelivr.net" || url.pathname.includes("/ocr-models/");
+  const cacheable = isOcr || url.origin === self.location.origin ||
+    ["fonts.googleapis.com", "fonts.gstatic.com", "cdnjs.cloudflare.com"].includes(url.hostname);
   if (!cacheable) return;
   e.respondWith(
     caches.match(req).then((hit) => hit || fetch(req).then((res) => {
-      if (res.ok || res.type === "opaque") { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(req, copy)); }
+      // 辨識模型檔很大，由 app 自己下載並存進 OCR_CACHE（才能顯示進度）；這裡不重複存
+      if ((res.ok || res.type === "opaque") && !url.pathname.includes("/ocr-models/")) {
+        const copy = res.clone(); caches.open(isOcr ? OCR_CACHE : CACHE).then((c) => c.put(req, copy));
+      }
       return res;
     }))
   );
