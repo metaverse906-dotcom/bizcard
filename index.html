@@ -18,6 +18,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chiron+Sung+HK:wght@500;700&display=swap">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chiron+Hei+HK:wght@400;500;700&display=swap">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script src="cardparse.js"></script>
 <style>
 /* Layout: phone app on a soft sage ground, rounded white tiles; my card is the one dark object on the page,
    collected cards stack like a card box. --card and --f-card are set from settings by JS. */
@@ -162,6 +163,68 @@ textarea{min-height:68px;resize:vertical}
 .scanner .bar{position:absolute;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;
   padding:16px max(20px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) max(20px,env(safe-area-inset-left,0px))}
 .scanner .bar .pill{background:#FFFFFF;color:#1F3530;min-width:140px}
+.cloud{background:var(--soft);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.nudge{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--sand);color:var(--sand-ink);border-radius:16px;padding:10px 10px 10px 16px;font-size:.9rem}
+.nudge .pill{background:var(--surface);color:var(--ink)}
+.ocrbox{background:var(--soft);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.ocrbox p{margin:0}
+.ocrrun{display:flex;align-items:center;gap:10px}
+.ocrrun [role=status]{flex:1;min-width:0}
+.spin{width:18px;height:18px;border-radius:50%;border:2.5px solid var(--line);border-top-color:var(--link);flex:none}
+@media (prefers-reduced-motion:no-preference){.spin{animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}}
+input.auto{background:var(--sand);border-color:transparent}
+.chk{display:inline-block;font-size:.7rem;background:var(--sand);color:var(--sand-ink);border-radius:999px;padding:0 7px;margin-left:6px;vertical-align:1px}
+details.raw summary{cursor:pointer;color:var(--muted);font-size:.84rem;min-height:32px;display:flex;align-items:center}
+details.raw pre{white-space:pre-wrap;font:inherit;font-size:.82rem;color:var(--muted);margin:4px 0 0;background:var(--soft);border-radius:10px;padding:10px 12px;user-select:text}
+.ocrlinks{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.rv-photo{position:relative;border-radius:16px;overflow:hidden;background:var(--soft)}
+.rv-photo img{display:block;width:100%}
+.rv-photo .hl{position:absolute;border:3px solid #E8A33D;border-radius:6px;background:rgba(232,163,61,.18);box-shadow:0 0 0 999px rgba(0,0,0,.25);pointer-events:none}
+@media (prefers-reduced-motion:no-preference){.rv-photo .hl{transition:all .25s ease}}
+.rv-sec{display:flex;flex-direction:column;gap:8px}
+.rv-sec h2{color:var(--ink);font-weight:700;letter-spacing:.04em}
+.tokwrap{display:flex;flex-wrap:wrap;gap:6px;min-width:0}
+.tok{font-size:.95rem;min-height:40px;padding:0 12px;border-radius:12px;border:1.5px dashed var(--muted);background:var(--surface);color:var(--ink);display:inline-flex;align-items:center;gap:6px;max-width:100%;text-align:left;overflow-wrap:anywhere}
+.tok.placed{border:1.5px solid transparent;background:var(--surface)}
+.tok.sel{border:2px solid var(--strong);box-shadow:0 0 0 3px #F3D9AE}
+.tok small{font-size:.68rem;color:var(--sand-ink);background:var(--sand);border-radius:999px;padding:0 6px}
+.rv-row{display:grid;grid-template-columns:4.6em 1fr;gap:8px;align-items:start}
+.rv-row .fl{font-size:.8rem;color:var(--link);font-weight:700;padding-top:10px}
+.sheet-space{height:300px}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:8;background:var(--surface);border-radius:24px 24px 0 0;box-shadow:0 -12px 30px -12px rgba(20,40,35,.4);
+  display:flex;flex-direction:column;gap:10px;max-width:560px;margin:0 auto;
+  padding:16px max(20px,env(safe-area-inset-right,0px)) calc(18px + env(safe-area-inset-bottom,0px)) max(20px,env(safe-area-inset-left,0px))}
+.sheet-t{margin:0;font-size:.95rem}
+.fgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.fgrid button,.tokacts button{min-height:44px;border-radius:12px;border:0;background:var(--soft);color:var(--ink);font-size:.86rem;padding:0 4px}
+.fgrid button[aria-pressed="true"]{background:var(--strong);color:var(--strong-ink)}
+.tokacts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.tokacts button{background:transparent;border:1px solid var(--line)}
+.tokacts button:disabled{opacity:.4}
+.row2{display:flex;gap:8px}
+.row2 .pill{flex:1}
+.splitter{display:flex;flex-wrap:wrap;align-items:center;font-size:1.3rem;gap:0;padding:4px 0}
+.splitter span{padding:6px 2px}
+.splitter .gap{width:22px;height:40px;border:0;background:transparent;position:relative;padding:0}
+.splitter .gap::after{content:"";position:absolute;left:50%;top:6px;bottom:6px;width:3px;margin-left:-1.5px;border-radius:2px;background:var(--line)}
+.splitter .gap:hover::after,.splitter .gap:focus-visible::after{background:#E8A33D}
+.toast.top{bottom:auto;top:calc(16px + env(safe-area-inset-top,0px))}
+.seg2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;background:var(--surface);border-radius:999px;padding:4px}
+.seg2 button{min-height:42px;border:0;border-radius:999px;background:transparent;color:var(--ink);font-size:.92rem;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.seg2 button[aria-pressed="true"]{background:var(--strong);color:var(--strong-ink);font-weight:700}
+.seg2 small{font-size:.68rem;opacity:.7}
+.pctrl{flex-direction:column;align-items:stretch}
+.pctrl .seg2{max-width:440px;margin:0 auto;width:100%}
+.pbtns{display:flex;gap:10px;justify-content:center}
+.pbtns .pill{flex:1;max-width:220px}
+.emptyp{display:flex;flex-direction:column;gap:10px}
+.eacts{display:grid;gap:8px}
+.eact{background:var(--surface);border-radius:16px;min-height:68px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-decoration:none;color:var(--ink);font-size:.78rem}
+.eact svg{color:var(--link)}
+.intro{margin:0;line-height:1.8;color:var(--ink);white-space:pre-wrap}
+.elinks{display:flex;flex-direction:column;gap:8px}
+.elinks a{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:48px;padding:0 16px;border-radius:14px;background:var(--surface);color:var(--ink);text-decoration:none}
+.efoot{text-align:center;font-size:.76rem;line-height:1.7;margin-top:8px}
 .importbox{background:var(--soft);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px}
 .photo{width:100%;border-radius:12px}
 .del{display:flex;gap:8px;justify-content:flex-end}
@@ -240,7 +303,7 @@ textarea.fallback{font-size:12px;min-height:120px}
 <input type="file" id="importFile" accept=".json,application/json" hidden>
 <input type="file" id="snapFile" accept="image/*" capture="environment" hidden>
 <input type="file" id="pickFile" accept="image/*" hidden>
-<nav class="tabs" aria-label="主選單">
+<nav class="tabs" id="tabs" aria-label="主選單">
   <button type="button" data-act="tab" data-tab="me" id="tab-me" aria-label="我的名片">
     <svg class="i" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="6" width="18" height="12" rx="3"/><path d="M7 11h6M7 14h4"/></svg><span>我的名片</span></button>
   <button type="button" data-act="tab" data-tab="book" id="tab-book" aria-label="名片夾">
@@ -258,7 +321,9 @@ textarea.fallback{font-size:12px;min-height:120px}
 
 <script>
 // ===== 上線前要填的地方 =====
-const TIP_URL = "";        // 打賞頁網址，例如 Buy Me a Coffee、Ko-fi、Portaly
+const GDRIVE_CLIENT_ID = "";   // Google Cloud 的 OAuth 用戶端 ID；空白時不顯示雲端備份
+const TIP_URL = "";
+const INTRO_MAX = 120;   // 自我介紹上限：太長 QR code 會太密，不好掃        // 打賞頁網址，例如 Buy Me a Coffee、Ko-fi、Portaly
 const STORE_KEY = "bizcard.v1";
 
 // ===== 個人化選項 =====
@@ -296,11 +361,11 @@ const FONT_ROLES = [
 const THEMES = {system:"跟隨系統", light:"淺色", dark:"深色"};
 const VIEWS = {box:"卡盒", list:"清單"};
 const SHOW_FIELDS = [["phone","電話"],["email","Email"],["line","LINE ID"],["web","網站"],["tagline","一句話介紹"]];
-const DEFAULT_SETTINGS = {cardColor:"green", fonts:{name:"serif",cardText:"sans",head:"sans",body:"sans"}, theme:"system", bookView:"box", presentFlip:true,
+const DEFAULT_SETTINGS = {cardColor:"green", fonts:{name:"serif",cardText:"sans",head:"sans",body:"sans"}, theme:"system", bookView:"box", presentFlip:true, qrMode:"ecard",
   show:{phone:true,email:true,line:true,web:true,tagline:true}};
 
 const DEFAULT = {
-  me:{name:"",title:"",org:"",tagline:"",phone:"",email:"",line:"",web:""},
+  profiles:{work:{}, personal:{}}, active:"work",
   cards:[
     {id:"s1",sample:true,name:"陳志明",title:"產品經理",org:"範例科技股份有限公司",phone:"0912-000-000",email:"chen@example.com",line:"chenpm",note:"開發者聚會認識",added:"2026-09-18",photo:""},
     {id:"s2",sample:true,name:"林怡君",title:"社工督導",org:"士林區家庭服務中心",phone:"02-2800-0000",email:"lin@example.org",line:"",note:"跨網絡個案會議認識",added:"2026-10-02",photo:""},
@@ -312,7 +377,8 @@ const clone = o => JSON.parse(JSON.stringify(o));
 let data = null;   // 由 boot() 從 IndexedDB 載入
 const ui = {tab:"me", editing:false, adding:false, draftPhoto:"", query:"", sort:"recent", photoOnly:false,
   openId:null, confirmId:null, showPhoto:false, confirmReset:false, lock:null, importing:null,
-  draftBack:"", editId:null, snapSide:"front", photoSide:"front"};
+  draftBack:"", editId:null, snapSide:"front", photoSide:"front",
+  review:{tokens:[]}, rv:{open:false, sel:null, mode:null, side:"front"}};
 const hostTheme = null;
 
 /* ---------- 儲存：IndexedDB，容量比 localStorage 大很多，照片放得下 ---------- */
@@ -330,18 +396,33 @@ const str = v => typeof v==="string" ? v.slice(0,500) : "";
 const PHOTO_RE = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/;
 function cleanCard(c){   // 匯入的檔案不可信：只留已知欄位、只接受圖片格式的照片
   return {id:str(c.id).replace(/[^\w-]/g,"").slice(0,40)||("c"+Math.random().toString(36).slice(2)), sample:!!c.sample,
-    name:str(c.name), title:str(c.title), org:str(c.org), phone:str(c.phone), email:str(c.email), line:str(c.line),
+    name:str(c.name), title:str(c.title), org:str(c.org), phone:str(c.phone), tel:str(c.tel), email:str(c.email), line:str(c.line),
+    web:str(c.web), address:str(c.address), ocrText:typeof c.ocrText==="string"?c.ocrText.slice(0,4000):"",
     note:str(c.note), alt:str(c.alt), added:/^\d{4}-\d{2}-\d{2}$/.test(c.added)?c.added:today(),
     photo:(typeof c.photo==="string"&&PHOTO_RE.test(c.photo))?c.photo:"",
     photoBack:(typeof c.photoBack==="string"&&PHOTO_RE.test(c.photoBack))?c.photoBack:""};
 }
-function cleanMe(m){ const o={}; ["name","title","org","tagline","phone","email","line","web"].forEach(k=>o[k]=str(m&&m[k])); return o; }
+const ME_KEYS=["name","title","org","tagline","phone","email","line","web","address","intro"];
+const safeUrl = u => { u=str(u).trim(); if(!u) return ""; if(!/^https?:\/\//i.test(u)) u="https://"+u; try{ const x=new URL(u); return /^https?:$/.test(x.protocol)?x.href:""; }catch(e){ return ""; } };
+function cleanMe(m){
+  const o={}; ME_KEYS.forEach(k=>o[k]=str(m&&m[k]));
+  o.intro=o.intro.slice(0,INTRO_MAX);
+  o.links=(Array.isArray(m&&m.links)?m.links:[]).slice(0,3).map(l=>({label:str(l&&l.label).slice(0,30), url:safeUrl(l&&l.url)})).filter(l=>l.url);
+  return o;
+}
+const PROFILE_LABEL={work:"工作版", personal:"個人版"};
+const me = () => data.profiles[data.active] || data.profiles.work;
 
 function normalize(d){
-  if(!d || !d.me || !Array.isArray(d.cards)) d=clone(DEFAULT);
-  d={me:cleanMe(d.me), cards:d.cards.filter(c=>c&&typeof c==="object").map(cleanCard), settings:d.settings};
+  if(!d || !(d.me||d.profiles) || !Array.isArray(d.cards)) d=clone(DEFAULT);
+  const mt=(d.meta&&typeof d.meta==="object")?d.meta:{};
+  const pf=(d.profiles&&typeof d.profiles==="object")?d.profiles:{work:d.me};   // 舊版只有一張「我的名片」→ 變成工作版
+  d={profiles:{work:cleanMe(pf.work), personal:cleanMe(pf.personal)}, active:d.active==="personal"?"personal":"work",
+     cards:d.cards.filter(c=>c&&typeof c==="object").map(cleanCard), settings:d.settings,
+     meta:{cloudConnected:!!mt.cloudConnected, lastCloud:str(mt.lastCloud), lastChange:str(mt.lastChange)}};
   const s=Object.assign(clone(DEFAULT_SETTINGS), d.settings||{});
   s.show=Object.assign(clone(DEFAULT_SETTINGS.show), (d.settings&&d.settings.show)||{});
+  s.ocr=Object.assign({enabled:true, ready:false, jpn:false, chi_sim:false}, (d.settings&&d.settings.ocr)||{});
   if(!CARD_COLORS[s.cardColor]) s.cardColor=DEFAULT_SETTINGS.cardColor;   // 舊版設定遷移
   s.fonts=Object.assign(clone(DEFAULT_SETTINGS.fonts), (d.settings&&d.settings.fonts)||{});
   if(d.settings && d.settings.cardFont && !d.settings.fonts && FONTS[d.settings.cardFont]) s.fonts.name=d.settings.cardFont; // 舊版只有名字字體
@@ -350,7 +431,8 @@ function normalize(d){
   if(!VIEWS[s.bookView]) s.bookView="box";
   d.settings=s; return d;
 }
-function save(){
+function save(opts){
+  if(!(opts&&opts.quiet)) data.meta.lastChange=new Date().toISOString();
   idbSet("data", data).catch(()=>toast("沒存進去：手機空間不足或瀏覽器不允許儲存。"));
   return true;
 }
@@ -358,7 +440,7 @@ const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt
 const vesc = s => String(s ?? "").replace(/\\/g,"\\\\").replace(/[,;]/g, m => "\\"+m).replace(/\n/g,"\\n");
 const today = () => { const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); };
 const short = d => (d||"").slice(5);
-function toast(msg){ const t=document.getElementById("toast"); t.textContent=msg; t.hidden=false; clearTimeout(toast._t); toast._t=setTimeout(()=>t.hidden=true, 2600); }
+function toast(msg){ const t=document.getElementById("toast"); t.textContent=msg; t.hidden=false; t.classList.toggle("top", !!document.querySelector(".sheet")); clearTimeout(toast._t); toast._t=setTimeout(()=>t.hidden=true, 2600); }
 function greeting(){ const h=new Date().getHours(); return h<5?"夜深了":h<11?"早安":h<14?"午安":h<18?"午後好":"晚安"; }
 function tint(id){ let n=0; for(const ch of String(id)) n+=ch.charCodeAt(0); return "t"+(n%5); }
 
@@ -383,8 +465,10 @@ function vcard(m){
   if(m.org) L.push("ORG:"+vesc(m.org));
   if(m.title) L.push("TITLE:"+vesc(m.title));
   if(m.phone) L.push("TEL;TYPE=CELL:"+m.phone.replace(/[^\d+]/g,""));
+  if(m.tel) L.push("TEL;TYPE=WORK:"+m.tel.replace(/\s*#\s*/,",").replace(/[^\d+,]/g,""));
   if(m.email) L.push("EMAIL:"+vesc(m.email));
   if(m.web) L.push("URL:"+vesc(m.web));
+  if(m.address) L.push("ADR;TYPE=WORK:;;"+vesc(m.address)+";;;;");
   const note=[m.line&&("LINE: "+m.line), m.alt, m.note].filter(Boolean).join(" / ");
   if(note) L.push("NOTE:"+vesc(note));
   L.push("END:VCARD"); return L.join("\r\n");
@@ -410,7 +494,9 @@ function cardHTML(m){
     +'<div class="ct">'+ct+'</div></div></div>';
 }
 function field(id,label,val,type="text",ph=""){
-  return '<label for="'+id+'">'+label+'<input id="'+id+'" name="'+id+'" type="'+type+'" value="'+esc(val)+'" placeholder="'+esc(ph)+'" autocomplete="off"></label>';
+  const auto=!!(ui.auto && ui.auto.has(id) && val);
+  return '<label for="'+id+'">'+'<span>'+label+(auto?'<span class="chk">請確認</span>':'')+'</span>'
+    +'<input id="'+id+'" name="'+id+'" type="'+type+'" value="'+esc(val)+'" placeholder="'+esc(ph)+'" autocomplete="off"'+(auto?' class="auto"':'')+'></label>';
 }
 const ICON = {
   copy:'<svg class="i" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg>',
@@ -418,27 +504,41 @@ const ICON = {
   plus:'<svg class="i" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>',
   cam:'<svg class="i" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>',
   qr:'<svg class="i" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><path d="M14 14h2v2h-2zM18 18h2v2h-2zM14 20h2M20 14v2"/></svg>',
+  share:'<svg class="i" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.2 10.8l7.6-3.6M8.2 13.2l7.6 3.6"/></svg>',
+  addp:'<svg class="i" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="8" r="3.5"/><path d="M3.5 19c.8-3.4 3.4-5 6.5-5s5.7 1.6 6.5 5M19 8v6M16 11h6"/></svg>',
   search:'<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg>'
 };
 
 /* ---------- 我的名片 ---------- */
 function renderMe(){
-  const m=data.me;
-  const editor = ui.editing ? '<section class="tile"><form id="meForm"><h2>編輯名片內容</h2>'
+  const m=me(), label=PROFILE_LABEL[data.active];
+  const links=(m.links||[]).concat([{},{},{}]).slice(0,3);
+  const editor = ui.editing ? '<section class="tile"><form id="meForm" novalidate><h2>編輯'+label+'</h2>'
     + field("me-name","姓名",m.name) + '<div class="grid2">'+field("me-title","職稱",m.title)+field("me-org","單位",m.org)+'</div>'
     + field("me-tagline","一句話介紹（選填）",m.tagline,"text","例如：陪你把卡住的事慢慢說清楚")
     + '<div class="grid2">'+field("me-phone","電話",m.phone,"tel")+field("me-email","Email",m.email,"email")+'</div>'
     + '<div class="grid2">'+field("me-line","LINE ID",m.line)+field("me-web","網站",m.web,"url","https://")+'</div>'
-    + '<div class="row"><button class="pill strong" type="submit">儲存名片</button><button type="button" class="pill line" data-act="cancelEdit">取消</button></div></form></section>' : "";
+    + field("me-address","地址（選填，電子名片上會出現「地圖」按鈕）",m.address)
+    + '<h2 style="margin-top:6px">電子名片上的額外內容（選填）</h2><p class="sub">有填才會出現在電子名片上；都不填，就是精簡版。</p>'
+    + '<label for="me-intro"><span>自我介紹（'+INTRO_MAX+' 字以內）</span><textarea id="me-intro" maxlength="'+INTRO_MAX+'" rows="3">'+esc(m.intro||"")+'</textarea></label>'
+    + links.map((l,i)=>'<div class="grid2">'+field("me-ll"+i,"連結 "+(i+1)+" 的名稱",l.label||"","text",i?"":"例如：我的 IG")+field("me-lu"+i,"網址",l.url||"","url","https://")+'</div>').join("")
+    + '<div class="row"><button class="pill strong" type="submit">儲存'+label+'</button><button type="button" class="pill line" data-act="cancelEdit">取消</button></div></form></section>' : "";
+  const seg='<div class="seg2" role="group" aria-label="切換名片">'+["work","personal"].map(k=>'<button type="button" data-act="profile" data-key="'+k+'" aria-pressed="'+(data.active===k)+'">'+PROFILE_LABEL[k]+(data.profiles[k].name?'':'<small>未設定</small>')+'</button>').join("")+'</div>';
+  if(!m.name && !ui.editing && data.active==="personal"){
+    return seg + '<div class="tile emptyp"><h2>個人版還沒設定</h2><p class="sub">個人版適合私人場合或個人品牌，可以放不同的電話、自我介紹和 IG 連結。工作場合遞出去的仍然是工作版。</p>'
+      + '<div class="row"><button type="button" class="pill strong" data-act="setupPersonal">從工作版複製姓名開始</button></div></div>';
+  }
   // 打賞：填了 TIP_URL 才會出現
   const tip = TIP_URL ? '<a class="mini coffee" href="'+esc(TIP_URL)+'" target="_blank" rel="noopener">'+ICON.cup+'<span>請我喝咖啡</span></a>' : '';
   return '<div class="head"><div><div class="eyebrow">'+greeting()+(m.name?'，'+esc(m.name):'')+'</div><h1>'+(m.name?'今天要遞名片嗎？':'先填上你的名片')+'</h1></div>'
     + (ui.editing?'':'<button type="button" class="pill" data-act="edit">編輯</button>')+'</div>'
+    + (ui.editing?'':seg)
     + '<div class="stackwrap">'+cardHTML(m)+'</div>'
     + editor
-    + (ui.editing?'':'<button type="button" class="pill strong big" data-act="present">遞名片給對方</button>')
-    + '<div class="tiles"><div class="tile qrtile">'+qrSvg(vcard(visible(m)))+'<span class="sub">相機掃描就能存聯絡人</span></div>'
-    + '<div class="stackcol"><button type="button" class="mini" data-act="copyMe">'+ICON.copy+'<span>複製文字版</span></button>'+tip+'</div></div>'
+    + (ui.editing?'':'<button type="button" class="pill strong big" data-act="present">遞'+label+'給對方</button>')
+    + '<div class="tiles"><div class="tile qrtile">'+qrSvg(qrPayload(m))+'<span class="sub">'+(data.settings.qrMode==="vcard"?"掃描直接存聯絡人":"掃描打開電子名片")+'</span></div>'
+    + '<div class="stackcol"><button type="button" class="mini" data-act="shareEcard">'+ICON.share+'<span>分享電子名片連結</span></button>'
+    + '<button type="button" class="mini" data-act="copyMe">'+ICON.copy+'<span>複製文字版</span></button>'+tip+'</div></div>'
     + '<p class="sub" style="text-align:center">名片和 QR code 只包含設定裡打開的欄位，不經過任何伺服器。</p>';
 }
 
@@ -446,14 +546,16 @@ function renderMe(){
 function filtered(){
   const q=ui.query.trim().toLowerCase();
   let list=data.cards.filter(c=>!ui.photoOnly || c.photo || c.photoBack);
-  if(q) list=list.filter(c=>[c.name,c.alt,c.org,c.title,c.note,c.phone,c.email,c.line].join(" ").toLowerCase().includes(q));
+  if(q) list=list.filter(c=>[c.name,c.alt,c.org,c.title,c.note,c.phone,c.tel,c.email,c.line,c.web,c.address,c.ocrText].join(" ").toLowerCase().includes(q));
   if(ui.sort==="org") list.sort((a,b)=>(a.org||"").localeCompare(b.org||"","zh-Hant")||(a.name||"").localeCompare(b.name||"","zh-Hant"));
   else list.sort((a,b)=>(a.added||"").localeCompare(b.added||"")); // 舊的在上，最新的在最下面展開
   return list;
 }
 function openHTML(c){
-  const kv=[["電話",c.phone],["Email",c.email],["LINE",c.line]].filter(x=>x[1]).map(([k,v])=>'<dt>'+k+'</dt><dd>'+esc(v)+'</dd>').join("");
-  const acts=[c.phone&&'<a href="tel:'+esc(c.phone.replace(/[^\d+]/g,""))+'">撥電話</a>',
+  const kv=[["手機",c.phone],["公司電話",c.tel],["Email",c.email],["LINE",c.line],["網站",c.web],["地址",c.address]].filter(x=>x[1]).map(([k,v])=>'<dt>'+k+'</dt><dd>'+esc(v)+'</dd>').join("");
+  const telHref = t => "tel:"+t.replace(/\s*#\s*/,",").replace(/[^\d+,]/g,"");   // 分機用逗號，撥通後自動按
+  const acts=[c.phone&&'<a href="'+esc(telHref(c.phone))+'">撥手機</a>',
+    c.tel&&'<a href="'+esc(telHref(c.tel))+'">撥公司電話</a>',
     c.email&&'<button type="button" data-act="copy" data-text="'+esc(c.email)+'">複製 Email</button>',
     (c.photo||c.photoBack)&&'<button type="button" data-act="photo">'+(ui.showPhoto?"收起照片":(c.photo&&c.photoBack?"看正反面":"看照片"))+'</button>'].filter(Boolean).join("");
   let viewer="";
@@ -468,6 +570,7 @@ function openHTML(c){
     + (c.note?'<div class="memo">'+esc(c.note)+'</div>':'')
     + viewer
     + (acts?'<div class="acts">'+acts+'</div>':'')
+    + (c.ocrText?'<details class="raw"><summary>辨識原文</summary><pre>'+esc(c.ocrText)+'</pre></details>':'')
     + '<div class="del"><button type="button" class="textbtn" data-act="editCard" data-id="'+c.id+'">編輯'+((c.photo&&!c.photoBack)?'・補拍背面':'')+'</button>'+(ui.confirmId===c.id
         ? '<button type="button" class="pill danger" data-act="del" data-id="'+c.id+'">確定刪除</button><button type="button" class="pill line" data-act="noDel">保留</button>'
         : '<button type="button" class="textbtn" data-act="askDel" data-id="'+c.id+'">刪除這張</button>')+'</div></div>';
@@ -487,19 +590,23 @@ function renderCards(){
   return '<div class="box">'+strips+openHTML(sel)+'</div>';
 }
 function renderBook(){
+  if(ui.adding && ui.rv && ui.rv.open && ui.review.tokens.length) return renderReview();
   const n=data.cards.length, samples=data.cards.filter(c=>c.sample).length;
   const d=ui.draft||{};
   const side=(key,label,img)=>'<div class="side"><span class="sub">'+label+(key==="back"?'（選填）':'')+'</span><div class="slot'+(img?'':' empty')+'">'+(img?'<img src="'+img+'" alt="名片'+label+'">':'<span>'+label+'</span>')+'</div>'
     + '<div class="photobtns"><button type="button" class="pill line small" data-act="snap" data-side="'+key+'">'+(img?'重拍':'拍'+label)+'</button>'
     + '<button type="button" class="pill line small" data-act="pickPhoto" data-side="'+key+'">相簿</button>'
     + (img?'<button type="button" class="textbtn" data-act="clearPhoto" data-side="'+key+'">移除</button>':'')+'</div></div>';
-  const add = ui.adding ? '<section class="tile"><form id="addForm"><h2>'+(ui.editId?'編輯名片':'新增名片')+'</h2>'
+  const add = ui.adding ? '<section class="tile"><form id="addForm" novalidate><h2>'+(ui.editId?'編輯名片':'新增名片')+'</h2>'
     + '<div class="sides">'+side("front","正面",ui.draftPhoto)+side("back","背面",ui.draftBack)+'</div>'
     + (ui.draftPhoto&&!ui.draftBack?'<p class="sub hint">背面有其他資訊或外文的話，順手補拍一張；沒有就跳過。</p>':'<p class="sub">照片縮小後存在 app 裡，不會留在相簿。</p>')
+    + ocrBox()
     + field("add-name","姓名",d.name||"") + '<div class="grid2">'+field("add-title","職稱",d.title||"")+field("add-org","單位",d.org||"")+'</div>'
     + field("add-alt","其他語言的姓名或職稱（選填）",d.alt||"","text","例如 Chen Chih-Ming, Product Manager")
-    + '<div class="grid2">'+field("add-phone","電話",d.phone||"","tel")+field("add-email","Email",d.email||"","email")+'</div>'
-    + field("add-line","LINE ID",d.line||"")
+    + '<div class="grid2">'+field("add-phone","手機",d.phone||"","tel")+field("add-tel","公司電話（分機用 #）",d.tel||"","tel","02-2345-6789 #123")+'</div>'
+    + '<div class="grid2">'+field("add-email","Email",d.email||"","email")+field("add-line","LINE ID",d.line||"")+'</div>'
+    + field("add-web","網站",d.web||"","url")
+    + field("add-address","地址",d.address||"")
     + '<label for="add-note">在哪裡認識、聊了什麼<textarea id="add-note" name="add-note">'+esc(d.note||"")+'</textarea></label>'
     + '<div class="row"><button class="pill strong" type="submit">'+(ui.editId?'儲存修改':'存入名片夾')+'</button><button type="button" class="pill line" data-act="cancelAdd">取消</button></div></form></section>' : "";
   return '<div class="head"><div><div class="eyebrow">'+n+' 張'+(samples?'・含 '+samples+' 張範例':'')+'</div><h1>名片夾</h1></div>'
@@ -507,6 +614,7 @@ function renderBook(){
     + (ui.adding?'':'<div class="quick"><button type="button" class="mini" data-act="snap" data-side="front">'+ICON.cam+'<span>拍名片</span></button>'
       + (CAN_SCAN?'<button type="button" class="mini" data-act="scan">'+ICON.qr+'<span>掃 QR code</span></button>':'<button type="button" class="mini" data-act="add">'+ICON.plus+'<span>手動輸入</span></button>')+'</div>')
     + add
+    + (!ui.adding && cloudPending() ? '<div class="nudge"><span>有新的名片還沒備份到雲端</span><button type="button" class="pill small" data-act="goSettings">去備份</button></div>' : '')
     + '<label class="search">'+ICON.search+'<input id="q" type="search" placeholder="搜尋姓名、單位、在哪認識" value="'+esc(ui.query)+'" aria-label="搜尋名片"></label>'
     + '<div class="chips"><button type="button" class="chip" data-act="sort" data-key="recent" aria-pressed="'+(ui.sort==="recent")+'">最近收到</button>'
     + '<button type="button" class="chip" data-act="sort" data-key="org" aria-pressed="'+(ui.sort==="org")+'">依單位</button>'
@@ -517,26 +625,33 @@ function renderBook(){
 /* ---------- 設定 ---------- */
 function opt(group,key,inner,cur){ return '<button type="button" class="opt" data-act="set" data-group="'+group+'" data-key="'+key+'" aria-pressed="'+(cur===key)+'">'+inner+'</button>'; }
 function renderSettings(){
-  const s=data.settings, nm=esc(data.me.name||"名字");
+  const s=data.settings, nm=esc(me().name||"名字");
   const imp=ui.importing;
   const importBox = imp ? '<div class="importbox"><p>檔案裡有 '+imp.cards.length+' 張名片，其中 <b>'+imp.fresh.length+'</b> 張是名片夾裡還沒有的。</p><div class="row">'
     + (imp.fresh.length?'<button type="button" class="pill strong" data-act="importCards">加入 '+imp.fresh.length+' 張新名片</button>':'')
-    + (imp.me&&imp.me.name?'<button type="button" class="pill line" data-act="importAll">加入新名片，並套用檔案裡的我的名片與外觀</button>':'')
+    + ((imp.profiles&&imp.profiles.work.name)||(imp.me&&imp.me.name)?'<button type="button" class="pill line" data-act="importAll">加入新名片，並套用檔案裡的我的名片與外觀</button>':'')
     + '<button type="button" class="pill line" data-act="importCancel">取消</button></div></div>' : '';
   const sw=Object.entries(CARD_COLORS).map(([k,c])=>'<button type="button" class="sw" data-act="set" data-group="cardColor" data-key="'+k+'" aria-pressed="'+(s.cardColor===k)+'" aria-label="'+c.name+'" title="'+c.name+'" style="background:'+c.c+'"></button>').join("");
   const fonts=FONT_ROLES.map(r=>'<div class="frole"><div class="frow"><span class="flbl">'+r.label+'</span><span class="sub">'+r.hint+'</span></div><div class="fchips">'
     + Object.entries(FONTS).map(([k,f])=>'<button type="button" class="fchip" data-act="font" data-role="'+r.key+'" data-key="'+k+'" aria-pressed="'+(s.fonts[r.key]===k)+'" style="font-family:'+esc(f.stack)+'">'+(r.key==="name"?nm+'・':'')+f.name+'</button>').join("")
     + '</div></div>').join("");
-  const checks=SHOW_FIELDS.map(([k,n])=>'<label class="check" for="show-'+k+'"><input type="checkbox" id="show-'+k+'" data-show="'+k+'"'+(s.show[k]?" checked":"")+'>'+n+(data.me[k]?'':'<span class="sub">（尚未填寫）</span>')+'</label>').join("");
+  const checks=SHOW_FIELDS.map(([k,n])=>'<label class="check" for="show-'+k+'"><input type="checkbox" id="show-'+k+'" data-show="'+k+'"'+(s.show[k]?" checked":"")+'>'+n+(me()[k]?'':'<span class="sub">（尚未填寫）</span>')+'</label>').join("");
   return '<div class="head"><div><div class="eyebrow">改了馬上套用</div><h1>設定</h1></div></div>'
-    + '<div class="preview-sticky">'+cardHTML(data.me)+'</div>'
+    + '<div class="preview-sticky">'+cardHTML(me())+'</div>'
     + '<section class="tile set"><h2>主題顏色</h2><div class="swatches">'+sw+'</div><p class="sub">'+CARD_COLORS[s.cardColor].name+'。名片、底色和按鈕會一起換成同一個色系。</p></section>'
     + '<section class="tile set"><h2>字體</h2>'+fonts+'</section>'
     + '<section class="tile set"><h2>名片上顯示的資料</h2><p class="sub">關掉的項目不會出現在名片上，也不會放進 QR code。私人手機可以只在需要時打開。</p><div>'+checks+'</div></section>'
+    + '<section class="tile set"><h2>名片文字辨識</h2>'
+      + '<label class="check" for="ocr-enabled"><input type="checkbox" id="ocr-enabled" data-ocr="enabled"'+(s.ocr.enabled?' checked':'')+'>拍完名片自動辨識文字</label>'
+      + '<p class="sub">辨識在手機上進行，照片不會上傳。第一次使用需要下載約 7MB 的辨識資料，之後離線也能用。'+(s.ocr.ready?'目前已下載。':'')+'</p>'
+      + '<p class="sub">預設辨識繁體中文和英文。需要的話可以加上其他語言，但速度會變慢，也要多下載資料：</p>'
+      + '<label class="check" for="ocr-jpn"><input type="checkbox" id="ocr-jpn" data-ocr="jpn"'+(s.ocr.jpn?' checked':'')+'>日文</label>'
+      + '<label class="check" for="ocr-chi_sim"><input type="checkbox" id="ocr-chi_sim" data-ocr="chi_sim"'+(s.ocr.chi_sim?' checked':'')+'>簡體中文</label></section>'
     + '<section class="tile set"><h2>名片夾檢視</h2><div class="choices two">'+Object.entries(VIEWS).map(([k,n])=>opt("bookView",k,n,s.bookView)).join("")+'</div><p class="sub">卡盒適合幾十張以內；名片多了，清單比較好找。</p></section>'
     + '<section class="tile set"><h2>深淺色</h2><div class="choices seg">'+Object.entries(THEMES).map(([k,n])=>opt("theme",k,n,s.theme)).join("")+'</div></section>'
-    + '<section class="tile set"><h2>備份與搬家</h2><p class="sub">名片只存在這支手機裡，不會上傳到任何伺服器。建議偶爾匯出一份備份，存到你自己的 Google Drive；換手機或想在電腦上用時，匯入這份檔案就好。</p>'
-      + '<div class="row"><button type="button" class="pill strong" data-act="exportJson">匯出備份（含照片）</button>'
+    + '<section class="tile set"><h2>備份與搬家</h2><p class="sub">名片只存在這支手機裡，不會上傳到任何伺服器。建議定期備份到你自己的雲端；換手機或想在電腦上用時，還原這份備份就好。</p>'
+      + cloudHTML()
+      + '<div class="row"><button type="button" class="pill '+(GDRIVE_CLIENT_ID?'line':'strong')+'" data-act="exportJson">匯出備份檔（含照片）</button>'
       + '<button type="button" class="pill line" data-act="importPick">匯入備份</button>'
       + '<button type="button" class="pill line" data-act="exportVcf">匯出成聯絡人檔（.vcf）</button></div>'
       + importBox
@@ -589,12 +704,386 @@ async function deliver(filename, text, mime){
   toast("已下載 "+filename);
 }
 
+/* ---------- 備份內容與匯入 ---------- */
+function backupPayload(){
+  return {app:"bizcard", version:1, exported:new Date().toISOString(), profiles:data.profiles, active:data.active, me:data.profiles.work, settings:data.settings, cards:data.cards.filter(c=>!c.sample)};
+}
+function prepareImport(d){   // 檔案或雲端讀回來的備份：先列出差異，讓使用者決定要加入哪些
+  if(!d || !Array.isArray(d.cards)) return false;
+  const have=new Set(data.cards.map(c=>c.id));
+  const cards=d.cards.filter(c=>c&&typeof c==="object"&&c.name).map(cleanCard);
+  ui.importing={cards, fresh:cards.filter(c=>!have.has(c.id)), me:d.me?cleanMe(d.me):null, profiles:d.profiles?{work:cleanMe(d.profiles.work), personal:cleanMe(d.profiles.personal)}:null, settings:d.settings||null};
+  return true;
+}
+
+/* ---------- Google Drive 雲端備份 ----------
+   只申請 drive.file：app 只看得到自己建立的那個備份檔，碰不到使用者雲端硬碟的其他檔案。
+   網頁拿到的授權約一小時過期，重新授權需要使用者點按，所以採「按一下備份」加上提醒，不做背景自動上傳。 */
+const CLOUD_FILE = "名片夾備份.json";
+const DRIVE = "https://www.googleapis.com/drive/v3/files";
+const cloud = {token:"", exp:0, client:null, pending:null};
+function initCloud(){
+  if(!GDRIVE_CLIENT_ID || document.getElementById("gis")) return;
+  const s=document.createElement("script"); s.id="gis"; s.src="https://accounts.google.com/gsi/client"; s.async=true;
+  s.onload=()=>{
+    cloud.client=google.accounts.oauth2.initTokenClient({
+      client_id:GDRIVE_CLIENT_ID, scope:"https://www.googleapis.com/auth/drive.file",
+      callback:r=>{ const p=cloud.pending; cloud.pending=null; if(!p) return;
+        if(r.error){ p.rej(new Error(r.error)); return; }
+        cloud.token=r.access_token; cloud.exp=Date.now()+(Number(r.expires_in)||3600)*1000; p.res(cloud.token); },
+      error_callback:e=>{ const p=cloud.pending; cloud.pending=null; if(p) p.rej(new Error((e&&e.type)||"popup")); }
+    });
+  };
+  document.head.appendChild(s);
+}
+function getToken(){   // 必須在點擊當下呼叫，瀏覽器才不會擋掉授權視窗
+  if(cloud.token && Date.now() < cloud.exp-60000) return Promise.resolve(cloud.token);
+  if(!cloud.client) return Promise.reject(new Error("notready"));
+  return new Promise((res,rej)=>{ cloud.pending={res,rej}; cloud.client.requestAccessToken({prompt: data.meta.cloudConnected ? "" : "consent"}); });
+}
+async function gfetch(url, opts){
+  const t=await getToken();
+  const r=await fetch(url, Object.assign({}, opts, {headers:Object.assign({}, (opts&&opts.headers)||{}, {Authorization:"Bearer "+t})}));
+  if(r.status===401){ cloud.token=""; throw new Error("auth"); }
+  if(!r.ok) throw new Error("http"+r.status);
+  return r;
+}
+async function findCloudFile(){
+  const q=encodeURIComponent("name='"+CLOUD_FILE+"' and trashed=false");
+  const r=await gfetch(DRIVE+"?q="+q+"&spaces=drive&orderBy=modifiedTime%20desc&fields=files(id,modifiedTime)");
+  const j=await r.json(); return (j.files&&j.files[0])||null;
+}
+function cloudError(e){
+  const m=e&&e.message;
+  if(m==="notready") toast("Google 登入元件還在載入，請過兩秒再按一次");
+  else if(m==="popup_closed"||m==="access_denied") toast("已取消，沒有變更");
+  else if(m==="popup_failed_to_open") toast("授權視窗被擋住了，請允許這個網站開啟彈出式視窗");
+  else if(m==="auth") toast("Google 授權過期了，請再按一次");
+  else toast("連不上 Google Drive，請確認網路後再試一次");
+}
+async function cloudBackup(){
+  if(ui.cloudBusy) return;
+  const tokenP=getToken();          // 先在點擊當下要授權
+  ui.cloudBusy="backup"; keepScroll(render);
+  try{
+    await tokenP;
+    const body=JSON.stringify(backupPayload());
+    const f=await findCloudFile();
+    if(f){
+      await gfetch("https://www.googleapis.com/upload/drive/v3/files/"+f.id+"?uploadType=media", {method:"PATCH", headers:{"Content-Type":"application/json"}, body});
+    } else {
+      const fd=new FormData();
+      fd.append("metadata", new Blob([JSON.stringify({name:CLOUD_FILE, mimeType:"application/json"})], {type:"application/json"}));
+      fd.append("file", new Blob([body], {type:"application/json"}));
+      await gfetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart", {method:"POST", body:fd});
+    }
+    data.meta.cloudConnected=true; data.meta.lastCloud=new Date().toISOString(); save({quiet:true});
+    toast("已備份到你的 Google Drive");
+  }catch(e){ cloudError(e); }
+  ui.cloudBusy=null; keepScroll(render);
+}
+async function cloudRestore(){
+  if(ui.cloudBusy) return;
+  const tokenP=getToken();
+  ui.cloudBusy="restore"; keepScroll(render);
+  try{
+    await tokenP;
+    const f=await findCloudFile();
+    if(!f){ toast("你的 Google Drive 裡還沒有名片夾的備份"); }
+    else {
+      const r=await gfetch(DRIVE+"/"+f.id+"?alt=media");
+      let d=null; try{ d=await r.json(); }catch(e){}
+      if(!prepareImport(d)) toast("雲端上的備份檔讀不出來");
+      data.meta.cloudConnected=true; save({quiet:true});
+    }
+  }catch(e){ cloudError(e); }
+  ui.cloudBusy=null; keepScroll(render);
+}
+const when = iso => { if(!iso) return ""; const d=new Date(iso); return isNaN(d) ? "" : d.toLocaleString("zh-TW",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"}); };
+function cloudPending(){   // 有變更還沒備份，而且距離上次雲端備份超過三天
+  const m=data.meta; if(!GDRIVE_CLIENT_ID || !m.cloudConnected || !m.lastChange) return false;
+  if(m.lastCloud && m.lastChange<=m.lastCloud) return false;
+  return !m.lastCloud || (Date.now()-new Date(m.lastCloud).getTime() > 3*864e5);
+}
+function cloudHTML(){
+  if(!GDRIVE_CLIENT_ID) return "";
+  const m=data.meta, b=ui.cloudBusy;
+  return '<div class="cloud"><div><strong>Google Drive</strong><div class="sub">'+(m.lastCloud?'上次備份：'+when(m.lastCloud):'還沒備份過')+'</div></div>'
+    + '<div class="row"><button type="button" class="pill strong" data-act="cloudBackup"'+(b?' disabled':'')+'>'+(b==="backup"?'備份中…':'備份到 Google Drive')+'</button>'
+    + '<button type="button" class="pill line" data-act="cloudRestore"'+(b?' disabled':'')+'>'+(b==="restore"?'讀取中…':'從 Google Drive 還原')+'</button></div>'
+    + '<p class="sub">備份檔叫「'+CLOUD_FILE+'」，存在你自己的 Google Drive。這個 app 只看得到它自己建立的這個檔案，碰不到你雲端硬碟裡的其他東西。</p></div>';
+}
+
+/* ---------- 名片文字辨識（OCR，全部在手機上進行） ----------
+   引擎：Tesseract.js 5.1.1，第一次使用時從 jsDelivr 下載程式與精簡版語言資料（繁中 1.7MB＋英文 3MB），之後存在手機上。
+   做法：同一張照片辨識兩次再合併——大圖（長邊 1500）讀小字、小圖（長邊 850，稀疏文字模式）讀大字，
+   同一個位置取信心比較高的那一行。Tesseract 不擅長特別大的字，而名片上的姓名通常最大，所以需要第二次。
+   拆欄位規則在 cardparse.js。辨識結果只填進還空著的欄位，並標上「請確認」。 */
+const OCR_LIB = "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js";
+const ocr = {worker:null, langs:"", seq:0, idle:null, lib:null};
+function ocrLangs(){ const o=data.settings.ocr; return ["chi_tra","eng"].concat(o.jpn?["jpn"]:[], o.chi_sim?["chi_sim"]:[]); }
+function loadTesseract(){
+  if(window.Tesseract) return Promise.resolve(window.Tesseract);
+  if(ocr.lib) return ocr.lib;
+  ocr.lib=new Promise((res,rej)=>{ const s=document.createElement("script"); s.src=OCR_LIB; s.async=true;
+    s.onload=()=>res(window.Tesseract); s.onerror=()=>{ ocr.lib=null; rej(new Error("lib")); }; document.head.appendChild(s); });
+  return ocr.lib;
+}
+async function getWorker(onProgress){
+  const langs=ocrLangs(), key=langs.join("+");
+  if(ocr.worker && ocr.langs===key) return ocr.worker;
+  if(ocr.worker){ try{ await ocr.worker.terminate(); }catch(e){} ocr.worker=null; }
+  const T=await loadTesseract();
+  ocr.worker=await T.createWorker(langs, 1, {logger:m=>onProgress && onProgress(m)});
+  ocr.langs=key; return ocr.worker;
+}
+function ocrIdle(){ clearTimeout(ocr.idle); ocr.idle=setTimeout(()=>{ if(ocr.worker && !ui.ocr){ ocr.worker.terminate().catch(()=>{}); ocr.worker=null; } }, 120000); }
+function ocrCancel(){
+  ocr.seq++;
+  if(ui.ocr && ui.ocr.status!=="error" && ocr.worker){ ocr.worker.terminate().catch(()=>{}); ocr.worker=null; }   // 正在跑的才終止
+  ui.ocr=null;
+}
+// 縮放、灰階、拉高對比；手機照片的方向依 EXIF 轉正
+async function prepImage(file, maxSide){
+  const bmp=await createImageBitmap(file, {imageOrientation:"from-image"});
+  const r=Math.min(1, maxSide/Math.max(bmp.width,bmp.height));
+  const c=document.createElement("canvas"); c.width=Math.round(bmp.width*r); c.height=Math.round(bmp.height*r);
+  const g=c.getContext("2d",{willReadFrequently:true}); g.drawImage(bmp,0,0,c.width,c.height); bmp.close&&bmp.close();
+  const im=g.getImageData(0,0,c.width,c.height), d=im.data, hist=new Uint32Array(256);
+  for(let i=0;i<d.length;i+=4){ const y=(d[i]*299+d[i+1]*587+d[i+2]*114)/1000|0; d[i]=y; hist[y]++; }
+  const n=d.length/4; let lo=0, hi=255, acc=0;
+  for(;lo<255;lo++){ acc+=hist[lo]; if(acc>n*0.02) break; } acc=0;
+  for(;hi>0;hi--){ acc+=hist[hi]; if(acc>n*0.02) break; }
+  const span=Math.max(1,hi-lo);
+  for(let i=0;i<d.length;i+=4){ const v=Math.max(0,Math.min(255,(d[i]-lo)*255/span)); d[i]=d[i+1]=d[i+2]=v; }
+  g.putImageData(im,0,0); return c;
+}
+function mergeLines(A, B, k, W, H){
+  const a=A.map(l=>({text:l.text.trim(), conf:l.confidence, x0:l.bbox.x0, y0:l.bbox.y0, x1:l.bbox.x1, y1:l.bbox.y1}));
+  const b=B.map(l=>({text:l.text.trim(), conf:l.confidence, x0:l.bbox.x0*k, y0:l.bbox.y0*k, x1:l.bbox.x1*k, y1:l.bbox.y1*k}));
+  const ov=(p,q)=>{ const iy=Math.max(0,Math.min(p.y1,q.y1)-Math.max(p.y0,q.y0)), ix=Math.max(0,Math.min(p.x1,q.x1)-Math.max(p.x0,q.x0));
+    return (ix*iy)/Math.max(1,Math.min((p.x1-p.x0)*(p.y1-p.y0),(q.x1-q.x0)*(q.y1-q.y0))); };
+  const out=a.slice();
+  for(const q of b){ if(!q.text) continue; const i=out.findIndex(p=>ov(p,q)>0.5); if(i<0) out.push(q); else if(q.conf>out[i].conf+5) out[i]=q; }
+  return out.filter(l=>l.text).sort((p,q)=>p.y0-q.y0||p.x0-q.x0).map(l=>({text:l.text, h:l.y1-l.y0, conf:Math.round(l.conf),
+    box:{x:l.x0/W, y:l.y0/H, w:(l.x1-l.x0)/W, h:(l.y1-l.y0)/H}}));
+}
+/* ---------- 文字卡整理（乙方案） ----------
+   辨識結果切成一塊塊文字卡，先照規則放進欄位；有沒用到的文字卡，就進「整理文字」畫面讓使用者自己放。
+   點文字卡：照片上框出它的位置，底部面板可以放到欄位、修字、拆開、接到另一塊後面、移出。
+   全部都放好了就直接跳到表單；表單上隨時可以按「整理文字」回來。 */
+const FIELD_ORDER=["name","title","org","alt","phone","tel","email","line","web","address","note"];
+const FIELD_LABEL={name:"姓名",title:"職稱",org:"單位",alt:"其他語言",phone:"手機",tel:"公司電話",email:"Email",line:"LINE",web:"網站",address:"地址",note:"備註"};
+let tokSeq=0;
+function resetReview(){ ui.review={tokens:[]}; ui.rv={open:false, sel:null, mode:null, side:"front"}; }
+function addTokens(side, toks){
+  ui.review=ui.review||{tokens:[]};
+  ui.review.tokens=ui.review.tokens.filter(t=>t.side!==side).concat(toks.map(t=>({id:"t"+(++tokSeq), text:t.text, field:t.field||null, kind:t.kind||null, box:t.box||null, side})));
+}
+const unusedTokens=()=>((ui.review&&ui.review.tokens)||[]).filter(t=>!t.field && t.kind!=="fax");
+function setRaw(label, raw){
+  const d=ui.draft=ui.draft||{}; const head="【"+label+"】";
+  const blocks=(d.ocrText||"").split(/\n(?=【)/).filter(x=>x && !x.startsWith(head)); blocks.push(head+"\n"+raw.trim());
+  d.ocrText=blocks.join("\n").slice(0,4000);
+}
+// 依文字卡更新表單：只改空欄位，或之前由文字卡填、使用者還沒動過的欄位
+function applyReview(){
+  const d=ui.draft=ui.draft||{}; ui.auto=ui.auto||new Set();
+  const toks=(ui.review&&ui.review.tokens)||[];
+  const f=CardParse.fieldsFrom(toks);
+  for(const k of FIELD_ORDER){
+    if(k==="note"){ const add=(f.note||"").split("\n").filter(x=>x && !(d.note||"").includes(x)); if(add.length) d.note=[d.note,...add].filter(Boolean).join("\n"); continue; }
+    const id="add-"+k, v=f[k]||"", cur=(d[k]||"").trim();
+    if(!cur || ui.auto.has(id)){ d[k]=v; if(v) ui.auto.add(id); else ui.auto.delete(id); }
+  }
+}
+function afterTokens(sideLabel){
+  if(unusedTokens().length){ ui.rv={open:true, sel:null, mode:null, side:ui.rv&&ui.rv.side||"front"}; return "還有 "+unusedTokens().length+" 塊文字沒有用到，請放到對的地方"; }
+  applyReview(); ui.rv.open=false;
+  return "全部文字都放好了，請確認表單";
+}
+const tokById=id=>((ui.review&&ui.review.tokens)||[]).find(t=>t.id===id);
+function tokChip(t, sel){
+  const sideTag=t.side==="back"?'<small>背面</small>':(t.side==="paste"?'<small>貼上</small>':'');
+  return '<button type="button" class="tok'+(t.field?' placed':'')+(sel&&sel.id===t.id?' sel':'')+'" data-act="tok" data-id="'+t.id+'">'
+    +(t.kind==="fax"&&!t.field?'<small>傳真</small>':'')+esc(t.field&&t.field!=="note"?(CardParse.valueFor(t.text,t.field)||t.text):t.text)+sideTag+'</button>';
+}
+function renderReview(){
+  const toks=ui.review.tokens, sel=tokById(ui.rv.sel), mode=ui.rv.mode;
+  const side=sel&&sel.side!=="paste" ? sel.side : (ui.rv.side||"front");
+  const photo=side==="back"?ui.draftBack:ui.draftPhoto;
+  const both=ui.draftPhoto&&ui.draftBack&&toks.some(t=>t.side==="back")&&toks.some(t=>t.side==="front");
+  const hl=sel&&sel.box&&sel.side===side ? '<span class="hl" style="left:'+(sel.box.x*100-1).toFixed(2)+'%;top:'+(sel.box.y*100-1.5).toFixed(2)+'%;width:'+(sel.box.w*100+2).toFixed(2)+'%;height:'+(sel.box.h*100+3).toFixed(2)+'%"></span>' : '';
+  const unused=toks.filter(t=>!t.field), placed=FIELD_ORDER.filter(f=>toks.some(t=>t.field===f));
+  let sheet;
+  if(!sel){
+    sheet='<div class="row2"><button type="button" class="pill strong big" data-act="rvDone">完成，看表單</button></div>';
+  } else if(mode==="edit"){
+    sheet='<label for="tokEdit"><span>修改文字</span><input id="tokEdit" type="text" value="'+esc(sel.text)+'" autocomplete="off"></label>'
+      +'<div class="row2"><button type="button" class="pill line" data-act="tokMode" data-mode="">取消</button><button type="button" class="pill strong" data-act="tokSave">儲存</button></div>';
+  } else if(mode==="split"){
+    const chars=Array.from(sel.text);
+    sheet='<p class="sheet-t">點字和字之間，選擇從哪裡切開</p><div class="splitter">'
+      +chars.map((c,i)=>(i?'<button type="button" class="gap" data-act="tokSplit" data-i="'+i+'" aria-label="從這裡切開"></button>':'')+'<span>'+esc(c)+'</span>').join("")
+      +'</div><div class="row2"><button type="button" class="pill line" data-act="tokMode" data-mode="">取消</button></div>';
+  } else if(mode==="merge"){
+    sheet='<p class="sheet-t">點另一張文字卡，把「'+esc(sel.text)+'」接到它後面</p><div class="row2"><button type="button" class="pill line" data-act="tokMode" data-mode="">取消</button></div>';
+  } else {
+    sheet='<p class="sheet-t"><b>'+esc(sel.text)+'</b> 要放到哪裡？</p><div class="fgrid">'
+      +FIELD_ORDER.map(f=>'<button type="button" data-act="tokTo" data-f="'+f+'"'+(sel.field===f?' aria-pressed="true"':'')+'>'+FIELD_LABEL[f]+'</button>').join("")+'</div>'
+      +'<div class="tokacts"><button type="button" data-act="tokMode" data-mode="edit">修字</button><button type="button" data-act="tokMode" data-mode="split"'+(Array.from(sel.text).length<2?' disabled':'')+'>拆開</button>'
+      +'<button type="button" data-act="tokMode" data-mode="merge">接到…後面</button>'
+      +(sel.field?'<button type="button" data-act="tokOut">移出</button>':'<button type="button" data-act="tokSel" data-id="">取消</button>')+'</div>';
+  }
+  return '<div class="head"><div><div class="eyebrow">步驟 1 / 2・整理文字</div><h1>把文字放到對的地方</h1></div></div>'
+    + (photo ? '<div class="rv-photo"><img src="'+photo+'" alt="名片'+(side==="back"?'背面':'正面')+'">'+hl+'</div>'
+      + (both?'<div class="chips"><button type="button" class="chip" data-act="rvSide" data-side="front" aria-pressed="'+(side==="front")+'">正面</button><button type="button" class="chip" data-act="rvSide" data-side="back" aria-pressed="'+(side==="back")+'">背面</button></div>':'')
+      + '<p class="sub">點文字卡，照片上會框出它的位置。</p>' : '')
+    + '<section class="rv-sec"><h2>還沒用到・'+unused.length+'</h2>'+(unused.length?'<div class="tokwrap">'+unused.map(t=>tokChip(t,sel)).join("")+'</div>':'<p class="sub">全部都放好了。</p>')+'</section>'
+    + '<section class="rv-sec"><h2>已放好・'+toks.filter(t=>t.field).length+'</h2>'
+      + placed.map(f=>'<div class="rv-row"><span class="fl">'+FIELD_LABEL[f]+'</span><div class="tokwrap">'+toks.filter(t=>t.field===f).map(t=>tokChip(t,sel)).join("")+'</div></div>').join("")+'</section>'
+    + '<div class="sheet-space" aria-hidden="true"></div>'
+    + '<div class="sheet" role="region" aria-label="文字卡操作">'+sheet+'</div>';
+}
+
+function startOCR(side, file){
+  const o=data.settings.ocr;
+  if(!o.ready && !o.consented){ ui.ocrAsk={side, file}; render(); window.scrollTo(0,0); return; }
+  runOCR(side, file);
+}
+function setOcrStatus(text){ if(!ui.ocr) return; ui.ocr.status=text; const box=document.getElementById("ocrbox"); if(box) box.outerHTML=ocrBox(); }
+async function runOCR(side, file){
+  const my=++ocr.seq, label=side==="back"?"背面":"正面";
+  ui.ocr={side, status:"準備辨識"+label+"…"}; render(); window.scrollTo(0,0);
+  const alive=()=>my===ocr.seq;
+  try{
+    const w=await getWorker(m=>{
+      if(!alive()) return;
+      if(m.status==="loading language traineddata") setOcrStatus("下載辨識資料 "+Math.round((m.progress||0)*100)+"%（只有第一次）");
+      else if(m.status==="loading tesseract core") setOcrStatus("載入辨識引擎…");
+    });
+    if(!alive()) return;
+    const big=await prepImage(file,1500), small=await prepImage(file,850);
+    if(!alive()) return;
+    setOcrStatus("辨識"+label+"文字…");
+    await w.setParameters({preserve_interword_spaces:"1", tessedit_pageseg_mode:"3"});
+    const A=(await w.recognize(big)).data.lines; if(!alive()) return;
+    await w.setParameters({preserve_interword_spaces:"1", tessedit_pageseg_mode:"11"});
+    const B=(await w.recognize(small)).data.lines; if(!alive()) return;
+    const lines=mergeLines(A, B, big.width/small.width, big.width, big.height);
+    if(!ui.adding) return;            // 使用者已經離開表單
+    syncDraft();
+    data.settings.ocr.ready=true; save({quiet:true});
+    ui.ocr=null;
+    const parsed=CardParse.parse(lines,{side});
+    if(!parsed.tokens.length){ keepScroll(render); toast("沒有認出可用的文字，可以改用貼上文字或手動輸入"); return; }
+    addTokens(side, parsed.tokens); setRaw(label, lines.map(l=>l.text).join("\n"));
+    ui.rv.side=side;
+    const msg=afterTokens(label);
+    render(); window.scrollTo(0,0); toast(msg);
+  }catch(e){
+    if(!alive()) return;
+    if(ocr.worker){ ocr.worker.terminate().catch(()=>{}); ocr.worker=null; }
+    ui.ocr={side, status:"error", msg: navigator.onLine===false && !data.settings.ocr.ready ? "第一次辨識需要網路下載辨識資料，請連上網路後重試。" : "辨識沒有完成，可以重試，或改用貼上文字、手動輸入。"};
+    syncDraft(); keepScroll(render);
+  }finally{ ocrIdle(); }
+}
+function ocrBox(){
+  const d=ui.draft||{};
+  let inner="";
+  if(ui.ocrAsk){
+    inner='<p><b>要自動辨識名片上的文字嗎？</b></p><p class="sub">辨識在手機上進行，照片不會上傳。第一次需要下載約 7MB 的辨識資料，建議在 Wi-Fi 下進行；之後離線也能用。</p>'
+      +'<div class="row"><button type="button" class="pill strong small" data-act="ocrYes">下載並辨識</button><button type="button" class="pill line small" data-act="ocrNo">這次手動輸入</button></div>'
+      +'<p class="sub">可以在「設定 → 名片文字辨識」關掉這個功能。</p>';
+  } else if(ui.ocr && ui.ocr.status==="error"){
+    inner='<p>'+esc(ui.ocr.msg)+'</p><div class="row"><button type="button" class="pill line small" data-act="ocrRetry" data-side="'+ui.ocr.side+'">重試</button><button type="button" class="pill line small" data-act="ocrStop">關閉</button></div>';
+  } else if(ui.ocr){
+    inner='<div class="ocrrun"><span class="spin" aria-hidden="true"></span><span role="status">'+esc(ui.ocr.status)+'</span><button type="button" class="textbtn" data-act="ocrStop">停止</button></div>';
+  } else if(d.paste!==undefined){
+    inner='<label for="pasteText"><span>貼上名片文字（例如用 Google 智慧鏡頭複製的文字）</span><textarea id="pasteText" rows="5">'+esc(d.paste)+'</textarea></label>'
+      +'<div class="row"><button type="button" class="pill strong small" data-act="pasteParse">拆成欄位</button><button type="button" class="pill line small" data-act="pasteClose">收起</button></div>';
+  } else {
+    const n=(ui.review&&ui.review.tokens.length)||0, u=unusedTokens().length;
+    return '<div id="ocrbox" class="ocrlinks">'+(n?'<button type="button" class="pill line small" data-act="rvOpen">整理文字'+(u?'（'+u+' 塊還沒用到）':'')+'</button>':'')
+      +'<button type="button" class="textbtn" data-act="pasteOpen">貼上文字自動填寫</button></div>';
+  }
+  return '<div id="ocrbox" class="ocrbox">'+inner+'</div>';
+}
+
+/* ---------- 電子名片 ----------
+   QR code 放的是一個網址：https://…/bizcard/#c=<名片資料>。
+   名片資料放在 # 後面，瀏覽器不會把這段送到伺服器，GitHub 也看不到；對方的手機打開網頁後，在自己手機上把名片組出來。
+   缺點：資料就在網址裡，改了名片之後，之前給出去的 QR code 還是舊內容。 */
+const b64u = {
+  enc: str => { const bytes=new TextEncoder().encode(str); let bin=""; bytes.forEach(b=>bin+=String.fromCharCode(b)); return btoa(bin).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,""); },
+  dec: s => { s=s.replace(/-/g,"+").replace(/_/g,"/"); while(s.length%4) s+="="; const bin=atob(s); return new TextDecoder().decode(Uint8Array.from(bin, c=>c.charCodeAt(0))); }
+};
+function ecardUrl(p){
+  const v=visible(p), s=data.settings;
+  const o={v:1, n:v.name, t:v.title, o:v.org, g:v.tagline, p:v.phone, e:v.email, l:v.line, w:v.web, a:p.address, i:p.intro,
+    k:(p.links||[]).map(x=>[x.label,x.url]), c:s.cardColor, f:s.fonts.name};
+  Object.keys(o).forEach(k=>{ if(o[k]==="" || (Array.isArray(o[k]) && !o[k].length)) delete o[k]; });
+  return location.origin + location.pathname.replace(/index\.html$/,"") + "#c=" + b64u.enc(JSON.stringify(o));
+}
+function readEcard(hash){
+  try{
+    const o=JSON.parse(b64u.dec(hash.slice(3)));
+    const p=cleanMe({name:o.n,title:o.t,org:o.o,tagline:o.g,phone:o.p,email:o.e,line:o.l,web:o.w,address:o.a,intro:o.i,
+      links:(Array.isArray(o.k)?o.k:[]).map(x=>({label:Array.isArray(x)?x[0]:"", url:Array.isArray(x)?x[1]:""}))});
+    p.web=p.web?safeUrl(p.web):"";
+    return {p, color:CARD_COLORS[o.c]?o.c:"green", font:FONTS[o.f]?o.f:"serif"};
+  }catch(e){ return null; }
+}
+const lineUrl = id => /^@/.test(id) ? "https://line.me/R/ti/p/"+encodeURIComponent(id) : "https://line.me/ti/p/~"+encodeURIComponent(id);
+// 對方看到的電子名片頁：不讀取、也不碰這台手機上的任何名片夾資料
+function renderEcardView(card){
+  const p=card.p;
+  const btn=(href,label,icon,ext)=>'<a class="eact" href="'+esc(href)+'"'+(ext?' target="_blank" rel="noopener"':'')+'>'+icon+'<span>'+label+'</span></a>';
+  const I={tel:'<svg class="i" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>',
+    mail:'<svg class="i" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>',
+    line:'<svg class="i" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 11c0-4 3.6-7 8-7s8 3 8 7-3.6 7-8 7c-.8 0-1.6-.1-2.3-.3L6 19.5l.8-3.2C5.1 15 4 13.1 4 11z"/></svg>',
+    map:'<svg class="i" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 21s-6-5.3-6-10a6 6 0 0 1 12 0c0 4.7-6 10-6 10z"/><circle cx="12" cy="11" r="2.2"/></svg>',
+    web:'<svg class="i" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 3 2.5 15 0 18M12 3c-2.5 3-2.5 15 0 18"/></svg>'};
+  const acts=[p.phone&&btn("tel:"+p.phone.replace(/[^\d+]/g,""),"撥電話",I.tel), p.email&&btn("mailto:"+p.email,"Email",I.mail),
+    p.line&&btn(lineUrl(p.line),"LINE",I.line,1), p.address&&btn("https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(p.address),"地圖",I.map,1),
+    p.web&&btn(p.web,"網站",I.web,1)].filter(Boolean);
+  const full=!!(p.intro || (p.links&&p.links.length));
+  document.title=(p.name||"電子名片")+"｜電子名片";
+  document.getElementById("tabs").hidden=true;
+  document.getElementById("app").innerHTML=
+    '<p class="sub" style="text-align:center">'+esc(p.name||"")+' 的電子名片</p>'
+    + '<div class="stackwrap">'+cardHTML(p)+'</div>'
+    + '<button type="button" class="pill strong big" data-act="ecardSave">'+ICON.addp+'加入聯絡人</button>'
+    + (acts.length?'<div class="eacts" style="grid-template-columns:repeat('+Math.min(acts.length,5)+',minmax(0,1fr))">'+acts.join("")+'</div>':'')
+    + (full && p.intro ? '<section class="tile"><h2 style="color:var(--link)">關於我</h2><p class="intro">'+esc(p.intro)+'</p></section>' : '')
+    + (full && p.links.length ? '<div class="elinks">'+p.links.map(l=>'<a href="'+esc(l.url)+'" target="_blank" rel="noopener"><span>'+esc(l.label||l.url.replace(/^https?:\/\//,""))+'</span><span aria-hidden="true">↗</span></a>').join("")+'</div>' : '')
+    + '<p class="sub efoot">這張名片的資料只存在你看到的這個網址裡，沒有經過任何伺服器。<br><a href="'+esc(location.origin+location.pathname)+'">用「隨身名片夾」製作</a></p>';
+  ui.ecard=p;
+}
+function saveEcardContact(){
+  const p=ui.ecard; if(!p) return;
+  const fn=(p.name||"名片")+".vcf";
+  const blob=new Blob([vcard(p)+"\r\n"],{type:"text/vcard"});
+  const url=URL.createObjectURL(blob), a=document.createElement("a");
+  a.href=url; a.download=fn; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 5000);
+  toast("已下載聯絡人檔，打開它就能存進通訊錄");
+}
+function qrPayload(p){
+  if(data.settings.qrMode==="vcard") return vcard(visible(p));
+  return ecardUrl(p);
+}
+const qrHint = () => data.settings.qrMode==="vcard" ? "用手機相機掃描，就能存入聯絡人" : "用手機相機掃描，打開我的電子名片";
+
 /* ---------- 遞名片模式 ---------- */
 const flipLabel = () => data.settings.presentFlip ? "改成朝向自己" : "轉向對面";
 function openPresent(){
-  const p=document.getElementById("present"), m=data.me;
-  p.innerHTML='<div class="stage"><div class="pcard">'+cardHTML(m)+'</div><div class="pqr">'+qrSvg(vcard(visible(m)))+'</div><p class="sub">用手機相機掃描，就能存入聯絡人</p></div>'
-    +'<div class="pctrl"><button type="button" class="pill line" data-act="flip" id="flipBtn">'+flipLabel()+'</button><button type="button" class="pill strong" data-act="closePresent">收起</button></div>';
+  const p=document.getElementById("present"), m=me();
+  p.innerHTML='<div class="stage"><div class="pcard">'+cardHTML(m)+'</div><div class="pqr" id="pqr">'+qrSvg(qrPayload(m))+'</div><p class="sub" id="pqrHint">'+qrHint()+'</p></div>'
+    +'<div class="pctrl"><div class="seg2 qrseg" role="group" aria-label="QR code 類型">'
+    +'<button type="button" data-act="qrMode" data-key="ecard" aria-pressed="'+(data.settings.qrMode!=="vcard")+'">電子名片</button>'
+    +'<button type="button" data-act="qrMode" data-key="vcard" aria-pressed="'+(data.settings.qrMode==="vcard")+'">直接存聯絡人</button></div>'
+    +'<div class="pbtns"><button type="button" class="pill line" data-act="flip" id="flipBtn">'+flipLabel()+'</button><button type="button" class="pill strong" data-act="closePresent">收起</button></div></div>';
   p.classList.remove("flip"); p.hidden=false; document.body.style.overflow="hidden";
   requestAnimationFrame(()=>requestAnimationFrame(()=>p.classList.toggle("flip", !!data.settings.presentFlip)));
   try{ navigator.wakeLock && navigator.wakeLock.request("screen").then(l=>ui.lock=l).catch(()=>{}); }catch(e){}
@@ -605,14 +1094,19 @@ function closePresent(){
   p.hidden=true; p.innerHTML=""; p.classList.remove("flip"); document.body.style.overflow="";
   try{ ui.lock && ui.lock.release().catch(()=>{}); }catch(e){} ui.lock=null;
 }
-document.addEventListener("keydown", e=>{ if(e.key!=="Escape") return;
+document.addEventListener("keydown", e=>{
+  if(e.key==="Enter" && e.target.id==="tokEdit"){ e.preventDefault(); document.querySelector('[data-act="tokSave"]')?.click(); return; }
+  if(e.key!=="Escape") return;
   if(!document.getElementById("present").hidden) closePresent();
   if(!document.getElementById("scanner").hidden) stopScan(); });
 
 /* ---------- 新增名片：草稿、拍照、掃 QR code ---------- */
 function syncDraft(){   // 重新繪製表單前，先把已經打的字存起來
   if(!document.getElementById("add-name")) return;
-  ui.draft={name:val("add-name"),title:val("add-title"),org:val("add-org"),alt:val("add-alt"),phone:val("add-phone"),email:val("add-email"),line:val("add-line"),note:val("add-note")};
+  const keep=ui.draft||{};
+  ui.draft={name:val("add-name"),title:val("add-title"),org:val("add-org"),alt:val("add-alt"),phone:val("add-phone"),tel:val("add-tel"),
+    email:val("add-email"),line:val("add-line"),web:val("add-web"),address:val("add-address"),note:val("add-note"),ocrText:keep.ocrText||"",
+    paste:document.getElementById("pasteText")?.value ?? keep.paste};
 }
 const CAN_SCAN = ("BarcodeDetector" in window) && !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
 const scan={stream:null, timer:null};
@@ -653,7 +1147,9 @@ function parseContact(raw){
       else if(key==="N" && !o.name){ const p=v.split(";"); o.name=joinName(un(p[0]||""),un(p[1]||"")); }
       else if(key==="ORG") o.org=un(v.split(";")[0]);
       else if(key==="TITLE") o.title=un(v);
-      else if(key==="TEL" && !o.phone) o.phone=un(v);
+      else if(key==="TEL"){ const isWork=/TYPE=[^:;]*(WORK|VOICE)/i.test(ln.slice(0,i)) && !/CELL/i.test(ln.slice(0,i));
+        if(isWork && !o.tel) o.tel=un(v); else if(!o.phone) o.phone=un(v); else if(!o.tel) o.tel=un(v); }
+      else if(key==="ADR" && !o.address) o.address=un(v.split(";").filter(Boolean).join(" "));
       else if(key==="EMAIL" && !o.email) o.email=un(v);
       else if(key==="URL" && !o.web) o.web=un(v);
       else if(key==="NOTE") o.noteRaw=un(v);
@@ -675,7 +1171,6 @@ function parseContact(raw){
     const rest=o.noteRaw.replace(/LINE[:：]\s*[^\s\/]+\s*\/?\s*/i,"").trim(); if(rest) o.note=rest;
     delete o.noteRaw;
   }
-  if(o.web){ o.note=[o.note,o.web].filter(Boolean).join("\n"); delete o.web; }
   Object.keys(o).forEach(k=>o[k]=str(o[k]));
   return o;
 }
@@ -689,23 +1184,73 @@ function onScanned(raw){
 document.addEventListener("click", e=>{
   const el=e.target.closest("[data-act]"); if(!el) return;
   const a=el.dataset.act, id=el.dataset.id;
-  if(a==="tab"){ ui.tab=el.dataset.tab; ui.editing=false; ui.confirmReset=false; render(); window.scrollTo(0,0); }
+  if(a==="tab"){ ui.tab=el.dataset.tab; ui.editing=false; ui.confirmReset=false; if(ui.rv){ ui.rv.sel=null; ui.rv.mode=null; } render(); window.scrollTo(0,0); }
   else if(a==="edit"){ ui.editing=true; render(); document.getElementById("me-name")?.focus(); }
   else if(a==="cancelEdit"){ ui.editing=false; render(); }
   else if(a==="present"){ openPresent(); }
   else if(a==="closePresent"){ closePresent(); }
   else if(a==="flip"){ data.settings.presentFlip=!data.settings.presentFlip; save(); document.getElementById("present").classList.toggle("flip", data.settings.presentFlip); el.textContent=flipLabel(); }
-  else if(a==="copyMe"){ copy(plainText(visible(data.me))); }
+  else if(a==="copyMe"){ copy(plainText(visible(me()))); }
+  else if(a==="shareEcard"){
+    const url=ecardUrl(me()), title=(me().name||"")+" 的電子名片";
+    if(navigator.share){ navigator.share({title, url}).catch(()=>{}); } else copy(url);
+  }
+  else if(a==="profile"){ data.active=el.dataset.key; ui.editing=false; save({quiet:true}); render(); }
+  else if(a==="setupPersonal"){ data.profiles.personal.name=data.profiles.work.name; ui.editing=true; render(); document.getElementById("me-name")?.focus(); }
+  else if(a==="qrMode"){
+    data.settings.qrMode=el.dataset.key; save({quiet:true});
+    const q=document.getElementById("pqr"); if(q) q.innerHTML=qrSvg(qrPayload(me()));
+    const h=document.getElementById("pqrHint"); if(h) h.textContent=qrHint();
+    document.querySelectorAll('[data-act="qrMode"]').forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.key===data.settings.qrMode)));
+  }
+  else if(a==="ecardSave"){ saveEcardContact(); }
   else if(a==="copy"){ copy(el.dataset.text); }
-  else if(a==="add"){ ui.adding=true; ui.editId=null; ui.draft={}; ui.draftPhoto=""; ui.draftBack=""; render(); document.getElementById("add-name")?.focus(); }
-  else if(a==="cancelAdd"){ ui.adding=false; ui.editId=null; ui.draft=null; ui.draftPhoto=""; ui.draftBack=""; render(); }
+  else if(a==="add"){ ui.adding=true; ui.editId=null; ui.draft={}; ui.draftPhoto=""; ui.draftBack=""; ui.auto=new Set(); ui.ocrAsk=null; resetReview(); render(); document.getElementById("add-name")?.focus(); }
+  else if(a==="cancelAdd"){ ocrCancel(); resetReview(); ui.adding=false; ui.editId=null; ui.draft=null; ui.draftPhoto=""; ui.draftBack=""; ui.auto=new Set(); ui.ocrAsk=null; render(); }
+  else if(a==="ocrYes"){ const ask=ui.ocrAsk; ui.ocrAsk=null; data.settings.ocr.consented=true; save({quiet:true}); if(ask) runOCR(ask.side, ask.file); }
+  else if(a==="ocrNo"){ syncDraft(); ui.ocrAsk=null; keepScroll(render); }
+  else if(a==="ocrStop"){ ocrCancel(); syncDraft(); keepScroll(render); toast("已停止辨識"); }
+  else if(a==="ocrRetry"){ const side=el.dataset.side; const f=ui.ocrFiles&&ui.ocrFiles[side]; if(f) startOCR(side, f); }
+  else if(a==="rvOpen"){ syncDraft(); ui.rv.open=true; ui.rv.sel=null; ui.rv.mode=null; render(); window.scrollTo(0,0); }
+  else if(a==="rvDone"){ applyReview(); ui.rv.open=false; ui.rv.sel=null; ui.rv.mode=null; render(); window.scrollTo(0,0); toast("請確認表單，沒問題就存入名片夾"); }
+  else if(a==="rvSide"){ ui.rv.side=el.dataset.side; ui.rv.sel=null; ui.rv.mode=null; keepScroll(render); }
+  else if(a==="tokSel"){ ui.rv.sel=null; ui.rv.mode=null; keepScroll(render); }
+  else if(a==="tok"){
+    const t=tokById(id), cur=tokById(ui.rv.sel);
+    if(ui.rv.mode==="merge" && cur && t && t.id!==cur.id){   // 把選取的文字卡接到點到的那張後面
+      t.text=CardParse.joinText(t.text, cur.text); if(!t.box) t.box=cur.box;
+      ui.review.tokens=ui.review.tokens.filter(x=>x.id!==cur.id); ui.rv.sel=t.id; ui.rv.mode=null; keepScroll(render); return;
+    }
+    ui.rv.sel = cur && cur.id===id ? null : id; ui.rv.mode=null; if(t && t.side!=="paste") ui.rv.side=t.side; keepScroll(render);
+  }
+  else if(a==="tokTo"){ const t=tokById(ui.rv.sel); if(t){ t.field=el.dataset.f; } ui.rv.sel=null; ui.rv.mode=null; keepScroll(render); }
+  else if(a==="tokOut"){ const t=tokById(ui.rv.sel); if(t) t.field=null; ui.rv.sel=null; keepScroll(render); }
+  else if(a==="tokMode"){ ui.rv.mode=el.dataset.mode||null; keepScroll(render); if(ui.rv.mode==="edit"){ const i=document.getElementById("tokEdit"); if(i){ i.focus(); i.select(); } } }
+  else if(a==="tokSave"){ const t=tokById(ui.rv.sel), v=val("tokEdit"); if(t && v) t.text=v; ui.rv.mode=null; keepScroll(render); }
+  else if(a==="tokSplit"){
+    const t=tokById(ui.rv.sel); if(!t) return; const chars=Array.from(t.text), i=+el.dataset.i;
+    const left=chars.slice(0,i).join("").trim(), right=chars.slice(i).join("").trim(); if(!left||!right) return;
+    t.text=left; const nt={id:"t"+(++tokSeq), text:right, field:null, kind:null, box:t.box, side:t.side};
+    ui.review.tokens.splice(ui.review.tokens.indexOf(t)+1, 0, nt); ui.rv.mode=null; keepScroll(render);
+  }
+  else if(a==="pasteOpen"){ syncDraft(); ui.draft.paste=ui.draft.paste||""; keepScroll(render); document.getElementById("pasteText")?.focus(); }
+  else if(a==="pasteClose"){ syncDraft(); delete ui.draft.paste; keepScroll(render); }
+  else if(a==="pasteParse"){
+    syncDraft(); const t=(ui.draft.paste||"").trim(); if(!t){ toast("先貼上名片文字"); return; }
+    const parsed=CardParse.parse(t,{side:"paste"});
+    delete ui.draft.paste;
+    if(!parsed.tokens.length){ keepScroll(render); toast("沒有找到可以用的文字"); return; }
+    addTokens("paste", parsed.tokens); setRaw("貼上", t);
+    const msg=afterTokens("貼上"); render(); window.scrollTo(0,0); toast(msg);
+  }
   else if(a==="snap"){ syncDraft(); ui.snapSide=el.dataset.side||"front"; document.getElementById("snapFile").click(); }
   else if(a==="pickPhoto"){ syncDraft(); ui.snapSide=el.dataset.side||"front"; document.getElementById("pickFile").click(); }
   else if(a==="clearPhoto"){ syncDraft(); if(el.dataset.side==="back") ui.draftBack=""; else ui.draftPhoto=""; keepScroll(render); }
   else if(a==="flipPhoto"){ ui.photoSide = ui.photoSide==="front"?"back":"front"; rerenderCards(); }
   else if(a==="editCard"){
     const c=data.cards.find(x=>x.id===id); if(!c) return;
-    ui.editId=c.id; ui.adding=true; ui.draft={name:c.name,title:c.title,org:c.org,alt:c.alt,phone:c.phone,email:c.email,line:c.line,note:c.note};
+    ui.editId=c.id; ui.adding=true; ui.auto=new Set(); ui.ocrAsk=null; resetReview();
+    ui.draft={name:c.name,title:c.title,org:c.org,alt:c.alt,phone:c.phone,tel:c.tel,email:c.email,line:c.line,web:c.web,address:c.address,note:c.note,ocrText:c.ocrText};
     ui.draftPhoto=c.photo||""; ui.draftBack=c.photoBack||""; render(); window.scrollTo(0,0);
   }
   else if(a==="scan"){ startScan(); }
@@ -720,9 +1265,11 @@ document.addEventListener("click", e=>{
   else if(a==="set"){ data.settings[el.dataset.group]=el.dataset.key; save(); applySettings(); keepScroll(render); }
   else if(a==="font"){ data.settings.fonts[el.dataset.role]=el.dataset.key; save(); applySettings(); keepScroll(render); }
   else if(a==="exportJson"){
-    const payload={app:"bizcard",version:1,exported:new Date().toISOString(),me:data.me,settings:data.settings,cards:data.cards.filter(c=>!c.sample)};
-    deliver("名片夾備份-"+today()+".json", JSON.stringify(payload), "application/json");
+    deliver("名片夾備份-"+today()+".json", JSON.stringify(backupPayload()), "application/json");
   }
+  else if(a==="cloudBackup"){ cloudBackup(); }
+  else if(a==="cloudRestore"){ cloudRestore(); }
+  else if(a==="goSettings"){ ui.tab="set"; render(); window.scrollTo(0,0); }
   else if(a==="exportVcf"){
     const real=data.cards.filter(c=>!c.sample);
     if(!real.length){ toast("名片夾裡還沒有自己存的名片"); return; }
@@ -733,7 +1280,8 @@ document.addEventListener("click", e=>{
   else if(a==="importCards"||a==="importAll"){
     const imp=ui.importing; if(!imp) return;
     data.cards=data.cards.concat(imp.fresh);
-    if(a==="importAll"){ data.me=imp.me; if(imp.settings) data.settings=normalize({me:data.me,cards:[],settings:imp.settings}).settings; applySettings(); }
+    if(a==="importAll"){ if(imp.profiles) data.profiles=imp.profiles; else if(imp.me) data.profiles.work=imp.me;
+      if(imp.settings) data.settings=normalize({profiles:data.profiles,cards:[],settings:imp.settings}).settings; applySettings(); }
     ui.importing=null; save(); keepScroll(render); toast("已匯入 "+imp.fresh.length+" 張名片");
   }
   else if(a==="clearSamples"){ data.cards=data.cards.filter(c=>!c.sample); ui.openId=null; save(); keepScroll(render); toast("已移除範例名片"); }
@@ -745,12 +1293,16 @@ document.addEventListener("click", e=>{
 document.addEventListener("submit", e=>{
   e.preventDefault();
   if(e.target.id==="meForm"){
-    data.me={name:val("me-name"),title:val("me-title"),org:val("me-org"),tagline:val("me-tagline"),phone:val("me-phone"),email:val("me-email"),line:val("me-line"),web:val("me-web")};
+    data.profiles[data.active]=cleanMe({name:val("me-name"),title:val("me-title"),org:val("me-org"),tagline:val("me-tagline"),phone:val("me-phone"),email:val("me-email"),
+      line:val("me-line"),web:val("me-web"),address:val("me-address"),intro:val("me-intro"),
+      links:[0,1,2].map(i=>({label:val("me-ll"+i), url:val("me-lu"+i)}))});
     if(save()) toast("名片已更新"); ui.editing=false; render();
   } else if(e.target.id==="addForm"){
     const name=val("add-name");
     if(!name){ toast("至少要填姓名"); document.getElementById("add-name").focus(); return; }
-    const fields={name,title:val("add-title"),org:val("add-org"),alt:val("add-alt"),phone:val("add-phone"),email:val("add-email"),line:val("add-line"),note:val("add-note"),photo:ui.draftPhoto,photoBack:ui.draftBack};
+    const fields={name,title:val("add-title"),org:val("add-org"),alt:val("add-alt"),phone:val("add-phone"),tel:val("add-tel"),email:val("add-email"),line:val("add-line"),
+      web:val("add-web"),address:val("add-address"),note:val("add-note"),ocrText:(ui.draft&&ui.draft.ocrText)||"",photo:ui.draftPhoto,photoBack:ui.draftBack};
+    ui.auto=new Set(); ui.ocrAsk=null; ocrCancel(); resetReview();
     let card, msg;
     if(ui.editId && (card=data.cards.find(x=>x.id===ui.editId))){ Object.assign(card, fields, {sample:false}); msg="已儲存修改"; }
     else { card=Object.assign({id:"c"+Date.now().toString(36), added:today()}, fields); data.cards.push(card); msg="已存入名片夾"; }
@@ -758,37 +1310,56 @@ document.addEventListener("submit", e=>{
     ui.adding=false; ui.editId=null; ui.draft=null; ui.draftPhoto=""; ui.draftBack=""; ui.openId=card.id; ui.query=""; render(); toast(msg);
   }
 });
-document.addEventListener("input", e=>{ if(e.target.id==="q"){ ui.query=e.target.value; rerenderCards(); } });
+document.addEventListener("input", e=>{
+  if(e.target.id==="q"){ ui.query=e.target.value; rerenderCards(); }
+  // 自動填入的欄位，使用者一改就拿掉「請確認」標記
+  else if(e.target.classList && e.target.classList.contains("auto")){
+    e.target.classList.remove("auto"); ui.auto && ui.auto.delete(e.target.id);
+    const chk=e.target.closest("label")?.querySelector(".chk"); if(chk) chk.remove();
+  }
+});
 document.addEventListener("change", async e=>{
-  if(e.target.dataset && e.target.dataset.show){
+  if(e.target.dataset && e.target.dataset.ocr){
+    const k=e.target.dataset.ocr; data.settings.ocr[k]=e.target.checked;
+    if(k!=="enabled" && ocr.worker){ ocr.worker.terminate().catch(()=>{}); ocr.worker=null; }   // 換語言要重新載入
+    save({quiet:true}); keepScroll(render); document.getElementById("ocr-"+k)?.focus();
+  } else if(e.target.dataset && e.target.dataset.show){
     const k=e.target.dataset.show; data.settings.show[k]=e.target.checked; save(); keepScroll(render); document.getElementById("show-"+k)?.focus();
   } else if(e.target.id==="importFile" && e.target.files[0]){
     const file=e.target.files[0]; e.target.value="";
     let d=null; try{ d=JSON.parse(await file.text()); }catch(err){}
-    if(!d || !Array.isArray(d.cards)){ toast("這個檔案不是名片夾的備份"); return; }
-    const have=new Set(data.cards.map(c=>c.id));
-    const cards=d.cards.filter(c=>c&&typeof c==="object"&&c.name).map(cleanCard);
-    ui.importing={cards, fresh:cards.filter(c=>!have.has(c.id)), me:d.me?cleanMe(d.me):null, settings:d.settings||null};
+    if(!prepareImport(d)){ toast("這個檔案不是名片夾的備份"); return; }
     keepScroll(render);
   } else if((e.target.id==="snapFile"||e.target.id==="pickFile") && e.target.files[0]){
     const file=e.target.files[0]; e.target.value="";
     let img; try{ img=await compress(file); }catch(err){ toast("這張照片讀不出來，請再拍一次"); return; }
-    if(ui.snapSide==="back") ui.draftBack=img; else ui.draftPhoto=img;
+    const side=ui.snapSide==="back"?"back":"front";
+    if(side==="back") ui.draftBack=img; else ui.draftPhoto=img;
     const fresh=!ui.adding;
-    if(fresh){ ui.adding=true; ui.editId=null; ui.draft={}; ui.draftBack=""; }
-    ui.tab="book"; render(); window.scrollTo(0,0);
-    if(!fresh) document.getElementById("add-name")?.focus();
+    if(fresh){ ui.adding=true; ui.editId=null; ui.draft={}; ui.draftBack=""; ui.auto=new Set(); resetReview(); }
+    else syncDraft();
+    ui.tab="book";
+    ui.ocrFiles=ui.ocrFiles||{}; ui.ocrFiles[side]=file;
+    if(data.settings.ocr.enabled) startOCR(side, file); else { render(); window.scrollTo(0,0); }
   }
 });
 
 /* ---------- 啟動：從 IndexedDB 讀資料（舊版 localStorage 會自動搬過來） ---------- */
 (async function boot(){
+  if(location.hash.startsWith("#c=")){
+    const card=readEcard(location.hash);
+    data=normalize(null); data.settings.cardColor=card?card.color:"green"; data.settings.fonts.name=card?card.font:"serif"; data.settings.show={phone:true,email:true,line:true,web:true,tagline:true};
+    applySettings();
+    if(card) renderEcardView(card);
+    else { document.getElementById("tabs").hidden=true; document.getElementById("app").innerHTML='<div class="empty">這個名片連結不完整，請對方重新給你一次 QR code。</div>'; }
+    return;
+  }
   let raw=null;
   try{ raw=await idbGet("data"); }catch(e){}
   if(!raw){ try{ const ls=localStorage.getItem(STORE_KEY); if(ls){ raw=JSON.parse(ls); await idbSet("data", raw); } }catch(e){} }
   data=normalize(raw);
-  ui.editing=!data.me.name;   // 第一次打開：直接進入填寫自己的名片
-  applySettings(); render();
+  ui.editing=!data.profiles.work.name;   // 第一次打開：直接進入填寫自己的名片
+  applySettings(); render(); initCloud();
   try{ navigator.storage && navigator.storage.persist && navigator.storage.persist(); }catch(e){} // 請瀏覽器不要自動清掉資料
 })();
 if("serviceWorker" in navigator){ addEventListener("load", ()=>navigator.serviceWorker.register("./sw.js").catch(()=>{})); }
