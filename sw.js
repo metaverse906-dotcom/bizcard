@@ -1,7 +1,7 @@
 // 離線快取：沒有網路時也能打開 app、遞名片。
 // 改版時把 CACHE 的版本號 +1，手機下次連線就會換成新版。
-const CACHE = "bizcard-v8";
-const SHELL = ["./", "./index.html", "./cardparse.js", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./apple-touch-icon.png"];
+const CACHE = "bizcard-v9";
+const SHELL = ["./", "./index.html", "./cardparse.js", "./crop.js", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./apple-touch-icon.png"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)));

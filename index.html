@@ -19,6 +19,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chiron+Hei+HK:wght@400;500;700&display=swap">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script src="cardparse.js"></script>
+<script src="crop.js"></script>
 <style>
 /* Layout: phone app on a soft sage ground, rounded white tiles; my card is the one dark object on the page,
    collected cards stack like a card box. --card and --f-card are set from settings by JS. */
@@ -137,9 +138,56 @@ textarea{min-height:68px;resize:vertical}
 .open .n{font-family:var(--f-card);font-size:1.5rem;font-weight:700;letter-spacing:.04em;line-height:1.3}
 .open .n small{font-family:var(--f-ui);font-size:.82rem;font-weight:500;color:var(--muted);letter-spacing:0;margin-left:6px}
 .badge{display:inline-block;font-family:var(--f-ui);font-size:.66rem;font-weight:500;border-radius:999px;padding:0 7px;background:var(--sand);color:var(--sand-ink);vertical-align:3px;margin-left:6px;letter-spacing:0}
+/* 擬真紙本名片：用存好的正反面照片，點一下翻面（只有畫面特效，不另外存圖） */
+.paper{display:flex;flex-direction:column;align-items:center;gap:8px}
+.paper-btn{all:unset;box-sizing:border-box;cursor:pointer;position:relative;display:block;perspective:1400px;max-width:100%}
+.paper-btn:focus-visible{outline:3px solid var(--strong);outline-offset:4px;border-radius:8px}
+.paper-in{position:relative;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.3,.7,.2,1)}
+.paper.flip .paper-in{transform:rotateY(180deg)}
+.face{border-radius:6px;overflow:hidden;backface-visibility:hidden;-webkit-backface-visibility:hidden;background:#FBF9F4;
+  box-shadow:0 1px 0 rgba(255,255,255,.7) inset,0 2px 0 rgba(0,0,0,.14),0 16px 26px -16px rgba(20,40,35,.6)}
+.face img{display:block;max-width:100%;max-height:min(290px,38vh);width:auto;height:auto}
+.face.back{position:absolute;inset:0;transform:rotateY(180deg);display:flex}
+.face.back img{width:100%;height:100%;max-height:none;object-fit:contain}
+.face.txt{background:var(--card);color:#F4F1EA;flex-direction:column;justify-content:space-between;padding:7% 7%;font-size:clamp(.62rem,2.6vw,.8rem);line-height:1.45;text-align:left}
+.face.txt b{font-family:var(--f-card);font-size:1.35em;letter-spacing:.08em}
+.face.txt .g{display:grid;grid-template-columns:auto 1fr;gap:1px 10px}
+.face.txt .g span:nth-child(odd){opacity:.75}
+.face.txt .g span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.face.txt .f{opacity:.8;border-top:1px solid rgba(255,255,255,.3);padding-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.paper-bar{display:flex;align-items:center;gap:8px;width:100%;font-size:.8rem;color:var(--muted)}
+.paper-bar .dots{display:flex;gap:5px}
+.paper-bar .dots i{width:8px;height:8px;border-radius:50%;border:1.5px solid var(--muted);box-sizing:border-box}
+.paper-bar .dots i.on{background:var(--ink);border-color:var(--ink)}
+.paper-bar .sp{flex:1}
+.paper-bar .pill{white-space:nowrap;flex:none}
+.iconbtn{width:44px;height:44px;flex:none;border-radius:50%;border:0;background:var(--soft);color:var(--ink);display:grid;place-items:center;padding:0}
+@media (prefers-reduced-motion:reduce){.paper-in{transition:none}}
+.zoom{position:fixed;inset:0;z-index:28;background:#111;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:16px}
+.zoom img{max-width:100%;max-height:calc(100vh - 110px);object-fit:contain;border-radius:4px}
+.zoom .row2{width:min(100%,420px)}
+.zoom .pill.line{color:#F2F5F3;border-color:#4A5853}
+.wishes{list-style:none;padding:0;margin:8px 0;display:flex;flex-direction:column;gap:6px;font-size:.88rem}
+.wishes .wst{display:inline-block;font-size:.72rem;background:var(--soft);border-radius:999px;padding:2px 8px;margin-right:8px}
+.pwho{margin:0;text-align:center;font-size:.85rem;color:var(--muted)}
+.pwho.personal{color:var(--strong-ink);background:var(--card);border-radius:999px;padding:6px 12px;font-weight:700;align-self:center}
+.supportnote p{margin:0 0 6px}
 .memo{font-size:.86rem;background:var(--soft);border-radius:12px;padding:10px 12px}
 .kv{display:grid;grid-template-columns:3.6em 1fr;gap:4px 10px;margin:0;font-size:.9rem}
 .kv dt{color:var(--muted);font-size:.8rem;padding-top:2px}
+.hist{display:flex;flex-direction:column;gap:8px}
+.hist h3{margin:4px 0 0;font-size:.9rem}
+.hrow{display:flex;gap:12px;align-items:center;background:var(--soft);border-radius:14px;padding:10px}
+.hthumb{all:unset;cursor:pointer;flex:none;width:84px;border-radius:4px;overflow:hidden;box-shadow:0 1px 0 rgba(0,0,0,.12),0 6px 10px -6px rgba(20,40,35,.5)}
+.hthumb:focus-visible{outline:3px solid var(--strong);outline-offset:2px}
+.hthumb img{display:block;width:100%}
+.hrow .ho{font-size:.9rem;font-weight:500}
+.hrow .ht{font-size:.82rem;color:var(--muted)}
+.scrim{position:fixed;inset:0;background:rgba(20,32,29,.5);z-index:7}
+.cmp{display:grid;grid-template-columns:1fr 22px 1fr;gap:6px;align-items:center}
+.cmp>div{background:var(--soft);border-radius:12px;padding:10px;font-size:.82rem;min-width:0;overflow-wrap:anywhere}
+.cmp>div.new{box-shadow:0 0 0 2px var(--strong) inset}
+.cmp .k{font-size:.72rem;color:var(--muted)}
 .kv dd{margin:0;min-width:0;overflow-wrap:anywhere;user-select:text}
 .acts{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px}
 .acts button,.acts a{min-height:44px;border-radius:12px;border:none;background:var(--soft);color:var(--ink);font-size:.84rem;display:grid;place-items:center;text-decoration:none}
@@ -295,11 +343,33 @@ nav.tabs button[aria-current="page"] span{display:inline}
 textarea.fallback{font-size:12px;min-height:120px}
 @media (prefers-reduced-motion:no-preference){.open{animation:rise .22s ease-out}@keyframes rise{from{transform:translateY(8px);opacity:.6}to{transform:none;opacity:1}}}
 @media (prefers-reduced-motion:reduce){.present .stage{transition:none}}
+
+/* 裁切畫面 */
+.crop{position:fixed;inset:0;z-index:28;background:#151B19;color:#F2F5F3;display:flex;flex-direction:column;gap:12px;overflow:auto;
+  padding:calc(14px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(14px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.crop h2{margin:0;font-size:1.1rem;font-family:var(--f-head)}
+.crop .sub{color:#B9C6C0;margin:2px 0 0}
+.crop-stage{position:relative;margin:0 auto;touch-action:none;user-select:none;-webkit-user-select:none}
+.crop-stage img{display:block;width:100%;height:100%;border-radius:4px;pointer-events:none}
+.crop-stage svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.crop-stage .shade{fill:rgba(0,0,0,.55)}
+.crop-stage .edge{fill:none;stroke:#F2C14E;stroke-width:2.5;vector-effect:non-scaling-stroke}
+.hdl{position:absolute;width:48px;height:48px;margin:-24px 0 0 -24px;border:0;background:transparent;padding:0;touch-action:none;cursor:grab;display:grid;place-items:center}
+.hdl span{width:22px;height:22px;border-radius:50%;background:#F2C14E;border:3px solid #151B19;box-shadow:0 0 0 2px #F2C14E}
+.hdl:focus-visible span{box-shadow:0 0 0 4px #fff}
+.loupe{position:absolute;top:8px;width:112px;height:112px;border-radius:50%;border:3px solid #F2C14E;background-repeat:no-repeat;pointer-events:none;box-shadow:0 6px 18px rgba(0,0,0,.5)}
+.loupe::after{content:"";position:absolute;left:50%;top:50%;width:10px;height:10px;margin:-5px 0 0 -5px;border-radius:50%;border:2px solid #F2C14E}
+.crop-prev{display:flex;align-items:center;gap:12px;justify-content:center}
+.crop-prev canvas{max-width:150px;max-height:110px;border-radius:4px;background:#2A332F}
+.crop-acts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:auto}
+.crop-acts button{min-height:46px;border-radius:999px;border:1px solid #4A5853;background:transparent;color:#F2F5F3;font:inherit;font-size:.9rem}
+.crop-acts .go{grid-column:1 / -1;background:#F2C14E;color:#1B1F1D;border:0;font-weight:700;font-size:1rem;min-height:52px}
 </style>
 
 </head>
 <body>
 <main id="app"></main>
+<div id="cropper" hidden></div>
 <input type="file" id="importFile" accept=".json,application/json" hidden>
 <input type="file" id="snapFile" accept="image/*" capture="environment" hidden>
 <input type="file" id="pickFile" accept="image/*" hidden>
@@ -323,6 +393,8 @@ textarea.fallback{font-size:12px;min-height:120px}
 // ===== 上線前要填的地方 =====
 const GDRIVE_CLIENT_ID = "";   // Google Cloud 的 OAuth 用戶端 ID；空白時不顯示雲端備份
 const TIP_URL = "";
+// 許願池清單：status 用「收到了／製作中／已完成／先不做」
+const WISHES = [];
 const INTRO_MAX = 120;   // 自我介紹上限：太長 QR code 會太密，不好掃        // 打賞頁網址，例如 Buy Me a Coffee、Ko-fi、Portaly
 const STORE_KEY = "bizcard.v1";
 
@@ -361,7 +433,7 @@ const FONT_ROLES = [
 const THEMES = {system:"跟隨系統", light:"淺色", dark:"深色"};
 const VIEWS = {box:"卡盒", list:"清單"};
 const SHOW_FIELDS = [["phone","電話"],["email","Email"],["line","LINE ID"],["web","網站"],["tagline","一句話介紹"]];
-const DEFAULT_SETTINGS = {cardColor:"green", fonts:{name:"serif",cardText:"sans",head:"sans",body:"sans"}, theme:"system", bookView:"box", presentFlip:true, qrMode:"ecard",
+const DEFAULT_SETTINGS = {cardColor:"green", fonts:{name:"serif",cardText:"sans",head:"sans",body:"sans"}, theme:"system", bookView:"box", presentFlip:true, qrWork:"vcard", qrPersonal:"ecard", cardColorPersonal:"plum",
   show:{phone:true,email:true,line:true,web:true,tagline:true}};
 
 const DEFAULT = {
@@ -376,8 +448,8 @@ const DEFAULT = {
 const clone = o => JSON.parse(JSON.stringify(o));
 let data = null;   // 由 boot() 從 IndexedDB 載入
 const ui = {tab:"me", editing:false, adding:false, draftPhoto:"", query:"", sort:"recent", photoOnly:false,
-  openId:null, confirmId:null, showPhoto:false, confirmReset:false, lock:null, importing:null,
-  draftBack:"", editId:null, snapSide:"front", photoSide:"front",
+  openId:null, confirmId:null, paperBack:false, zoom:null, confirmReset:false, lock:null, importing:null,
+  draftBack:"", editId:null, snapSide:"front",
   review:{tokens:[]}, rv:{open:false, sel:null, mode:null, side:"front"}};
 const hostTheme = null;
 
@@ -400,7 +472,10 @@ function cleanCard(c){   // 匯入的檔案不可信：只留已知欄位、只�
     web:str(c.web), address:str(c.address), ocrText:typeof c.ocrText==="string"?c.ocrText.slice(0,4000):"",
     note:str(c.note), alt:str(c.alt), added:/^\d{4}-\d{2}-\d{2}$/.test(c.added)?c.added:today(),
     photo:(typeof c.photo==="string"&&PHOTO_RE.test(c.photo))?c.photo:"",
-    photoBack:(typeof c.photoBack==="string"&&PHOTO_RE.test(c.photoBack))?c.photoBack:""};
+    photoBack:(typeof c.photoBack==="string"&&PHOTO_RE.test(c.photoBack))?c.photoBack:"",
+    history:Array.isArray(c.history)?c.history.slice(0,10).map(h=>({org:str(h&&h.org), title:str(h&&h.title), phone:str(h&&h.phone), tel:str(h&&h.tel),
+      email:str(h&&h.email), address:str(h&&h.address), added:/^\d{4}-\d{2}-\d{2}$/.test(h&&h.added)?h.added:"", until:/^\d{4}-\d{2}-\d{2}$/.test(h&&h.until)?h.until:"",
+      photo:(h&&typeof h.photo==="string"&&PHOTO_RE.test(h.photo))?h.photo:""})):[]};
 }
 const ME_KEYS=["name","title","org","tagline","phone","email","line","web","address","intro"];
 const safeUrl = u => { u=str(u).trim(); if(!u) return ""; if(!/^https?:\/\//i.test(u)) u="https://"+u; try{ const x=new URL(u); return /^https?:$/.test(x.protocol)?x.href:""; }catch(e){ return ""; } };
@@ -412,6 +487,9 @@ function cleanMe(m){
 }
 const PROFILE_LABEL={work:"工作版", personal:"個人版"};
 const me = () => data.profiles[data.active] || data.profiles.work;
+const colorKey = () => data.active==="personal" ? data.settings.cardColorPersonal : data.settings.cardColor;   // 工作版、個人版各自的主題色
+const qrKey = () => data.active==="personal" ? "qrPersonal" : "qrWork";
+const qrMode = () => data.settings[qrKey()];
 
 function normalize(d){
   if(!d || !(d.me||d.profiles) || !Array.isArray(d.cards)) d=clone(DEFAULT);
@@ -419,11 +497,14 @@ function normalize(d){
   const pf=(d.profiles&&typeof d.profiles==="object")?d.profiles:{work:d.me};   // 舊版只有一張「我的名片」→ 變成工作版
   d={profiles:{work:cleanMe(pf.work), personal:cleanMe(pf.personal)}, active:d.active==="personal"?"personal":"work",
      cards:d.cards.filter(c=>c&&typeof c==="object").map(cleanCard), settings:d.settings,
-     meta:{cloudConnected:!!mt.cloudConnected, lastCloud:str(mt.lastCloud), lastChange:str(mt.lastChange)}};
+     meta:{cloudConnected:!!mt.cloudConnected, lastCloud:str(mt.lastCloud), lastChange:str(mt.lastChange), supportShown:!!mt.supportShown}};
   const s=Object.assign(clone(DEFAULT_SETTINGS), d.settings||{});
   s.show=Object.assign(clone(DEFAULT_SETTINGS.show), (d.settings&&d.settings.show)||{});
   s.ocr=Object.assign({enabled:true, ready:false, jpn:false, chi_sim:false}, (d.settings&&d.settings.ocr)||{});
   if(!CARD_COLORS[s.cardColor]) s.cardColor=DEFAULT_SETTINGS.cardColor;   // 舊版設定遷移
+  if(!d.settings || !CARD_COLORS[d.settings.cardColorPersonal]) s.cardColorPersonal = s.cardColor==="plum"?"navy":"plum";   // 個人版預設和工作版不同色
+  ["qrWork","qrPersonal"].forEach(k=>{ if(s[k]!=="vcard" && s[k]!=="ecard") s[k]=DEFAULT_SETTINGS[k]; });
+  delete s.qrMode;
   s.fonts=Object.assign(clone(DEFAULT_SETTINGS.fonts), (d.settings&&d.settings.fonts)||{});
   if(d.settings && d.settings.cardFont && !d.settings.fonts && FONTS[d.settings.cardFont]) s.fonts.name=d.settings.cardFont; // 舊版只有名字字體
   Object.keys(s.fonts).forEach(k=>{ if(!FONTS[s.fonts[k]]) s.fonts[k]=DEFAULT_SETTINGS.fonts[k]; });
@@ -446,7 +527,7 @@ function tint(id){ let n=0; for(const ch of String(id)) n+=ch.charCodeAt(0); ret
 
 function applySettings(){
   const s=data.settings, r=document.documentElement;
-  const pal=CARD_COLORS[s.cardColor];
+  const pal=CARD_COLORS[colorKey()]||CARD_COLORS.green;
   r.style.setProperty("--card", pal.c);
   Object.entries(pal.L).forEach(([k,v])=>r.style.setProperty("--L-"+k, v));
   Object.entries(pal.D).forEach(([k,v])=>r.style.setProperty("--D-"+k, v));
@@ -528,17 +609,15 @@ function renderMe(){
     return seg + '<div class="tile emptyp"><h2>個人版還沒設定</h2><p class="sub">個人版適合私人場合或個人品牌，可以放不同的電話、自我介紹和 IG 連結。工作場合遞出去的仍然是工作版。</p>'
       + '<div class="row"><button type="button" class="pill strong" data-act="setupPersonal">從工作版複製姓名開始</button></div></div>';
   }
-  // 打賞：填了 TIP_URL 才會出現
-  const tip = TIP_URL ? '<a class="mini coffee" href="'+esc(TIP_URL)+'" target="_blank" rel="noopener">'+ICON.cup+'<span>請我喝咖啡</span></a>' : '';
   return '<div class="head"><div><div class="eyebrow">'+greeting()+(m.name?'，'+esc(m.name):'')+'</div><h1>'+(m.name?'今天要遞名片嗎？':'先填上你的名片')+'</h1></div>'
     + (ui.editing?'':'<button type="button" class="pill" data-act="edit">編輯</button>')+'</div>'
     + (ui.editing?'':seg)
     + '<div class="stackwrap">'+cardHTML(m)+'</div>'
     + editor
     + (ui.editing?'':'<button type="button" class="pill strong big" data-act="present">遞'+label+'給對方</button>')
-    + '<div class="tiles"><div class="tile qrtile">'+qrSvg(qrPayload(m))+'<span class="sub">'+(data.settings.qrMode==="vcard"?"掃描直接存聯絡人":"掃描打開電子名片")+'</span></div>'
+    + '<div class="tiles"><div class="tile qrtile">'+qrSvg(qrPayload(m))+'<span class="sub">'+(qrMode()==="vcard"?"掃描直接存聯絡人":"掃描打開電子名片")+'</span></div>'
     + '<div class="stackcol"><button type="button" class="mini" data-act="shareEcard">'+ICON.share+'<span>分享電子名片連結</span></button>'
-    + '<button type="button" class="mini" data-act="copyMe">'+ICON.copy+'<span>複製文字版</span></button>'+tip+'</div></div>'
+    + '<button type="button" class="mini" data-act="copyMe">'+ICON.copy+'<span>複製文字版</span></button></div></div>'
     + '<p class="sub" style="text-align:center">名片和 QR code 只包含設定裡打開的欄位，不經過任何伺服器。</p>';
 }
 
@@ -546,32 +625,115 @@ function renderMe(){
 function filtered(){
   const q=ui.query.trim().toLowerCase();
   let list=data.cards.filter(c=>!ui.photoOnly || c.photo || c.photoBack);
-  if(q) list=list.filter(c=>[c.name,c.alt,c.org,c.title,c.note,c.phone,c.tel,c.email,c.line,c.web,c.address,c.ocrText].join(" ").toLowerCase().includes(q));
+  if(q) list=list.filter(c=>[c.name,c.alt,c.org,c.title,c.note,c.phone,c.tel,c.email,c.line,c.web,c.address,c.ocrText].concat((c.history||[]).flatMap(h=>[h.org,h.title])).join(" ").toLowerCase().includes(q));
   if(ui.sort==="org") list.sort((a,b)=>(a.org||"").localeCompare(b.org||"","zh-Hant")||(a.name||"").localeCompare(b.name||"","zh-Hant"));
   else list.sort((a,b)=>(a.added||"").localeCompare(b.added||"")); // 舊的在上，最新的在最下面展開
   return list;
+}
+/* ---------- 同一個人的新名片 ---------- */
+const digits = s => String(s||"").split("#")[0].replace(/\D/g,"");
+function findSame(f){
+  const nm = s => String(s||"").replace(/\s/g,"").toLowerCase();
+  if(!nm(f.name)) return null;
+  for(const c of data.cards){
+    if(c.sample || nm(c.name)!==nm(f.name)) continue;
+    const mine=[c.phone,c.tel].map(digits).filter(Boolean);
+    if(digits(f.phone) && mine.includes(digits(f.phone))) return {card:c, why:"手機號碼相同"};
+    if(digits(f.tel) && mine.includes(digits(f.tel))) return {card:c, why:"電話號碼相同"};
+    if(f.email && c.email && f.email.toLowerCase()===c.email.toLowerCase()) return {card:c, why:"Email 相同"};
+  }
+  return null;
+}
+function shrinkPhoto(url){   // 舊名片只留縮小的正面（約 30–50KB）
+  return new Promise(res=>{ if(!url) return res(""); const im=new Image();
+    im.onload=()=>{ const s=Math.min(1,560/Math.max(im.width,im.height)), c=document.createElement("canvas"); c.width=Math.round(im.width*s); c.height=Math.round(im.height*s);
+      c.getContext("2d").drawImage(im,0,0,c.width,c.height); res(c.toDataURL("image/jpeg",.6)); };
+    im.onerror=()=>res(""); im.src=url; });
+}
+async function applyNewVersion(old, f){
+  const h={org:old.org, title:old.title, phone:old.phone, tel:old.tel, email:old.email, address:old.address, added:old.added, until:today(), photo:await shrinkPhoto(old.photo)};
+  old.history=[h].concat(old.history||[]).slice(0,10);
+  const note=[old.note, f.note].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i).join("\n");
+  // 個人的聯絡方式（手機、LINE、外文名）新名片沒寫就沿用；工作相關的照新名片
+  const keep={phone:f.phone||old.phone, line:f.line||old.line, alt:f.alt||old.alt};
+  Object.assign(old, f, keep, {note, added:today(), sample:false});
+}
+function histHit(c, q){
+  if(!q) return null;
+  const now=[c.name,c.alt,c.org,c.title,c.note,c.phone,c.tel,c.email,c.line,c.web,c.address,c.ocrText].join(" ").toLowerCase();
+  if(now.includes(q)) return null;
+  return (c.history||[]).find(h=>[h.org,h.title].join(" ").toLowerCase().includes(q))||null;
+}
+const orgLabel = c => { const h=histHit(c, ui.query.trim().toLowerCase()); return h ? "以前在 "+(h.org||h.title) : c.org; };
+function histHTML(c){
+  const H=c.history||[]; if(!H.length) return "";
+  return '<section class="hist" aria-label="以前的名片"><h3>以前的名片（'+H.length+'）</h3>'+H.map((h,i)=>'<div class="hrow">'
+    + (h.photo?'<button type="button" class="hthumb" data-act="zoomHist" data-id="'+c.id+'" data-i="'+i+'" aria-label="看 '+esc(h.added)+' 收到的舊名片"><img src="'+h.photo+'" alt=""></button>':'')
+    + '<div><div class="ho">'+esc(h.org||"（沒有單位）")+'</div>'+(h.title?'<div class="ht">'+esc(h.title)+'</div>':'')
+    + '<div class="sub">'+esc([h.added&&h.added+" 收到", h.until&&h.until+" 換新"].filter(Boolean).join("・"))+'</div></div></div>').join("")+'</section>';
+}
+function sameSheet(){
+  const s=ui.same; if(!s) return "";
+  const c=data.cards.find(x=>x.id===s.id); if(!c){ ui.same=null; return ""; }
+  const box=(cls,k,o,t)=>'<div class="'+cls+'"><div class="k">'+k+'</div><div>'+esc(o||"（沒有單位）")+'</div><div class="k">'+esc(t||"")+'</div></div>';
+  return '<div class="scrim" aria-hidden="true"></div><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="same-t">'
+    + '<h2 class="sheet-t" id="same-t" style="font-size:1.1rem">要更新'+esc(c.name)+'的名片嗎？</h2>'
+    + '<p class="sub" style="margin:0">名片夾裡已經有一位'+esc(c.name)+'，'+esc(s.why)+'。</p>'
+    + '<div class="cmp">'+box("","原本的・"+short(c.added),c.org,c.title)+'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>'+box("new","新的・今天",s.fields.org,s.fields.title)+'</div>'
+    + '<p class="memo" style="margin:0">更新後，舊名片會收進「以前的名片」，只留縮小的正面照片。你記下的認識經過會保留。</p>'
+    + '<button type="button" class="pill strong big" data-act="sameUpdate">更新'+esc(c.name)+'的名片</button>'
+    + '<button type="button" class="pill line" data-act="sameNew">不是同一個人，另存一張</button><button type="button" class="textbtn" data-act="sameBack" style="align-self:center">返回修改</button></div>';
+}
+async function finishAdd(fields, mode, targetId){
+  ui.auto=new Set(); ui.ocrAsk=null; ocrCancel(); resetReview(); cropKeep.src={}; ui.same=null;
+  let card, msg;
+  if(mode==="edit" && (card=data.cards.find(x=>x.id===ui.editId))){ Object.assign(card, fields, {sample:false}); msg="已儲存修改"; }
+  else if(mode==="update" && (card=data.cards.find(x=>x.id===targetId))){ await applyNewVersion(card, fields); msg="已更新，舊的收進「以前的名片」"; }
+  else { card=Object.assign({id:"c"+Date.now().toString(36), added:today()}, fields); data.cards.push(card); msg="已存入名片夾"; }
+  save();
+  ui.adding=false; ui.editId=null; ui.newFor=null; ui.draft=null; ui.draftPhoto=""; ui.draftBack=""; ui.openId=card.id; ui.paperBack=false; ui.query=""; render(); toast(msg);
+}
+const paperLabel=(fl,hasBack)=>!fl?"正面・點名片翻面":hasBack?"背面・點名片翻回":"沒拍背面，依資料排版";
+function paperHTML(c){
+  if(!c.photo && !c.photoBack) return "";
+  const front=c.photo||c.photoBack, back=c.photo&&c.photoBack ? c.photoBack : "";
+  const rows=[["手機",c.phone],["電話",c.tel],["Email",c.email],["LINE",c.line],["地址",c.address]].filter(x=>x[1]).slice(0,4);
+  const backFace = back ? '<div class="face back"><img src="'+back+'" alt=""></div>'
+    : '<div class="face back txt"><b>'+esc(c.name)+'</b><div class="g">'+rows.map(([k,v])=>'<span>'+k+'</span><span>'+esc(v)+'</span>').join("")+'</div>'
+      + '<div class="f">'+esc([c.added, c.note].filter(Boolean).join("・"))+'</div></div>';
+  const fl=!!ui.paperBack, lbl=fl?"背面":"正面";
+  return '<div class="paper'+(fl?' flip':'')+'" id="paper">'
+    + '<button type="button" class="paper-btn" data-act="flipPaper" aria-label="'+esc(c.name)+' 的名片'+lbl+'，點一下翻面"><div class="paper-in">'
+    + '<div class="face front"><img src="'+front+'" alt=""></div>'+backFace+'</div></button>'
+    + '<div class="paper-bar"><span class="dots" aria-hidden="true"><i class="'+(fl?'':'on')+'"></i><i class="'+(fl?'on':'')+'"></i></span>'
+    + '<span id="paperLbl">'+paperLabel(fl,!!back)+'</span><span class="sp"></span>'
+    + (!back&&!c.sample?'<button type="button" class="pill line small" data-act="addBack" data-id="'+c.id+'">補拍背面</button>':'')
+    + '<button type="button" class="iconbtn" data-act="zoomPaper" aria-label="放大看名片"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>'
+    + '</div></div>';
+}
+function renderZoom(){
+  let z=document.getElementById("zoomer");
+  if(!z){ z=document.createElement("div"); z.id="zoomer"; document.body.appendChild(z); }
+  if(!ui.zoom){ z.innerHTML=""; document.body.style.overflow=""; return; }
+  document.body.style.overflow="hidden";
+  z.innerHTML='<div class="zoom" role="dialog" aria-modal="true" aria-label="名片放大"><img src="'+ui.zoom.src+'" alt="'+esc(ui.zoom.alt)+'">'
+    + '<div class="row2">'+(ui.zoom.other?'<button type="button" class="pill line" data-act="zoomFlip">看另一面</button>':'')+'<button type="button" class="pill strong" data-act="zoomClose">關閉</button></div></div>';
+  z.querySelector('[data-act="zoomClose"]').focus();
 }
 function openHTML(c){
   const kv=[["手機",c.phone],["公司電話",c.tel],["Email",c.email],["LINE",c.line],["網站",c.web],["地址",c.address]].filter(x=>x[1]).map(([k,v])=>'<dt>'+k+'</dt><dd>'+esc(v)+'</dd>').join("");
   const telHref = t => "tel:"+t.replace(/\s*#\s*/,",").replace(/[^\d+,]/g,"");   // 分機用逗號，撥通後自動按
   const acts=[c.phone&&'<a href="'+esc(telHref(c.phone))+'">撥手機</a>',
     c.tel&&'<a href="'+esc(telHref(c.tel))+'">撥公司電話</a>',
-    c.email&&'<button type="button" data-act="copy" data-text="'+esc(c.email)+'">複製 Email</button>',
-    (c.photo||c.photoBack)&&'<button type="button" data-act="photo">'+(ui.showPhoto?"收起照片":(c.photo&&c.photoBack?"看正反面":"看照片"))+'</button>'].filter(Boolean).join("");
-  let viewer="";
-  if(ui.showPhoto && (c.photo||c.photoBack)){
-    const both=!!(c.photo&&c.photoBack), side=both?ui.photoSide:(c.photo?"front":"back");
-    const src=side==="front"?c.photo:c.photoBack;
-    viewer='<div class="viewer"><img class="photo turn" src="'+src+'" alt="'+esc(c.name)+' 名片的'+(side==="front"?"正面":"背面")+'">'
-      + (both?'<button type="button" class="pill line" data-act="flipPhoto">翻到'+(side==="front"?"背面":"正面")+'</button>':'<span class="sub">只有'+(side==="front"?"正面":"背面")+'</span>')+'</div>';
-  }
-  return '<div class="open"><div class="top"><div><div class="o">'+esc(c.org)+'</div><div class="n">'+esc(c.name)+'<small>'+esc(c.title)+'</small>'+(c.sample?'<span class="badge">範例</span>':'')+'</div>'+(c.alt?'<div class="alt">'+esc(c.alt)+'</div>':'')+'</div><span class="sub">'+short(c.added)+'</span></div>'
+    c.email&&'<button type="button" data-act="copy" data-text="'+esc(c.email)+'">複製 Email</button>'].filter(Boolean).join("");
+  const hh=histHit(c, ui.query.trim().toLowerCase());
+  return '<div class="open">'+paperHTML(c)+'<div class="top"><div><div class="o">'+esc(c.org)+(hh?'・以前在 '+esc(hh.org||hh.title):'')+'</div><div class="n">'+esc(c.name)+'<small>'+esc(c.title)+'</small>'+(c.sample?'<span class="badge">範例</span>':'')+'</div>'+(c.alt?'<div class="alt">'+esc(c.alt)+'</div>':'')+'</div><span class="sub">'+short(c.added)+'</span></div>'
     + (kv?'<dl class="kv">'+kv+'</dl>':'')
     + (c.note?'<div class="memo">'+esc(c.note)+'</div>':'')
-    + viewer
     + (acts?'<div class="acts">'+acts+'</div>':'')
+    + histHTML(c)
     + (c.ocrText?'<details class="raw"><summary>辨識原文</summary><pre>'+esc(c.ocrText)+'</pre></details>':'')
-    + '<div class="del"><button type="button" class="textbtn" data-act="editCard" data-id="'+c.id+'">編輯'+((c.photo&&!c.photoBack)?'・補拍背面':'')+'</button>'+(ui.confirmId===c.id
+    + '<div class="del"><button type="button" class="textbtn" data-act="editCard" data-id="'+c.id+'">編輯</button>'+(c.sample?'':'<button type="button" class="textbtn" data-act="newVersion" data-id="'+c.id+'">收到新名片</button>')+(ui.confirmId===c.id
         ? '<button type="button" class="pill danger" data-act="del" data-id="'+c.id+'">確定刪除</button><button type="button" class="pill line" data-act="noDel">保留</button>'
         : '<button type="button" class="textbtn" data-act="askDel" data-id="'+c.id+'">刪除這張</button>')+'</div></div>';
 }
@@ -582,11 +744,11 @@ function renderCards(){
     return '<div class="list">'+list.slice().reverse().map(c=>{
       if(ui.openId===c.id) return openHTML(c);
       const t=tint(c.id);
-      return '<button type="button" class="lrow" data-act="pick" data-id="'+c.id+'"><span class="av '+t+'">'+((c.photo||c.photoBack)?'<img src="'+(c.photo||c.photoBack)+'" alt="">':esc((c.name||"?").slice(0,1)))+'</span><span class="who"><strong>'+esc(c.name)+(c.sample?'<span class="badge">範例</span>':'')+'</strong><span>'+esc([c.org,c.title].filter(Boolean).join("・"))+'</span></span><span class="d">'+short(c.added)+'</span></button>';
+      return '<button type="button" class="lrow" data-act="pick" data-id="'+c.id+'"><span class="av '+t+'">'+((c.photo||c.photoBack)?'<img src="'+(c.photo||c.photoBack)+'" alt="">':esc((c.name||"?").slice(0,1)))+'</span><span class="who"><strong>'+esc(c.name)+(c.sample?'<span class="badge">範例</span>':'')+'</strong><span>'+esc([orgLabel(c),c.title].filter(Boolean).join("・"))+'</span></span><span class="d">'+short(c.added)+'</span></button>';
     }).join("")+'</div>';
   }
   const sel = list.find(c=>c.id===ui.openId) || list[list.length-1];
-  const strips = list.filter(c=>c!==sel).map(c=>'<button type="button" class="strip '+tint(c.id)+'" data-act="pick" data-id="'+c.id+'"><span><span class="o">'+esc(c.org||" ")+'</span><span class="n">'+esc(c.name)+'</span></span><span class="d">'+short(c.added)+'</span></button>').join("");
+  const strips = list.filter(c=>c!==sel).map(c=>'<button type="button" class="strip '+tint(c.id)+'" data-act="pick" data-id="'+c.id+'"><span><span class="o">'+esc(orgLabel(c)||" ")+'</span><span class="n">'+esc(c.name)+'</span></span><span class="d">'+short(c.added)+'</span></button>').join("");
   return '<div class="box">'+strips+openHTML(sel)+'</div>';
 }
 function renderBook(){
@@ -596,8 +758,10 @@ function renderBook(){
   const side=(key,label,img)=>'<div class="side"><span class="sub">'+label+(key==="back"?'（選填）':'')+'</span><div class="slot'+(img?'':' empty')+'">'+(img?'<img src="'+img+'" alt="名片'+label+'">':'<span>'+label+'</span>')+'</div>'
     + '<div class="photobtns"><button type="button" class="pill line small" data-act="snap" data-side="'+key+'">'+(img?'重拍':'拍'+label)+'</button>'
     + '<button type="button" class="pill line small" data-act="pickPhoto" data-side="'+key+'">相簿</button>'
+    + (img&&cropKeep.src[key]?'<button type="button" class="textbtn" data-act="recrop" data-side="'+key+'">調整範圍</button>':'')
     + (img?'<button type="button" class="textbtn" data-act="clearPhoto" data-side="'+key+'">移除</button>':'')+'</div></div>';
-  const add = ui.adding ? '<section class="tile"><form id="addForm" novalidate><h2>'+(ui.editId?'編輯名片':'新增名片')+'</h2>'
+  const add = ui.adding ? '<section class="tile"><form id="addForm" novalidate><h2>'+(ui.editId?'編輯名片':ui.newFor?'收到'+esc(data.cards.find(x=>x.id===ui.newFor)?.name||"")+'的新名片':'新增名片')+'</h2>'
+    + (ui.newFor?'<p class="sub">存檔後，現在這張會收進「以前的名片」。</p>':'')
     + '<div class="sides">'+side("front","正面",ui.draftPhoto)+side("back","背面",ui.draftBack)+'</div>'
     + (ui.draftPhoto&&!ui.draftBack?'<p class="sub hint">背面有其他資訊或外文的話，順手補拍一張；沒有就跳過。</p>':'<p class="sub">照片縮小後存在 app 裡，不會留在相簿。</p>')
     + ocrBox()
@@ -609,7 +773,7 @@ function renderBook(){
     + field("add-address","地址",d.address||"")
     + '<label for="add-note">在哪裡認識、聊了什麼<textarea id="add-note" name="add-note">'+esc(d.note||"")+'</textarea></label>'
     + '<div class="row"><button class="pill strong" type="submit">'+(ui.editId?'儲存修改':'存入名片夾')+'</button><button type="button" class="pill line" data-act="cancelAdd">取消</button></div></form></section>' : "";
-  return '<div class="head"><div><div class="eyebrow">'+n+' 張'+(samples?'・含 '+samples+' 張範例':'')+'</div><h1>名片夾</h1></div>'
+  return sameSheet()+'<div class="head"><div><div class="eyebrow">'+n+' 張'+(samples?'・含 '+samples+' 張範例':'')+'</div><h1>名片夾</h1></div>'
     + (ui.adding?'':'<button type="button" class="round" data-act="add" aria-label="手動新增名片">'+ICON.plus+'</button>')+'</div>'
     + (ui.adding?'':'<div class="quick"><button type="button" class="mini" data-act="snap" data-side="front">'+ICON.cam+'<span>拍名片</span></button>'
       + (CAN_SCAN?'<button type="button" class="mini" data-act="scan">'+ICON.qr+'<span>掃 QR code</span></button>':'<button type="button" class="mini" data-act="add">'+ICON.plus+'<span>手動輸入</span></button>')+'</div>')
@@ -619,11 +783,46 @@ function renderBook(){
     + '<div class="chips"><button type="button" class="chip" data-act="sort" data-key="recent" aria-pressed="'+(ui.sort==="recent")+'">最近收到</button>'
     + '<button type="button" class="chip" data-act="sort" data-key="org" aria-pressed="'+(ui.sort==="org")+'">依單位</button>'
     + '<button type="button" class="chip" data-act="photoOnly" aria-pressed="'+ui.photoOnly+'">有照片</button></div>'
-    + '<div id="cards">'+renderCards()+'</div>';
+    + '<div id="cards">'+renderCards()+'</div>'
+    + supportNote();
 }
 
 /* ---------- 設定 ---------- */
 function opt(group,key,inner,cur){ return '<button type="button" class="opt" data-act="set" data-group="'+group+'" data-key="'+key+'" aria-pressed="'+(cur===key)+'">'+inner+'</button>'; }
+function photoCount(cards){ let n=0; cards.forEach(c=>{ n+=(c.photo?1:0)+(c.photoBack?1:0)+(c.history||[]).filter(h=>h.photo).length; }); return n; }
+function backupSizeText(){
+  const real=data.cards.filter(c=>!c.sample); if(!real.length) return "";
+  let b=4000; real.forEach(c=>{ b+=1500+(c.ocrText||"").length*3+(c.photo||"").length+(c.photoBack||"").length+(c.history||[]).reduce((t,h)=>t+(h.photo||"").length+300,0); });
+  const mb=b/1048576;
+  return '目前的備份檔約 '+(mb<1?Math.max(1,Math.round(b/1024))+'KB':mb.toFixed(1)+'MB')+'（'+real.length+' 張名片、'+photoCount(real)+' 張照片）。'+(mb>20?'Gmail 附件上限約 25MB，太大的話請改存雲端硬碟。':'');
+}
+function textOnly(p){
+  p.cards=p.cards.map(c=>Object.assign({}, c, {photo:"", photoBack:"", history:(c.history||[]).map(h=>Object.assign({}, h, {photo:""}))}));
+  p.textOnly=true; return p;
+}
+const APP_URL = () => location.origin + location.pathname.replace(/index\.html$/,"");
+function aboutHTML(){
+  return '<section class="tile set" id="about"><h2>關於隨身名片夾</h2>'
+    + '<p>一個常常交換名片的人，替自己做的小工具。</p>'
+    + '<p class="sub">不收費、沒有廣告、不收集任何資料。你的名片只存在這支手機和你自己的雲端裡，我看不到。</p>'
+    + '<p class="sub" style="margin-bottom:4px">如果它幫上了忙：</p>'
+    + '<div class="row"><button type="button" class="pill line" data-act="shareApp">'+ICON.share+'分享給朋友</button>'
+    + (TIP_URL?'<a class="pill line" href="'+esc(TIP_URL)+'" target="_blank" rel="noopener">'+ICON.cup+'請我喝杯咖啡</a>':'')+'</div>'
+    + (TIP_URL?'<details class="raw"><summary>許願池怎麼運作</summary><ul class="sub" style="padding-left:1.2em;margin:8px 0">'
+      + '<li>贊助任何金額時，可以在留言寫下一個想要的功能。</li>'
+      + '<li>每個願望我都會認真看，但不一定都會做——要看做不做得到，也要看適不適合放進這個工具。</li>'
+      + '<li>正在做的，會放進下面的清單，讓你看到進度。</li>'
+      + '<li>需要把你的名片資料上傳到別處的功能，不會做。</li></ul>'
+      + (WISHES.length?'<ul class="wishes">'+WISHES.map(w=>'<li><span class="wst">'+esc(w.status)+'</span>'+esc(w.text)+'</li>').join("")+'</ul>':'<p class="sub">目前還沒有願望。</p>')+'</details>':'')
+    + '<p class="sub">'+(TIP_URL?'':'')+'不支持也能用全部功能。</p></section>';
+}
+function supportNote(){
+  const real=data.cards.filter(c=>!c.sample).length;
+  if(real<10 || data.meta.supportShown || ui.adding) return "";
+  return '<section class="tile supportnote" aria-label="給你的一段話"><p>你已經收了 '+real+' 張名片了。</p>'
+    + '<p class="sub">隨身名片夾不收費、沒有廣告。如果它有幫上忙，可以到「設定 → 關於」看看。</p>'
+    + '<div class="row"><button type="button" class="pill line" data-act="supportOk">知道了</button><button type="button" class="textbtn" data-act="supportGo">看看「關於」</button></div></section>';
+}
 function renderSettings(){
   const s=data.settings, nm=esc(me().name||"名字");
   const imp=ui.importing;
@@ -631,14 +830,17 @@ function renderSettings(){
     + (imp.fresh.length?'<button type="button" class="pill strong" data-act="importCards">加入 '+imp.fresh.length+' 張新名片</button>':'')
     + ((imp.profiles&&imp.profiles.work.name)||(imp.me&&imp.me.name)?'<button type="button" class="pill line" data-act="importAll">加入新名片，並套用檔案裡的我的名片與外觀</button>':'')
     + '<button type="button" class="pill line" data-act="importCancel">取消</button></div></div>' : '';
-  const sw=Object.entries(CARD_COLORS).map(([k,c])=>'<button type="button" class="sw" data-act="set" data-group="cardColor" data-key="'+k+'" aria-pressed="'+(s.cardColor===k)+'" aria-label="'+c.name+'" title="'+c.name+'" style="background:'+c.c+'"></button>').join("");
+  const sw=g=>Object.entries(CARD_COLORS).map(([k,c])=>'<button type="button" class="sw" data-act="set" data-group="'+g+'" data-key="'+k+'" aria-pressed="'+(s[g]===k)+'" aria-label="'+(g==="cardColor"?"工作版":"個人版")+'：'+c.name+'" title="'+c.name+'" style="background:'+c.c+'"></button>').join("");
   const fonts=FONT_ROLES.map(r=>'<div class="frole"><div class="frow"><span class="flbl">'+r.label+'</span><span class="sub">'+r.hint+'</span></div><div class="fchips">'
     + Object.entries(FONTS).map(([k,f])=>'<button type="button" class="fchip" data-act="font" data-role="'+r.key+'" data-key="'+k+'" aria-pressed="'+(s.fonts[r.key]===k)+'" style="font-family:'+esc(f.stack)+'">'+(r.key==="name"?nm+'・':'')+f.name+'</button>').join("")
     + '</div></div>').join("");
   const checks=SHOW_FIELDS.map(([k,n])=>'<label class="check" for="show-'+k+'"><input type="checkbox" id="show-'+k+'" data-show="'+k+'"'+(s.show[k]?" checked":"")+'>'+n+(me()[k]?'':'<span class="sub">（尚未填寫）</span>')+'</label>').join("");
   return '<div class="head"><div><div class="eyebrow">改了馬上套用</div><h1>設定</h1></div></div>'
     + '<div class="preview-sticky">'+cardHTML(me())+'</div>'
-    + '<section class="tile set"><h2>主題顏色</h2><div class="swatches">'+sw+'</div><p class="sub">'+CARD_COLORS[s.cardColor].name+'。名片、底色和按鈕會一起換成同一個色系。</p></section>'
+    + '<section class="tile set"><h2>主題顏色</h2>'
+      + '<div class="frow"><span class="flbl">工作版</span><span class="sub">'+CARD_COLORS[s.cardColor].name+'</span></div><div class="swatches">'+sw("cardColor")+'</div>'
+      + '<div class="frow" style="margin-top:12px"><span class="flbl">個人版</span><span class="sub">'+CARD_COLORS[s.cardColorPersonal].name+'</span></div><div class="swatches">'+sw("cardColorPersonal")+'</div>'
+      + '<p class="sub">名片、底色和按鈕會一起換成同一個色系。兩張用不同顏色，切換時一眼就看得出現在是哪一張。</p></section>'
     + '<section class="tile set"><h2>字體</h2>'+fonts+'</section>'
     + '<section class="tile set"><h2>名片上顯示的資料</h2><p class="sub">關掉的項目不會出現在名片上，也不會放進 QR code。私人手機可以只在需要時打開。</p><div>'+checks+'</div></section>'
     + '<section class="tile set"><h2>名片文字辨識</h2>'
@@ -652,10 +854,12 @@ function renderSettings(){
     + '<section class="tile set"><h2>備份與搬家</h2><p class="sub">名片只存在這支手機裡，不會上傳到任何伺服器。建議定期備份到你自己的雲端；換手機或想在電腦上用時，還原這份備份就好。</p>'
       + cloudHTML()
       + '<div class="row"><button type="button" class="pill '+(GDRIVE_CLIENT_ID?'line':'strong')+'" data-act="exportJson">匯出備份檔（含照片）</button>'
+      + '<button type="button" class="pill line" data-act="exportText">只匯出文字（不含照片）</button>'
       + '<button type="button" class="pill line" data-act="importPick">匯入備份</button>'
       + '<button type="button" class="pill line" data-act="exportVcf">匯出成聯絡人檔（.vcf）</button></div>'
       + importBox
-      + '<p class="sub">.vcf 可以直接匯入 Google 聯絡人。範例名片不會被匯出。</p></section>'
+      + '<p class="sub">'+backupSizeText()+'只有文字的備份通常不到 1MB，適合用 Email 寄給自己或快速搬家。.vcf 可以直接匯入 Google 聯絡人。範例名片不會被匯出。</p></section>'
+    + aboutHTML()
     + '<section class="tile set"><h2>其他</h2>'
       + '<div class="row">'
       + (data.cards.some(c=>c.sample)?'<button type="button" class="pill line" data-act="clearSamples">移除範例名片</button>':'')
@@ -690,6 +894,116 @@ function compress(file){
   });
 }
 const val = id => (document.getElementById(id)?.value||"").trim();
+
+/* ---------- 自動裁切：拍完先找名片四個角，使用者可以拖曳微調，確定後只存裁切好的照片 ----------
+   原圖只留在記憶體裡（cropKeep.src），存檔或取消後就丟掉；存檔前都可以按「調整範圍」重裁。 */
+const cropKeep={src:{}};
+const CROP_FULL=[[0,0],[1,0],[1,1],[0,1]], CROP_INSET=[[.06,.06],[.94,.06],[.94,.94],[.06,.94]];
+const CORNER_LABEL=["左上角","右上角","右下角","左下角"];
+async function loadWork(file){
+  let src;
+  try{ src=await createImageBitmap(file,{imageOrientation:"from-image"}); }
+  catch(e){ src=await new Promise((res,rej)=>{ const u=URL.createObjectURL(file), im=new Image(); im.onload=()=>{ URL.revokeObjectURL(u); res(im); }; im.onerror=rej; im.src=u; }); }
+  const w=src.width, h=src.height, s=Math.min(1,1600/Math.max(w,h));
+  const c=document.createElement("canvas"); c.width=Math.round(w*s); c.height=Math.round(h*s);
+  c.getContext("2d").drawImage(src,0,0,c.width,c.height); src.close&&src.close();
+  return c;
+}
+function canvasURL(c, maxSide, q){
+  const s=Math.min(1,maxSide/Math.max(c.width,c.height)); if(s===1) return c.toDataURL("image/jpeg",q);
+  const d=document.createElement("canvas"); d.width=Math.round(c.width*s); d.height=Math.round(c.height*s);
+  d.getContext("2d").drawImage(c,0,0,d.width,d.height); return d.toDataURL("image/jpeg",q);
+}
+async function openCrop(side, file, recrop){
+  ui.crop={side, busy:true}; renderCrop();
+  try{
+    const keep=recrop?cropKeep.src[side]:null;
+    const canvas=keep?keep.canvas:await loadWork(file);
+    let q=keep?keep.q:CardCrop.detectCanvas(canvas);
+    const found=!!q;
+    ui.crop={side, recrop:!!recrop, canvas, url:canvasURL(canvas,1100,.8), q:(q||CROP_INSET).map(p=>p.slice()), found, rot:keep?keep.rot:0};
+  }catch(e){ ui.crop=null; renderCrop(); toast("這張照片讀不出來，請再拍一次"); return; }
+  renderCrop(); cropPreview();
+  document.querySelector(".crop .go")?.focus();
+}
+function quadPath(q){ return q.map((p,i)=>(i?"L":"M")+(p[0]*100).toFixed(2)+" "+(p[1]*100).toFixed(2)).join(" ")+"Z"; }
+function renderCrop(){
+  const box=document.getElementById("cropper"), c=ui.crop;
+  if(!c){ box.hidden=true; box.innerHTML=""; document.body.style.overflow=""; return; }
+  box.hidden=false; document.body.style.overflow="hidden";
+  if(c.busy){ box.innerHTML='<div class="crop" role="dialog" aria-modal="true" aria-label="調整名片範圍"><p class="sub" role="status">正在找名片的邊緣…</p></div>'; return; }
+  const ar=c.canvas.width/c.canvas.height, label=c.side==="back"?"背面":"正面";
+  box.innerHTML='<div class="crop" role="dialog" aria-modal="true" aria-labelledby="crop-t">'
+    + '<div><h2 id="crop-t">調整名片'+label+'的範圍</h2><p class="sub">'+(c.found?'已自動找到名片邊緣，四個角可以拖曳微調。':'沒有找到名片邊緣，請把四個黃點拖到名片的四個角上。')+'</p></div>'
+    + '<div class="crop-stage" id="cropStage" style="aspect-ratio:'+ar.toFixed(4)+';width:min(100%, calc(56vh * '+ar.toFixed(4)+'))">'
+    + '<img src="'+c.url+'" alt="">'
+    + '<svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path class="shade" fill-rule="evenodd" d="M0 0H100V100H0Z '+quadPath(c.q)+'"/><path class="edge" d="'+quadPath(c.q)+'"/></svg>'
+    + c.q.map((p,i)=>'<button type="button" class="hdl" data-i="'+i+'" aria-label="'+CORNER_LABEL[i]+'，可以用方向鍵移動" style="left:'+(p[0]*100)+'%;top:'+(p[1]*100)+'%"><span></span></button>').join("")
+    + '<div class="loupe" id="loupe" hidden></div></div>'
+    + '<div class="crop-prev"><span class="sub">裁切後</span><canvas id="cropPrev" width="1" height="1" role="img" aria-label="裁切後的預覽"></canvas></div>'
+    + '<div class="crop-acts"><button type="button" data-act="cropRot">轉 90°</button><button type="button" data-act="cropAll">用整張照片</button><button type="button" data-act="cropCancel">取消</button>'
+    + '<button type="button" class="go" data-act="cropOk">使用這個範圍</button></div></div>';
+}
+function cropUpdate(){
+  const c=ui.crop; if(!c||c.busy) return;
+  document.querySelectorAll("#cropStage .hdl").forEach(b=>{ const p=c.q[+b.dataset.i]; b.style.left=(p[0]*100)+"%"; b.style.top=(p[1]*100)+"%"; });
+  const sh=document.querySelector("#cropStage .shade"), ed=document.querySelector("#cropStage .edge");
+  if(sh) sh.setAttribute("d","M0 0H100V100H0Z "+quadPath(c.q)); if(ed) ed.setAttribute("d",quadPath(c.q));
+}
+function cropPreview(){
+  const c=ui.crop, cv=document.getElementById("cropPrev"); if(!c||!cv) return;
+  try{ const out=CardCrop.cropCanvas(c.canvas, c.q, c.rot, 300); cv.width=out.width; cv.height=out.height; cv.getContext("2d").drawImage(out,0,0); }catch(e){}
+}
+function cropLoupe(i){
+  const c=ui.crop, lp=document.getElementById("loupe"), st=document.getElementById("cropStage"); if(!lp||!st) return;
+  if(i==null){ lp.hidden=true; return; }
+  const p=c.q[i], W=st.clientWidth, H=st.clientHeight, z=3;
+  lp.hidden=false; lp.style.backgroundImage='url("'+c.url+'")'; lp.style.backgroundSize=(W*z)+"px "+(H*z)+"px";
+  lp.style.backgroundPosition=(56-p[0]*W*z)+"px "+(56-p[1]*H*z)+"px";
+  lp.style.left = p[0]<.5 ? "auto" : "8px"; lp.style.right = p[0]<.5 ? "8px" : "auto";
+}
+const cropDrag={i:null};
+document.addEventListener("pointerdown", e=>{
+  const h=e.target.closest && e.target.closest("#cropStage .hdl"); if(!h) return;
+  e.preventDefault(); cropDrag.i=+h.dataset.i; h.setPointerCapture&&h.setPointerCapture(e.pointerId); cropLoupe(cropDrag.i);
+});
+document.addEventListener("pointermove", e=>{
+  if(cropDrag.i==null||!ui.crop) return;
+  const r=document.getElementById("cropStage").getBoundingClientRect();
+  ui.crop.q[cropDrag.i]=[Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)), Math.max(0,Math.min(1,(e.clientY-r.top)/r.height))];
+  cropUpdate(); cropLoupe(cropDrag.i);
+});
+const cropEnd=()=>{ if(cropDrag.i==null) return; cropDrag.i=null; cropLoupe(null); cropPreview(); };
+document.addEventListener("pointerup", cropEnd); document.addEventListener("pointercancel", cropEnd);
+document.addEventListener("keydown", e=>{
+  if(ui.zoom && e.key==="Escape"){ ui.zoom=null; renderZoom(); return; }
+  if(!ui.crop||ui.crop.busy) return;
+  if(e.key==="Escape"){ ui.crop=null; renderCrop(); return; }
+  const h=e.target.closest && e.target.closest("#cropStage .hdl"); if(!h) return;
+  const d={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]}[e.key]; if(!d) return;
+  e.preventDefault(); const st=e.shiftKey?.02:.005, p=ui.crop.q[+h.dataset.i];
+  p[0]=Math.max(0,Math.min(1,p[0]+d[0]*st)); p[1]=Math.max(0,Math.min(1,p[1]+d[1]*st)); cropUpdate(); cropPreview();
+});
+function canvasBlob(c){ return new Promise(res=>c.toBlob(b=>res(b),"image/jpeg",.92)); }
+async function cropDone(){
+  const c=ui.crop; if(!c||c.busy) return;
+  const out=CardCrop.cropCanvas(c.canvas, c.q, c.rot, 1500);
+  const img=canvasURL(out, 900, .7), blob=await canvasBlob(out);
+  cropKeep.src[c.side]={canvas:c.canvas, q:c.q.map(p=>p.slice()), rot:c.rot};
+  ui.crop=null; renderCrop();
+  usePhoto(c.side, img, blob, c.recrop);
+}
+// 照片準備好之後（裁切完或不能裁切時）：放進表單，需要的話開始辨識文字
+function usePhoto(side, img, file, recrop){
+  if(recrop){ syncDraft(); if(side==="back") ui.draftBack=img; else ui.draftPhoto=img; keepScroll(render); toast("已更新照片範圍"); return; }
+  const fresh=!ui.adding;
+  if(fresh){ ui.adding=true; ui.editId=null; ui.draft={}; ui.draftBack=""; ui.auto=new Set(); resetReview(); }
+  else syncDraft();
+  if(side==="back") ui.draftBack=img; else ui.draftPhoto=img;
+  ui.tab="book";
+  ui.ocrFiles=ui.ocrFiles||{}; ui.ocrFiles[side]=file;
+  if(data.settings.ocr.enabled) startOCR(side, file); else { render(); window.scrollTo(0,0); }
+}
 
 // 交出檔案：手機上跳出分享選單（可以直接存到 Google Drive），不支援的瀏覽器就直接下載
 async function deliver(filename, text, mime){
@@ -1021,7 +1335,7 @@ const b64u = {
 function ecardUrl(p){
   const v=visible(p), s=data.settings;
   const o={v:1, n:v.name, t:v.title, o:v.org, g:v.tagline, p:v.phone, e:v.email, l:v.line, w:v.web, a:p.address, i:p.intro,
-    k:(p.links||[]).map(x=>[x.label,x.url]), c:s.cardColor, f:s.fonts.name};
+    k:(p.links||[]).map(x=>[x.label,x.url]), c:colorKey(), f:s.fonts.name};
   Object.keys(o).forEach(k=>{ if(o[k]==="" || (Array.isArray(o[k]) && !o[k].length)) delete o[k]; });
   return location.origin + location.pathname.replace(/index\.html$/,"") + "#c=" + b64u.enc(JSON.stringify(o));
 }
@@ -1070,10 +1384,10 @@ function saveEcardContact(){
   toast("已下載聯絡人檔，打開它就能存進通訊錄");
 }
 function qrPayload(p){
-  if(data.settings.qrMode==="vcard") return vcard(visible(p));
+  if(qrMode()==="vcard") return vcard(visible(p));
   return ecardUrl(p);
 }
-const qrHint = () => data.settings.qrMode==="vcard" ? "用手機相機掃描，就能存入聯絡人" : "用手機相機掃描，打開我的電子名片";
+const qrHint = () => qrMode()==="vcard" ? "用手機相機掃描，就能存入聯絡人" : "用手機相機掃描，打開我的電子名片";
 
 /* ---------- 遞名片模式 ---------- */
 const flipLabel = () => data.settings.presentFlip ? "改成朝向自己" : "轉向對面";
@@ -1081,8 +1395,9 @@ function openPresent(){
   const p=document.getElementById("present"), m=me();
   p.innerHTML='<div class="stage"><div class="pcard">'+cardHTML(m)+'</div><div class="pqr" id="pqr">'+qrSvg(qrPayload(m))+'</div><p class="sub" id="pqrHint">'+qrHint()+'</p></div>'
     +'<div class="pctrl"><div class="seg2 qrseg" role="group" aria-label="QR code 類型">'
-    +'<button type="button" data-act="qrMode" data-key="ecard" aria-pressed="'+(data.settings.qrMode!=="vcard")+'">電子名片</button>'
-    +'<button type="button" data-act="qrMode" data-key="vcard" aria-pressed="'+(data.settings.qrMode==="vcard")+'">直接存聯絡人</button></div>'
+    +'<button type="button" data-act="qrMode" data-key="ecard" aria-pressed="'+(qrMode()!=="vcard")+'">電子名片</button>'
+    +'<button type="button" data-act="qrMode" data-key="vcard" aria-pressed="'+(qrMode()==="vcard")+'">直接存聯絡人</button></div>'
+    +'<p class="pwho'+(data.active==="personal"?' personal':'')+'">正在遞：'+PROFILE_LABEL[data.active]+(data.active==="personal"?'（不是工作版）':'')+'</p>'
     +'<div class="pbtns"><button type="button" class="pill line" data-act="flip" id="flipBtn">'+flipLabel()+'</button><button type="button" class="pill strong" data-act="closePresent">收起</button></div></div>';
   p.classList.remove("flip"); p.hidden=false; document.body.style.overflow="hidden";
   requestAnimationFrame(()=>requestAnimationFrame(()=>p.classList.toggle("flip", !!data.settings.presentFlip)));
@@ -1195,18 +1510,18 @@ document.addEventListener("click", e=>{
     const url=ecardUrl(me()), title=(me().name||"")+" 的電子名片";
     if(navigator.share){ navigator.share({title, url}).catch(()=>{}); } else copy(url);
   }
-  else if(a==="profile"){ data.active=el.dataset.key; ui.editing=false; save({quiet:true}); render(); }
+  else if(a==="profile"){ data.active=el.dataset.key; ui.editing=false; save({quiet:true}); applySettings(); render(); }
   else if(a==="setupPersonal"){ data.profiles.personal.name=data.profiles.work.name; ui.editing=true; render(); document.getElementById("me-name")?.focus(); }
   else if(a==="qrMode"){
-    data.settings.qrMode=el.dataset.key; save({quiet:true});
+    data.settings[qrKey()]=el.dataset.key; save({quiet:true});
     const q=document.getElementById("pqr"); if(q) q.innerHTML=qrSvg(qrPayload(me()));
     const h=document.getElementById("pqrHint"); if(h) h.textContent=qrHint();
-    document.querySelectorAll('[data-act="qrMode"]').forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.key===data.settings.qrMode)));
+    document.querySelectorAll('[data-act="qrMode"]').forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.key===qrMode())));
   }
   else if(a==="ecardSave"){ saveEcardContact(); }
   else if(a==="copy"){ copy(el.dataset.text); }
   else if(a==="add"){ ui.adding=true; ui.editId=null; ui.draft={}; ui.draftPhoto=""; ui.draftBack=""; ui.auto=new Set(); ui.ocrAsk=null; resetReview(); render(); document.getElementById("add-name")?.focus(); }
-  else if(a==="cancelAdd"){ ocrCancel(); resetReview(); ui.adding=false; ui.editId=null; ui.draft=null; ui.draftPhoto=""; ui.draftBack=""; ui.auto=new Set(); ui.ocrAsk=null; render(); }
+  else if(a==="cancelAdd"){ cropKeep.src={}; ui.newFor=null; ui.same=null; ocrCancel(); resetReview(); ui.adding=false; ui.editId=null; ui.draft=null; ui.draftPhoto=""; ui.draftBack=""; ui.auto=new Set(); ui.ocrAsk=null; render(); }
   else if(a==="ocrYes"){ const ask=ui.ocrAsk; ui.ocrAsk=null; data.settings.ocr.consented=true; save({quiet:true}); if(ask) runOCR(ask.side, ask.file); }
   else if(a==="ocrNo"){ syncDraft(); ui.ocrAsk=null; keepScroll(render); }
   else if(a==="ocrStop"){ ocrCancel(); syncDraft(); keepScroll(render); toast("已停止辨識"); }
@@ -1245,8 +1560,21 @@ document.addEventListener("click", e=>{
   }
   else if(a==="snap"){ syncDraft(); ui.snapSide=el.dataset.side||"front"; document.getElementById("snapFile").click(); }
   else if(a==="pickPhoto"){ syncDraft(); ui.snapSide=el.dataset.side||"front"; document.getElementById("pickFile").click(); }
-  else if(a==="clearPhoto"){ syncDraft(); if(el.dataset.side==="back") ui.draftBack=""; else ui.draftPhoto=""; keepScroll(render); }
-  else if(a==="flipPhoto"){ ui.photoSide = ui.photoSide==="front"?"back":"front"; rerenderCards(); }
+  else if(a==="clearPhoto"){ syncDraft(); if(el.dataset.side==="back") ui.draftBack=""; else ui.draftPhoto=""; delete cropKeep.src[el.dataset.side==="back"?"back":"front"]; keepScroll(render); }
+  else if(a==="recrop"){ syncDraft(); openCrop(el.dataset.side==="back"?"back":"front", null, true); }
+  else if(a==="cropRot"){ ui.crop.rot=(ui.crop.rot+3)%4; cropPreview(); }
+  else if(a==="cropAll"){ ui.crop.q=CROP_FULL.map(p=>p.slice()); cropUpdate(); cropPreview(); }
+  else if(a==="cropCancel"){ ui.crop=null; renderCrop(); }
+  else if(a==="cropOk"){ cropDone(); }
+  else if(a==="sameUpdate"){ const s=ui.same; if(s) finishAdd(s.fields,"update",s.id); }
+  else if(a==="sameNew"){ const s=ui.same; if(s) finishAdd(s.fields,"new"); }
+  else if(a==="sameBack"){ ui.same=null; keepScroll(render); }
+  else if(a==="newVersion"){
+    const c=data.cards.find(x=>x.id===id); if(!c) return;
+    ui.adding=true; ui.editId=null; ui.newFor=c.id; ui.auto=new Set(); ui.ocrAsk=null; resetReview(); cropKeep.src={};
+    ui.draft={name:c.name, alt:c.alt}; ui.draftPhoto=""; ui.draftBack=""; render(); window.scrollTo(0,0);
+  }
+  else if(a==="zoomHist"){ const c=data.cards.find(x=>x.id===id), h=c&&c.history&&c.history[+el.dataset.i]; if(h&&h.photo){ ui.zoom={src:h.photo, other:"", alt:"舊名片正面（"+h.added+" 收到）"}; renderZoom(); } }
   else if(a==="editCard"){
     const c=data.cards.find(x=>x.id===id); if(!c) return;
     ui.editId=c.id; ui.adding=true; ui.auto=new Set(); ui.ocrAsk=null; resetReview();
@@ -1255,8 +1583,31 @@ document.addEventListener("click", e=>{
   }
   else if(a==="scan"){ startScan(); }
   else if(a==="scanStop"){ stopScan(); }
-  else if(a==="pick"){ ui.openId = (data.settings.bookView==="list" && ui.openId===id) ? null : id; ui.confirmId=null; ui.showPhoto=false; ui.photoSide="front"; rerenderCards(); }
-  else if(a==="photo"){ ui.showPhoto=!ui.showPhoto; rerenderCards(); }
+  else if(a==="pick"){ ui.openId = (data.settings.bookView==="list" && ui.openId===id) ? null : id; ui.confirmId=null; ui.paperBack=false; rerenderCards(); }
+  else if(a==="flipPaper"){
+    ui.paperBack=!ui.paperBack; const p=document.getElementById("paper"); if(!p) return;
+    p.classList.toggle("flip", ui.paperBack);
+    const hasBack=!p.querySelector(".face.txt"), lbl=ui.paperBack?"背面":"正面";
+    p.querySelectorAll(".dots i").forEach((d,i)=>d.classList.toggle("on", i===(ui.paperBack?1:0)));
+    document.getElementById("paperLbl").textContent=paperLabel(ui.paperBack, hasBack);
+    el.setAttribute("aria-label", el.getAttribute("aria-label").replace(/(正面|背面)，/, lbl+"，"));
+  }
+  else if(a==="zoomPaper"){
+    const p=document.getElementById("paper"); if(!p) return;
+    const imgs=[...p.querySelectorAll(".face img")].map(i=>i.getAttribute("src"));
+    if(ui.paperBack && !imgs[1]){ toast("背面沒有照片，可以按「補拍背面」"); return; }
+    const showBack=ui.paperBack;
+    ui.zoom={src:showBack?imgs[1]:imgs[0], other:imgs[1]?(showBack?imgs[0]:imgs[1]):"", alt:"名片"+(showBack?"背面":"正面")}; renderZoom();
+  }
+  else if(a==="zoomFlip"){ ui.zoom={src:ui.zoom.other, other:ui.zoom.src, alt:ui.zoom.alt==="名片正面"?"名片背面":"名片正面"}; renderZoom(); }
+  else if(a==="zoomClose"){ ui.zoom=null; renderZoom(); document.querySelector("[data-act=zoomPaper]")?.focus(); }
+  else if(a==="addBack"){
+    const c=data.cards.find(x=>x.id===id); if(!c) return;
+    ui.editId=c.id; ui.adding=true; ui.auto=new Set(); ui.ocrAsk=null; resetReview();
+    ui.draft={name:c.name,title:c.title,org:c.org,alt:c.alt,phone:c.phone,tel:c.tel,email:c.email,line:c.line,web:c.web,address:c.address,note:c.note,ocrText:c.ocrText};
+    ui.draftPhoto=c.photo||""; ui.draftBack=""; render(); window.scrollTo(0,0);
+    ui.snapSide="back"; document.getElementById("snapFile").click();
+  }
   else if(a==="sort"){ ui.sort=el.dataset.key; keepScroll(render); }
   else if(a==="photoOnly"){ ui.photoOnly=!ui.photoOnly; keepScroll(render); }
   else if(a==="askDel"){ ui.confirmId=id; rerenderCards(); }
@@ -1264,6 +1615,15 @@ document.addEventListener("click", e=>{
   else if(a==="del"){ data.cards=data.cards.filter(c=>c.id!==id); ui.openId=null; ui.confirmId=null; save(); keepScroll(render); toast("已刪除"); }
   else if(a==="set"){ data.settings[el.dataset.group]=el.dataset.key; save(); applySettings(); keepScroll(render); }
   else if(a==="font"){ data.settings.fonts[el.dataset.role]=el.dataset.key; save(); applySettings(); keepScroll(render); }
+  else if(a==="exportText"){
+    deliver("名片夾備份-文字-"+today()+".json", JSON.stringify(textOnly(backupPayload())), "application/json");
+  }
+  else if(a==="shareApp"){
+    const url=APP_URL(), text="一個存名片、遞名片的小工具，資料只存在自己手機裡：";
+    if(navigator.share){ navigator.share({title:"隨身名片夾", text, url}).catch(()=>{}); } else copy(url);
+  }
+  else if(a==="supportOk"){ data.meta.supportShown=true; save({quiet:true}); keepScroll(render); }
+  else if(a==="supportGo"){ data.meta.supportShown=true; save({quiet:true}); ui.tab="set"; render(); document.getElementById("about")?.scrollIntoView(); }
   else if(a==="exportJson"){
     deliver("名片夾備份-"+today()+".json", JSON.stringify(backupPayload()), "application/json");
   }
@@ -1302,12 +1662,11 @@ document.addEventListener("submit", e=>{
     if(!name){ toast("至少要填姓名"); document.getElementById("add-name").focus(); return; }
     const fields={name,title:val("add-title"),org:val("add-org"),alt:val("add-alt"),phone:val("add-phone"),tel:val("add-tel"),email:val("add-email"),line:val("add-line"),
       web:val("add-web"),address:val("add-address"),note:val("add-note"),ocrText:(ui.draft&&ui.draft.ocrText)||"",photo:ui.draftPhoto,photoBack:ui.draftBack};
-    ui.auto=new Set(); ui.ocrAsk=null; ocrCancel(); resetReview();
-    let card, msg;
-    if(ui.editId && (card=data.cards.find(x=>x.id===ui.editId))){ Object.assign(card, fields, {sample:false}); msg="已儲存修改"; }
-    else { card=Object.assign({id:"c"+Date.now().toString(36), added:today()}, fields); data.cards.push(card); msg="已存入名片夾"; }
-    save();
-    ui.adding=false; ui.editId=null; ui.draft=null; ui.draftPhoto=""; ui.draftBack=""; ui.openId=card.id; ui.query=""; render(); toast(msg);
+    if(ui.editId){ finishAdd(fields,"edit"); return; }
+    if(ui.newFor){ finishAdd(fields,"update",ui.newFor); return; }
+    const same=findSame(fields);
+    if(same){ syncDraft(); ui.same={id:same.card.id, why:same.why, fields}; keepScroll(render); document.querySelector('[data-act="sameUpdate"]')?.focus(); return; }
+    finishAdd(fields,"new");
   }
 });
 document.addEventListener("input", e=>{
@@ -1332,15 +1691,10 @@ document.addEventListener("change", async e=>{
     keepScroll(render);
   } else if((e.target.id==="snapFile"||e.target.id==="pickFile") && e.target.files[0]){
     const file=e.target.files[0]; e.target.value="";
-    let img; try{ img=await compress(file); }catch(err){ toast("這張照片讀不出來，請再拍一次"); return; }
     const side=ui.snapSide==="back"?"back":"front";
-    if(side==="back") ui.draftBack=img; else ui.draftPhoto=img;
-    const fresh=!ui.adding;
-    if(fresh){ ui.adding=true; ui.editId=null; ui.draft={}; ui.draftBack=""; ui.auto=new Set(); resetReview(); }
-    else syncDraft();
-    ui.tab="book";
-    ui.ocrFiles=ui.ocrFiles||{}; ui.ocrFiles[side]=file;
-    if(data.settings.ocr.enabled) startOCR(side, file); else { render(); window.scrollTo(0,0); }
+    if(window.CardCrop){ syncDraft(); openCrop(side, file, false); return; }
+    let img; try{ img=await compress(file); }catch(err){ toast("這張照片讀不出來，請再拍一次"); return; }
+    usePhoto(side, img, file, false);
   }
 });
 
