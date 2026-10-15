@@ -40,6 +40,17 @@
   const ORG_RE = /(中心|醫院|診所|院區|醫學中心|衛生所|心理治療所|心理諮商所|諮商所|治療所|協會|學會|公會|基金會|股份有限公司|有限公司|公司|企業社|商行|工作室|大學|學院|學校|高中|國中|國小|幼兒園|事務所|政府|市政府|縣政府|區公所|公所|法院|地檢署|檢察署|警察局|分局|派出所|消防局|局|處|署|委員會|議會|教會|聯盟|銀行|集團|部|科|課|組|室|系|所|社|館|園)$|\b(inc\.?|ltd\.?|co\.?,? ?ltd|corp(oration)?|company|center|centre|hospital|clinic|university|college|school|association|foundation|institute|department|bureau|office|bank|group|studio|llc)\b/i;
   const TITLE_WORDS = "心理師|臨床心理師|諮商心理師|社會工作師|社工師|社工員|社工督導|社工|督導|個案管理師|個管師|管理師|主任委員|副主任|主任|執行長|董事長|副總經理|總經理|總監|協理|經理|副理|襄理|專案經理|專員|組長|課長|科長|股長|處長|局長|署長|院長|副院長|校長|所長|隊長|理事長|秘書長|秘書|總幹事|幹事|護理長|護理師|醫師|主治醫師|住院醫師|藥師|營養師|職能治療師|物理治療師|語言治療師|治療師|教授|副教授|助理教授|講師|老師|教師|導師|研究員|助理|律師|會計師|代書|法官|檢察官|書記官|觀護人|警員|巡佐|工程師|設計師|顧問|創辦人|負責人|業務|店長|志工";
   const TITLE_RE = new RegExp("(" + TITLE_WORDS + ")$");
+  // ---------- 從使用者的整理學到的規則（只存在使用者手機上，由 app 傳進來） ----------
+  // exact：某段文字 → 欄位（"" 代表不要用）；titles：職稱詞；orgs：單位字尾
+  let LEARN = null;
+  const learnKey = s => String(s || "").replace(/\s+/g, "").toLowerCase();
+  function learnedField(t, v) {
+    if (!LEARN || !LEARN.exact) return null;
+    for (const s of [t.text, v]) { const k = learnKey(s); if (k && Object.prototype.hasOwnProperty.call(LEARN.exact, k)) return LEARN.exact[k]; }
+    return null;
+  }
+  const isTitleWord = v => TITLE_RE.test(v) || ((LEARN && LEARN.titles) || []).some(w => w && v.endsWith(w));
+  const isOrgWord = v => ORG_RE.test(v) || ((LEARN && LEARN.orgs) || []).some(w => w && v.endsWith(w));
   const TITLE_ANY = new RegExp("(" + TITLE_WORDS + ")");
   const TITLE_FULL = new RegExp("^(" + TITLE_WORDS + ")$");
   const PAIR_RE = new RegExp("^([" + CJK + "]{2,4})\\s*(" + TITLE_WORDS + ")$");
@@ -115,6 +126,8 @@
     const { label, value } = stripLabel(t.text);
     const v = tidy(value);
     t.value = v;
+    const lf = learnedField(t, v);
+    if (lf !== null) { t.learned = true; t.kind = lf === "" ? "skip" : "learn_" + lf; return; }
     if (label === "fax") { t.kind = "fax"; return; }
     const em = v.match(EMAIL_RE);
     if (em) { t.kind = "email"; t.value = em[0]; return; }
@@ -135,9 +148,9 @@
     const cjk = reCJK.test(v);
     // 「主治醫師 Attending Psychiatrist」：中文職稱後面接英文，只取中文部分
     const mix = cjk && v.match(new RegExp("^([" + CJK + "\\s]{2,14}?)\\s+([A-Za-z].*)$"));
-    if (mix && TITLE_RE.test(mix[1])) { t.kind = "title"; t.value = tidy(mix[1]); return; }
-    const isTitle = (cjk && TITLE_RE.test(v) && v.length <= 14) || (!cjk && TITLE_EN.test(v) && v.split(" ").length <= 6 && !ORG_RE.test(v));
-    const isOrg = ORG_RE.test(v) && v.length >= 3;
+    if (mix && isTitleWord(mix[1])) { t.kind = "title"; t.value = tidy(mix[1]); return; }
+    const isTitle = (cjk && isTitleWord(v) && v.length <= 14) || (!cjk && TITLE_EN.test(v) && v.split(" ").length <= 6 && !ORG_RE.test(v));
+    const isOrg = isOrgWord(v) && v.length >= 3;
     if (isTitle && !(isOrg && v.length > 8)) { t.kind = cjk ? "title" : "enTitle"; return; }
     if (isOrg) { t.kind = cjk ? "org" : "orgEn"; return; }
     if (new RegExp("^[" + CJK + "]{2,4}$").test(v) && !STOP.test(v)) { t.kind = "nameCand"; return; }
@@ -149,6 +162,7 @@
   function assign(tokens, opts) {
     const has = f => tokens.some(t => t.field === f);
     const firstOf = (k, f, more) => { tokens.filter(t => t.kind === k && !t.field).forEach((t, i) => { if (i === 0 && !has(f)) t.field = f; else if (more) more(t); }); };
+    tokens.filter(t => t.kind && t.kind.startsWith("learn_")).forEach(t => { t.field = t.kind.slice(6); });
     firstOf("email", "email");
     firstOf("line", "line");
     firstOf("web", "web");
@@ -197,6 +211,7 @@
 
   function parse(input, opts) {
     opts = opts || {};
+    LEARN = opts.learn || null;
     let lines = Array.isArray(input) ? input.map(l => typeof l === "string" ? { text: l } : l) : String(input || "").split(/\r?\n/).map(t => ({ text: t }));
     lines = lines.map(l => ({ text: String(l.text || "").trim(), h: Number(l.h) || 0, box: l.box || null, conf: l.conf == null ? 100 : Number(l.conf) }))
       .filter(l => l.text && !(l.conf < 30 && !/\d|@/.test(l.text)));   // 低信心又沒數字的多半是 logo 雜訊
@@ -204,11 +219,13 @@
     tokens.forEach((t, i) => classify(t, tokens[i - 1]));
     assign(tokens, opts);
     const r = fieldsFrom(tokens);
-    r.tokens = tokens.map(t => ({ text: t.text, value: t.value, field: t.field || null, kind: t.kind || null, box: t.box, side: t.side }));
+    r.tokens = tokens.map(t => ({ text: t.text, value: t.value, field: t.field || null, kind: t.kind || null, box: t.box, side: t.side, learned: !!t.learned }));
+    LEARN = null;
     return r;
   }
 
-  const api = { parse, normalize, joinField, fieldsFrom, valueFor, joinText, cleanPhone };
+  const api = { parse, normalize, joinField, fieldsFrom, valueFor, joinText, cleanPhone, learnKey,
+    knownOrg: v => ORG_RE.test(v), knownTitle: v => TITLE_RE.test(v) };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.CardParse = api;
 })(typeof self !== "undefined" ? self : this);

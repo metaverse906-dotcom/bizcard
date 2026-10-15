@@ -177,6 +177,10 @@ textarea{min-height:68px;resize:vertical}
 .eng.on{border-color:var(--strong);box-shadow:0 0 0 1px var(--strong) inset}
 .eng p{margin:4px 0}
 .engst{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.lrn{list-style:none;padding:0;margin:8px 0;display:flex;flex-direction:column;gap:2px;font-size:.88rem}
+.lrn li{display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line);min-height:40px}
+.lrn li span:first-child{flex:1;min-width:0;overflow-wrap:anywhere}
+.tok small{margin-left:4px}
 .memo{font-size:.86rem;background:var(--soft);border-radius:12px;padding:10px 12px}
 .kv{display:grid;grid-template-columns:3.6em 1fr;gap:4px 10px;margin:0;font-size:.9rem}
 .kv dt{color:var(--muted);font-size:.8rem;padding-top:2px}
@@ -496,12 +500,59 @@ const colorKey = () => data.active==="personal" ? data.settings.cardColorPersona
 const qrKey = () => data.active==="personal" ? "qrPersonal" : "qrWork";
 const qrMode = () => data.settings[qrKey()];
 
+/* ---------- 從使用者的整理學習 ----------
+   在「整理文字」把一塊字放到和自動判斷不同的地方，存檔時就記下來，下次遇到一樣的字直接照做。
+   只學單位、職稱、備註和「不要用」；姓名、電話、Email、地址是個人資料，不學。全部只存在這支手機（和使用者自己的備份）。 */
+const LEARN_FIELDS=["org","title","note",""];
+const LEARN_MAX=400;
+function cleanLearn(l){
+  l=(l&&typeof l==="object")?l:{};
+  const exact={};
+  if(l.exact && typeof l.exact==="object") Object.entries(l.exact).slice(-LEARN_MAX).forEach(([k,v])=>{ k=str(k).slice(0,80); if(k && LEARN_FIELDS.includes(v)) exact[k]=v; });
+  const words=a=>Array.isArray(a)?[...new Set(a.map(x=>str(x).slice(0,12)).filter(Boolean))].slice(-100):[];
+  return {exact, titles:words(l.titles), orgs:words(l.orgs)};
+}
+function learnFromReview(){
+  const toks=(ui.review&&ui.review.tokens)||[], L=data.learn; let n=0;
+  const hasName=toks.some(t=>t.field==="name");
+  const cjk=/[㐀-鿿]/;
+  for(const t of toks){
+    const before=t.orig||null, after=t.field||null;
+    if((before===after && !(after===null && !before)) || t.kind==="email" || t.kind==="phone" || t.kind==="tel" || t.kind==="web") continue;
+    const key=CardParse.learnKey(t.raw||t.text); if(!key || key.length>80) continue;
+    if(after==="org"||after==="title"||after==="note"){ L.exact[key]=after; n++; }
+    else if(after===null && before){ L.exact[key]=""; n++; }
+    // 存檔時還沒用到的文字（不是像姓名的那種），也當成「不要用」，下次就不會再停在整理畫面
+    else if(after===null && !before && key.length<=20 && !["enName","address","fax","skip"].includes(t.kind)
+      && (t.kind!=="nameCand" || hasName)){ L.exact[key]=""; n++; }   // 像姓名的字，只有在姓名已經另外放好時才記
+    else continue;
+    const txt=(t.text||"").replace(/\s+/g,"");
+    if(after==="title" && cjk.test(txt) && txt.length>=2 && txt.length<=8 && !CardParse.knownTitle(txt) && !L.titles.includes(txt)) L.titles.push(txt);
+    if(after==="org" && cjk.test(txt) && txt.length>=4 && !CardParse.knownOrg(txt)){ const suf=txt.slice(-3); if(!L.orgs.includes(suf)) L.orgs.push(suf); }
+  }
+  if(n){ const e=Object.entries(L.exact); if(e.length>LEARN_MAX) L.exact=Object.fromEntries(e.slice(-LEARN_MAX)); L.titles=L.titles.slice(-100); L.orgs=L.orgs.slice(-100); }
+  return n;
+}
+function learnHTML(){
+  const L=data.learn, e=Object.entries(L.exact), FL={org:"單位",title:"職稱",note:"備註","":"不要用"};
+  const total=e.length+L.titles.length+L.orgs.length;
+  return '<details class="raw learn"><summary>從你的整理學到的規則（'+total+' 條）</summary>'
+    + '<p class="sub">在「整理文字」把文字放到不同的地方，存檔時會記下來，下次直接照做。只記單位、職稱、備註和不要用的文字，姓名和聯絡方式不記。</p>'
+    + (total?'<ul class="lrn">'
+      + e.slice().reverse().map(([k,v])=>'<li><span>'+esc(k)+'</span><span class="sub">→ '+FL[v]+'</span><button type="button" class="textbtn" data-act="learnDel" data-t="x" data-k="'+esc(k)+'" aria-label="刪除這條">刪除</button></li>').join("")
+      + L.titles.map(w=>'<li><span>'+esc(w)+'</span><span class="sub">→ 職稱用詞</span><button type="button" class="textbtn" data-act="learnDel" data-t="t" data-k="'+esc(w)+'" aria-label="刪除這條">刪除</button></li>').join("")
+      + L.orgs.map(w=>'<li><span>…'+esc(w)+'</span><span class="sub">→ 單位結尾</span><button type="button" class="textbtn" data-act="learnDel" data-t="o" data-k="'+esc(w)+'" aria-label="刪除這條">刪除</button></li>').join("")
+      + '</ul><button type="button" class="pill line small" data-act="learnClear">全部清除</button>'
+      : '<p class="sub">還沒有。</p>')
+    + '</details>';
+}
 function normalize(d){
   if(!d || !(d.me||d.profiles) || !Array.isArray(d.cards)) d=clone(DEFAULT);
   const mt=(d.meta&&typeof d.meta==="object")?d.meta:{};
   const pf=(d.profiles&&typeof d.profiles==="object")?d.profiles:{work:d.me};   // 舊版只有一張「我的名片」→ 變成工作版
   d={profiles:{work:cleanMe(pf.work), personal:cleanMe(pf.personal)}, active:d.active==="personal"?"personal":"work",
      cards:d.cards.filter(c=>c&&typeof c==="object").map(cleanCard), settings:d.settings,
+     learn:cleanLearn(d.learn),
      meta:{cloudConnected:!!mt.cloudConnected, lastCloud:str(mt.lastCloud), lastChange:str(mt.lastChange), supportShown:!!mt.supportShown}};
   const s=Object.assign(clone(DEFAULT_SETTINGS), d.settings||{});
   s.show=Object.assign(clone(DEFAULT_SETTINGS.show), (d.settings&&d.settings.show)||{});
@@ -691,13 +742,15 @@ function sameSheet(){
     + '<button type="button" class="pill line" data-act="sameNew">不是同一個人，另存一張</button><button type="button" class="textbtn" data-act="sameBack" style="align-self:center">返回修改</button></div>';
 }
 async function finishAdd(fields, mode, targetId){
+  const learned=learnFromReview();
   ui.auto=new Set(); ui.ocrAsk=null; ocrCancel(); resetReview(); cropKeep.src={}; ui.same=null;
   let card, msg;
   if(mode==="edit" && (card=data.cards.find(x=>x.id===ui.editId))){ Object.assign(card, fields, {sample:false}); msg="已儲存修改"; }
   else if(mode==="update" && (card=data.cards.find(x=>x.id===targetId))){ await applyNewVersion(card, fields); msg="已更新，舊的收進「以前的名片」"; }
   else { card=Object.assign({id:"c"+Date.now().toString(36), added:today()}, fields); data.cards.push(card); msg="已存入名片夾"; }
   save();
-  ui.adding=false; ui.editId=null; ui.newFor=null; ui.draft=null; ui.draftPhoto=""; ui.draftBack=""; ui.openId=card.id; ui.paperBack=false; ui.query=""; render(); toast(msg);
+  ui.adding=false; ui.editId=null; ui.newFor=null; ui.draft=null; ui.draftPhoto=""; ui.draftBack=""; ui.openId=card.id; ui.paperBack=false; ui.query=""; render();
+  toast(msg+(learned?"；記下了 "+learned+" 條你的整理方式":""));
 }
 const paperLabel=(fl,hasBack)=>!fl?"正面・點名片翻面":hasBack?"背面・點名片翻回":"沒拍背面，依資料排版";
 function paperHTML(c){
@@ -849,6 +902,7 @@ function ocrSettingsHTML(){
     + row("paddle") + row("tess")
     + (o.engine==="tess"?'<p class="sub">輕量版預設辨識繁體中文和英文，可以加上：</p><label class="check" for="ocr-jpn"><input type="checkbox" id="ocr-jpn" data-ocr="jpn"'+(o.jpn?' checked':'')+'>日文</label>'
       + '<label class="check" for="ocr-chi_sim"><input type="checkbox" id="ocr-chi_sim" data-ocr="chi_sim"'+(o.chi_sim?' checked':'')+'>簡體中文</label>':'')
+    + learnHTML()
     + '<p class="sub" id="appUsage">這個 app 目前在手機上使用的空間：計算中…</p></section>';
 }
 const mb = b => b>=1048576 ? (b/1048576).toFixed(1)+"MB" : Math.max(1,Math.round(b/1024))+"KB";
@@ -1072,13 +1126,13 @@ async function deliver(filename, text, mime){
 
 /* ---------- 備份內容與匯入 ---------- */
 function backupPayload(){
-  return {app:"bizcard", version:1, exported:new Date().toISOString(), profiles:data.profiles, active:data.active, me:data.profiles.work, settings:data.settings, cards:data.cards.filter(c=>!c.sample)};
+  return {app:"bizcard", version:1, exported:new Date().toISOString(), profiles:data.profiles, active:data.active, me:data.profiles.work, settings:data.settings, learn:data.learn, cards:data.cards.filter(c=>!c.sample)};
 }
 function prepareImport(d){   // 檔案或雲端讀回來的備份：先列出差異，讓使用者決定要加入哪些
   if(!d || !Array.isArray(d.cards)) return false;
   const have=new Set(data.cards.map(c=>c.id));
   const cards=d.cards.filter(c=>c&&typeof c==="object"&&c.name).map(cleanCard);
-  ui.importing={cards, fresh:cards.filter(c=>!have.has(c.id)), me:d.me?cleanMe(d.me):null, profiles:d.profiles?{work:cleanMe(d.profiles.work), personal:cleanMe(d.profiles.personal)}:null, settings:d.settings||null};
+  ui.importing={cards, fresh:cards.filter(c=>!have.has(c.id)), me:d.me?cleanMe(d.me):null, profiles:d.profiles?{work:cleanMe(d.profiles.work), personal:cleanMe(d.profiles.personal)}:null, settings:d.settings||null, learn:d.learn?cleanLearn(d.learn):null};
   return true;
 }
 
@@ -1258,9 +1312,9 @@ let tokSeq=0;
 function resetReview(){ ui.review={tokens:[]}; ui.rv={open:false, sel:null, mode:null, side:"front"}; }
 function addTokens(side, toks){
   ui.review=ui.review||{tokens:[]};
-  ui.review.tokens=ui.review.tokens.filter(t=>t.side!==side).concat(toks.map(t=>({id:"t"+(++tokSeq), text:t.text, field:t.field||null, kind:t.kind||null, box:t.box||null, side})));
+  ui.review.tokens=ui.review.tokens.filter(t=>t.side!==side).concat(toks.map(t=>({id:"t"+(++tokSeq), text:t.text, raw:t.text, orig:t.field||null, field:t.field||null, kind:t.kind||null, learned:!!t.learned, box:t.box||null, side})));
 }
-const unusedTokens=()=>((ui.review&&ui.review.tokens)||[]).filter(t=>!t.field && t.kind!=="fax");
+const unusedTokens=()=>((ui.review&&ui.review.tokens)||[]).filter(t=>!t.field && t.kind!=="fax" && t.kind!=="skip");
 function setRaw(label, raw){
   const d=ui.draft=ui.draft||{}; const head="【"+label+"】";
   const blocks=(d.ocrText||"").split(/\n(?=【)/).filter(x=>x && !x.startsWith(head)); blocks.push(head+"\n"+raw.trim());
@@ -1286,7 +1340,7 @@ const tokById=id=>((ui.review&&ui.review.tokens)||[]).find(t=>t.id===id);
 function tokChip(t, sel){
   const sideTag=t.side==="back"?'<small>背面</small>':(t.side==="paste"?'<small>貼上</small>':'');
   return '<button type="button" class="tok'+(t.field?' placed':'')+(sel&&sel.id===t.id?' sel':'')+'" data-act="tok" data-id="'+t.id+'">'
-    +(t.kind==="fax"&&!t.field?'<small>傳真</small>':'')+esc(t.field&&t.field!=="note"?(CardParse.valueFor(t.text,t.field)||t.text):t.text)+sideTag+'</button>';
+    +(t.kind==="fax"&&!t.field?'<small>傳真</small>':'')+(t.learned&&t.field===t.orig?'<small>'+(t.field?'學過':'之前略過')+'</small>':'')+esc(t.field&&t.field!=="note"?(CardParse.valueFor(t.text,t.field)||t.text):t.text)+sideTag+'</button>';
 }
 function renderReview(){
   const toks=ui.review.tokens, sel=tokById(ui.rv.sel), mode=ui.rv.mode;
@@ -1381,11 +1435,12 @@ async function runOCR(side, file){
     if(!ui.adding) return;            // 使用者已經離開表單
     syncDraft();
     ui.ocr=null;
-    const parsed=CardParse.parse(lines,{side});
+    const parsed=CardParse.parse(lines,{side, learn:data.learn});
     if(!parsed.tokens.length){ keepScroll(render); toast("沒有認出可用的文字，可以改用貼上文字或手動輸入"); return; }
     addTokens(side, parsed.tokens); setRaw(label, lines.map(l=>l.text).join("\n"));
     ui.rv.side=side;
-    const msg=afterTokens(label);
+    const nL=parsed.tokens.filter(t=>t.learned).length;
+    const msg=afterTokens(label)+(nL?"（"+nL+" 塊照你之前的整理）":"");
     render(); window.scrollTo(0,0); toast(msg);
   }catch(e){
     if(!alive()) return;
@@ -1643,7 +1698,7 @@ document.addEventListener("click", e=>{
   else if(a==="tok"){
     const t=tokById(id), cur=tokById(ui.rv.sel);
     if(ui.rv.mode==="merge" && cur && t && t.id!==cur.id){   // 把選取的文字卡接到點到的那張後面
-      t.text=CardParse.joinText(t.text, cur.text); if(!t.box) t.box=cur.box;
+      t.text=CardParse.joinText(t.text, cur.text); t.raw=t.text; t.orig=null; t.learned=false; if(!t.box) t.box=cur.box;
       ui.review.tokens=ui.review.tokens.filter(x=>x.id!==cur.id); ui.rv.sel=t.id; ui.rv.mode=null; keepScroll(render); return;
     }
     ui.rv.sel = cur && cur.id===id ? null : id; ui.rv.mode=null; if(t && t.side!=="paste") ui.rv.side=t.side; keepScroll(render);
@@ -1655,14 +1710,14 @@ document.addEventListener("click", e=>{
   else if(a==="tokSplit"){
     const t=tokById(ui.rv.sel); if(!t) return; const chars=Array.from(t.text), i=+el.dataset.i;
     const left=chars.slice(0,i).join("").trim(), right=chars.slice(i).join("").trim(); if(!left||!right) return;
-    t.text=left; const nt={id:"t"+(++tokSeq), text:right, field:null, kind:null, box:t.box, side:t.side};
+    t.text=left; t.raw=left; t.orig=null; t.learned=false; const nt={id:"t"+(++tokSeq), text:right, raw:right, orig:null, field:null, kind:null, box:t.box, side:t.side};
     ui.review.tokens.splice(ui.review.tokens.indexOf(t)+1, 0, nt); ui.rv.mode=null; keepScroll(render);
   }
   else if(a==="pasteOpen"){ syncDraft(); ui.draft.paste=ui.draft.paste||""; keepScroll(render); document.getElementById("pasteText")?.focus(); }
   else if(a==="pasteClose"){ syncDraft(); delete ui.draft.paste; keepScroll(render); }
   else if(a==="pasteParse"){
     syncDraft(); const t=(ui.draft.paste||"").trim(); if(!t){ toast("先貼上名片文字"); return; }
-    const parsed=CardParse.parse(t,{side:"paste"});
+    const parsed=CardParse.parse(t,{side:"paste", learn:data.learn});
     delete ui.draft.paste;
     if(!parsed.tokens.length){ keepScroll(render); toast("沒有找到可以用的文字"); return; }
     addTokens("paste", parsed.tokens); setRaw("貼上", t);
@@ -1676,6 +1731,12 @@ document.addEventListener("click", e=>{
   else if(a==="cropAll"){ ui.crop.q=CROP_FULL.map(p=>p.slice()); cropUpdate(); cropPreview(); }
   else if(a==="cropCancel"){ ui.crop=null; renderCrop(); }
   else if(a==="cropOk"){ cropDone(); }
+  else if(a==="learnDel"){
+    const k=el.dataset.k, L=data.learn;
+    if(el.dataset.t==="x") delete L.exact[k]; else if(el.dataset.t==="t") L.titles=L.titles.filter(w=>w!==k); else L.orgs=L.orgs.filter(w=>w!==k);
+    save({quiet:true}); keepScroll(render); const d=document.querySelector("details.learn"); if(d) d.open=true;
+  }
+  else if(a==="learnClear"){ data.learn=cleanLearn(null); save({quiet:true}); keepScroll(render); toast("已清除學到的規則"); }
   else if(a==="sameUpdate"){ const s=ui.same; if(s) finishAdd(s.fields,"update",s.id); }
   else if(a==="sameNew"){ const s=ui.same; if(s) finishAdd(s.fields,"new"); }
   else if(a==="sameBack"){ ui.same=null; keepScroll(render); }
@@ -1750,6 +1811,7 @@ document.addEventListener("click", e=>{
   else if(a==="importCards"||a==="importAll"){
     const imp=ui.importing; if(!imp) return;
     data.cards=data.cards.concat(imp.fresh);
+    if(imp.learn){ const L=data.learn; Object.assign(L.exact, imp.learn.exact); imp.learn.titles.forEach(w=>{ if(!L.titles.includes(w)) L.titles.push(w); }); imp.learn.orgs.forEach(w=>{ if(!L.orgs.includes(w)) L.orgs.push(w); }); data.learn=cleanLearn(L); }
     if(a==="importAll"){ if(imp.profiles) data.profiles=imp.profiles; else if(imp.me) data.profiles.work=imp.me;
       if(imp.settings) data.settings=normalize({profiles:data.profiles,cards:[],settings:imp.settings}).settings; applySettings(); }
     ui.importing=null; save(); keepScroll(render); toast("已匯入 "+imp.fresh.length+" 張名片");
