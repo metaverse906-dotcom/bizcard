@@ -17,7 +17,7 @@
      對方打開電子名片時，只載入那張名片用到的字體，不載入辨識和裁切的程式，打開比較快。 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script>
-window.APP_VERSION = "0.6.1";
+window.APP_VERSION = "0.6.2";
 window.IS_ECARD = location.hash.indexOf("#c=") === 0;
 (function(){
   var G = "https://fonts.googleapis.com/css2?family=", F = {
@@ -88,7 +88,8 @@ button{font:inherit;cursor:pointer;color:inherit}
 .pill{border:none;border-radius:999px;background:var(--surface);color:var(--ink);min-height:44px;padding:0 18px;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none}
 .pill.strong{background:var(--strong);color:var(--strong-ink);font-weight:700}
 .pill.big{min-height:56px;font-size:1.06rem;width:100%}
-.pill.line{background:transparent;border:1px solid var(--line)}
+.pill.line{background:var(--soft);border:1.5px solid var(--line);font-weight:500}
+.pill.line:active,.chip:active,.pill:active{transform:scale(.97)}
 .pill.danger{background:transparent;border:1px solid var(--danger);color:var(--danger)}
 .pill:disabled{opacity:.5;cursor:not-allowed}
 .round{width:52px;height:52px;border-radius:50%;border:none;background:var(--strong);color:var(--strong-ink);display:grid;place-items:center;flex:none}
@@ -131,11 +132,11 @@ textarea.grow{min-height:0;resize:none;overflow:hidden;line-height:1.45;display:
 @media (max-width:420px){.grid2{grid-template-columns:1fr}}
 
 /* ---------- card box ---------- */
-.search{display:flex;align-items:center;gap:10px;background:var(--surface);border-radius:999px;padding:0 18px;min-height:48px;color:var(--muted)}
+.search{display:flex;flex-direction:row;align-items:center;gap:10px;background:var(--surface);border-radius:999px;padding:0 18px;min-height:48px;color:var(--muted)}
 .search input{flex:1;min-width:0;border:none;background:transparent;padding:0;border-radius:0}
 .search input:focus{border:none}
 .chips{display:flex;gap:8px;flex-wrap:wrap}
-.chip{min-height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--ink);font-size:.84rem}
+.chip{min-height:38px;padding:0 14px;border-radius:999px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);font-size:.84rem}
 .chip[aria-pressed="true"]{background:var(--strong);color:var(--strong-ink);border-color:var(--strong)}
 .box{display:flex;flex-direction:column;padding-top:4px}
 .strip{all:unset;box-sizing:border-box;cursor:pointer;height:78px;margin-top:-14px;border-radius:16px 16px 0 0;padding:13px 20px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;
@@ -249,14 +250,18 @@ textarea.grow{min-height:0;resize:none;overflow:hidden;line-height:1.45;display:
 .nudge .nb{display:flex;flex-direction:column;align-items:center;gap:2px;flex:none}
 .nudge .nb .textbtn{color:var(--sand-ink);min-height:32px}
 .tip{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--surface);color:var(--ink);border:1.5px dashed var(--line);border-radius:14px;padding:10px 10px 10px 14px;font-size:.88rem;line-height:1.55}
-.tip .pill{background:var(--soft);flex:none}
+.tip .pill{background:var(--soft);flex:none;white-space:nowrap}
 .ocrintro p{margin:6px 0 12px}
 .empty p{margin:0}
 .clog{display:flex;flex-direction:column;gap:12px;overflow-y:auto;max-height:60vh;padding-right:4px}
 .clogsheet{max-height:85vh}
-.verrow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
+.rowbtn{all:unset;box-sizing:border-box;cursor:pointer;width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:56px;margin-top:12px;padding:8px 14px;border-radius:14px;background:var(--soft);border:1.5px solid var(--line);color:var(--ink)}
+.rowbtn:focus-visible{outline:2px solid var(--link);outline-offset:2px}
+.rowbtn>span:first-child{display:flex;flex-direction:column;line-height:1.4}
+.rowbtn b{font-weight:500}
+.chev{width:9px;height:9px;border-right:2px solid var(--muted);border-top:2px solid var(--muted);transform:rotate(45deg);flex:none;margin-right:4px}
 .newdot{position:relative}
-.newdot::after{content:"";position:absolute;top:-2px;right:-2px;width:9px;height:9px;border-radius:50%;background:var(--danger)}
+.newdot::after{content:"";position:absolute;top:8px;right:10px;width:9px;height:9px;border-radius:50%;background:var(--danger)}
 .clog b{margin-right:8px}
 .clog ul{margin:4px 0 0;padding-left:1.2em;font-size:.88rem}
 #tab-set{position:relative}
@@ -269,7 +274,11 @@ textarea.grow{min-height:0;resize:none;overflow:hidden;line-height:1.45;display:
 @media (prefers-reduced-motion:no-preference){.spin{animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}}
 input.auto,textarea.auto{background:var(--sand);border-color:transparent}
 .chk{display:inline-block;font-size:.7rem;background:var(--sand);color:var(--sand-ink);border-radius:999px;padding:0 7px;margin-left:6px;vertical-align:1px}
-details.raw summary{cursor:pointer;color:var(--muted);font-size:.84rem;min-height:32px;display:flex;align-items:center}
+details.raw summary{cursor:pointer;color:var(--ink);font-size:.86rem;min-height:44px;display:flex;align-items:center;justify-content:space-between;gap:8px;list-style:none;
+  border-radius:12px;background:var(--soft);padding:0 14px;margin-top:6px}
+details.raw summary::-webkit-details-marker{display:none}
+details.raw summary::after{content:"";width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);margin-top:-4px;flex:none;transition:transform .15s}
+details.raw[open] summary::after{transform:rotate(-135deg);margin-top:4px}
 details.raw pre{white-space:pre-wrap;font:inherit;font-size:.82rem;color:var(--muted);margin:4px 0 0;background:var(--soft);border-radius:10px;padding:10px 12px;user-select:text}
 .ocrlinks{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .rv-photo{position:relative;border-radius:16px;overflow:hidden;background:var(--soft)}
@@ -835,7 +844,7 @@ function sameSheet(){
     + '<div class="cmp">'+box("","原本的・"+short(c.added),c.org,c.title)+'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>'+box("new","新的・今天",s.fields.org,s.fields.title)+'</div>'
     + '<p class="memo" style="margin:0">更新後，舊名片會收進「以前的名片」，只留縮小的正面照片。你記下的認識經過會保留。</p>'
     + '<button type="button" class="pill strong big" data-act="sameUpdate">更新'+esc(c.name)+'的名片</button>'
-    + '<button type="button" class="pill line" data-act="sameNew">不是同一個人，另存一張</button><button type="button" class="textbtn" data-act="sameBack" style="align-self:center">返回修改</button></div>';
+    + '<button type="button" class="pill line" data-act="sameNew">不是同一個人，另存一張</button><button type="button" class="pill line small" data-act="sameBack" style="align-self:center">返回修改</button></div>';
 }
 async function finishAdd(fields, mode, targetId){
   try{ await finishAddInner(fields, mode, targetId); }
@@ -905,7 +914,7 @@ function openHTML(c){
     + (acts?'<div class="acts">'+acts+'</div>':'')
     + histHTML(c)
     + (c.ocrText?'<details class="raw"><summary>辨識原文</summary><pre>'+esc(c.ocrText)+'</pre></details>':'')
-    + '<div class="del"><button type="button" class="textbtn" data-act="editCard" data-id="'+c.id+'">編輯</button>'+(c.sample?'':'<button type="button" class="textbtn" data-act="newVersion" data-id="'+c.id+'">收到新名片</button>')+(ui.confirmId===c.id
+    + '<div class="del"><button type="button" class="pill line small" data-act="editCard" data-id="'+c.id+'">編輯</button>'+(c.sample?'':'<button type="button" class="pill line small" data-act="newVersion" data-id="'+c.id+'">收到新名片</button>')+(ui.confirmId===c.id
         ? '<button type="button" class="pill danger" data-act="del" data-id="'+c.id+'">確定刪除</button><button type="button" class="pill line" data-act="noDel">保留</button>'
         : '<button type="button" class="textbtn" data-act="askDel" data-id="'+c.id+'">刪除這張</button>')+'</div></div>';
 }
@@ -931,8 +940,8 @@ function renderBook(){
   const side=(key,label,img)=>'<div class="side"><span class="sub">'+label+(key==="back"?'（選填）':'')+'</span><div class="slot'+(img?'':' empty')+'">'+(img?'<img src="'+img+'" alt="名片'+label+'">':'<span>'+label+'</span>')+'</div>'
     + '<div class="photobtns"><button type="button" class="pill line small" data-act="snap" data-side="'+key+'">'+(img?'重拍':'拍'+label)+'</button>'
     + '<button type="button" class="pill line small" data-act="pickPhoto" data-side="'+key+'">相簿</button>'
-    + (img&&cropKeep.src[key]?'<button type="button" class="textbtn" data-act="recrop" data-side="'+key+'">調整範圍</button>':'')
-    + (img?'<button type="button" class="textbtn" data-act="clearPhoto" data-side="'+key+'">移除</button>':'')+'</div></div>';
+    + (img&&cropKeep.src[key]?'<button type="button" class="pill line small" data-act="recrop" data-side="'+key+'">調整範圍</button>':'')
+    + (img?'<button type="button" class="pill line small" data-act="clearPhoto" data-side="'+key+'">移除</button>':'')+'</div></div>';
   const add = ui.adding ? '<section class="tile"><form id="addForm" novalidate><h2>'+(ui.editId?'編輯名片':ui.newFor?'收到'+esc(data.cards.find(x=>x.id===ui.newFor)?.name||"")+'的新名片':'新增名片')+'</h2>'
     + (ui.newFor?'<p class="sub">存檔後，現在這張會收進「以前的名片」。</p>':'')
     + '<div class="sides">'+side("front","正面",ui.draftPhoto)+side("back","背面",ui.draftBack)+'</div>'
@@ -977,6 +986,7 @@ function textOnly(p){
 const APP_URL = () => location.origin + location.pathname.replace(/index\.html$/,"");
 // 更新紀錄：每版 1–3 行白話。發新版時在最上面加一筆，並把 index.html 開頭的 APP_VERSION 改成同一個號碼
 const CHANGELOG = [
+  {v:"0.6.2", d:"2026-10-16", items:["按鈕看起來更像按鈕：外框更清楚、可以展開的地方加上箭頭","「更新紀錄」改成一整列可以點的按鈕","修正搜尋框的放大鏡跑到輸入框上面"]},
   {v:"0.6.1", d:"2026-10-16", items:["電子名片的美術樣式（紙感、插畫、直排）也會套用你選的字體","更新紀錄改成按鈕，點開才顯示"]},
   {v:"0.6.0", d:"2026-10-16", items:["第一次用到各個功能時，會出現一句簡短的說明","填好自己的名片後，可以用範例名片試試看自動讀字","新增名片多了會提醒你備份；對方打開電子名片更快"]},
   {v:"0.5.1", d:"2026-10-16", items:["範例和提示文字改成適合各行各業","職稱辨識更準，例如「資深分析師」不會再被拆開"]},
@@ -988,8 +998,7 @@ const CHANGELOG = [
 ];
 // 「關於」裡只放版本號和一顆按鈕；更新紀錄在彈出的視窗裡，紀錄再多也不會把設定頁拉長
 function changelogHTML(isNew){
-  return '<div class="verrow"><span class="sub">版本 '+esc(APP_VERSION)+'</span>'
-    + '<button type="button" class="pill line small'+(isNew?' newdot':'')+'" data-act="clogOpen">'+(isNew?'看看新功能':'更新紀錄')+'</button></div>';
+  return '<button type="button" class="rowbtn'+(isNew?' newdot':'')+'" data-act="clogOpen"><span><b>更新紀錄</b><span class="sub">'+(isNew?'有新功能・':'')+'目前版本 '+esc(APP_VERSION)+'</span></span><span class="chev" aria-hidden="true"></span></button>';
 }
 function renderClog(){
   let z=document.getElementById("clogBox");
@@ -1029,7 +1038,7 @@ function ocrIntroHTML(){
   return '<section class="tile ocrintro"><h2>再來試試收名片</h2><p>拍一張名片，app 會自動讀出姓名、電話、Email，幫你填好表單。照片不會上傳。</p>'
     + '<div class="row"><button type="button" class="pill strong" data-act="demoOcr" data-tip="ocrIntro">用範例名片試試看</button>'
     + '<button type="button" class="pill line" data-act="snap" data-side="front" data-tip="ocrIntro">現在拍一張</button>'
-    + '<button type="button" class="textbtn" data-act="tipOk" data-key="ocrIntro" data-rerender="1">先不用</button></div></section>';
+    + '<button type="button" class="pill line small" data-act="tipOk" data-key="ocrIntro" data-rerender="1">先不用</button></div></section>';
 }
 // 範例名片照片：當場用畫布畫一張虛構的名片，不需要另外下載圖檔
 function demoCardPhoto(){
@@ -1050,7 +1059,7 @@ function backupNudge(){
   const m=data.meta, n=m.sinceBackup||0;
   if(m.cloudConnected || n<5 || n<(m.snoozeAt||0)+5) return "";
   return '<div class="nudge backup"><span>'+(m.lastBackup?'上次備份後新增了 '+n+' 張名片':'名片夾還沒備份過，已經有 '+n+' 張名片')+'。手機資料被清掉就救不回來，建議現在備份。</span>'
-    + '<span class="nb"><button type="button" class="pill small" data-act="exportJson">備份</button><button type="button" class="textbtn" data-act="backupLater">晚點</button></span></div>';
+    + '<span class="nb"><button type="button" class="pill small" data-act="exportJson">備份</button><button type="button" class="pill line small" data-act="backupLater">晚點</button></span></div>';
 }
 function markBackup(){ Object.assign(data.meta,{sinceBackup:0, snoozeAt:0, lastBackup:new Date().toISOString()}); save({quiet:true}); }
 function supportNote(){
@@ -1058,7 +1067,7 @@ function supportNote(){
   if(real<10 || data.meta.supportShown || ui.adding) return "";
   return '<section class="tile supportnote" aria-label="給你的一段話"><p>你已經收了 '+real+' 張名片了。</p>'
     + '<p class="sub">隨身名片夾不收費、沒有廣告。如果它有幫上忙，可以到「設定 → 關於」看看。</p>'
-    + '<div class="row"><button type="button" class="pill line" data-act="supportOk">知道了</button><button type="button" class="textbtn" data-act="supportGo">看看「關於」</button></div></section>';
+    + '<div class="row"><button type="button" class="pill line" data-act="supportOk">知道了</button><button type="button" class="pill line small" data-act="supportGo">看看「關於」</button></div></section>';
 }
 /* ---------- 辨識引擎與資料管理 ----------
    兩種引擎的檔案都放在獨立快取「bizcard-ocr」（Tesseract 的語言檔另外存在它自己的資料庫 keyval-store），
@@ -1113,7 +1122,7 @@ async function downloadPaddle(onP){
 }
 function estyleSettingsHTML(){
   const s=data.settings, hasP=!!data.profiles.personal.name;
-  const prev=prof=>'<div class="row">'+Object.entries(ESTYLES).map(([k,n])=>'<button type="button" class="textbtn" data-act="stylePreview" data-prof="'+prof+'" data-key="'+k+'">預覽'+n+'</button>').join("")+'</div>';
+  const prev=prof=>'<div class="row">'+Object.entries(ESTYLES).map(([k,n])=>'<button type="button" class="pill line small" data-act="stylePreview" data-prof="'+prof+'" data-key="'+k+'">預覽'+n+'</button>').join("")+'</div>';
   return '<section class="tile set"><h2>電子名片樣式</h2>'
     + '<div class="frow"><span class="flbl">工作版</span><span class="sub">固定一種</span></div>'
     + '<div class="choices four">'+Object.entries(ESTYLES).map(([k,n])=>opt("styleWork",k,n,s.styleWork)).join("")+'</div>'
@@ -1662,14 +1671,14 @@ function ocrBox(){
   } else if(ui.ocr && ui.ocr.status==="error"){
     inner='<p>'+esc(ui.ocr.msg)+'</p><div class="row"><button type="button" class="pill line small" data-act="ocrRetry" data-side="'+ui.ocr.side+'">重試</button><button type="button" class="pill line small" data-act="ocrStop">關閉</button></div>';
   } else if(ui.ocr){
-    inner='<div class="ocrrun"><span class="spin" aria-hidden="true"></span><span role="status">'+esc(ui.ocr.status)+'</span><button type="button" class="textbtn" data-act="ocrStop">停止</button></div>';
+    inner='<div class="ocrrun"><span class="spin" aria-hidden="true"></span><span role="status">'+esc(ui.ocr.status)+'</span><button type="button" class="pill line small" data-act="ocrStop">停止</button></div>';
   } else if(d.paste!==undefined){
     inner='<label for="pasteText"><span>貼上名片文字（例如用 Google 智慧鏡頭複製的文字）</span><textarea id="pasteText" rows="5">'+esc(d.paste)+'</textarea></label>'
       +'<div class="row"><button type="button" class="pill strong small" data-act="pasteParse">拆成欄位</button><button type="button" class="pill line small" data-act="pasteClose">收起</button></div>';
   } else {
     const n=(ui.review&&ui.review.tokens.length)||0, u=unusedTokens().length;
     return '<div id="ocrbox" class="ocrlinks">'+(n?'<button type="button" class="pill line small" data-act="rvOpen">整理文字'+(u?'（'+u+' 塊還沒用到）':'')+'</button>':'')
-      +'<button type="button" class="textbtn" data-act="pasteOpen">貼上文字自動填寫</button></div>';
+      +'<button type="button" class="pill line small" data-act="pasteOpen">貼上文字自動填寫</button></div>';
   }
   return '<div id="ocrbox" class="ocrbox">'+inner+'</div>';
 }
@@ -1932,7 +1941,7 @@ const qrHint = () => qrMode()==="vcard" ? "用手機相機掃描，就能存入�
 const flipLabel = () => data.settings.presentFlip ? "改成朝向自己" : "轉向對面";
 function drawLine(){
   if(qrMode()==="vcard") return "";
-  return '這次抽到：<b>'+ESTYLES[ui.drawn]+'</b>'+(stylePool().length>1?' <button type="button" class="textbtn" data-act="redraw">換一款</button>':'');
+  return '這次抽到：<b>'+ESTYLES[ui.drawn]+'</b>'+(stylePool().length>1?' <button type="button" class="pill line small" data-act="redraw">換一款</button>':'');
 }
 function openPresent(){
   drawStyle();
