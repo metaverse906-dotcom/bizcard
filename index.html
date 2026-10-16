@@ -256,6 +256,13 @@ textarea.grow{min-height:0;resize:none;overflow:hidden;line-height:1.45;display:
 .clog{display:flex;flex-direction:column;gap:12px;overflow-y:auto;max-height:60vh;padding-right:4px}
 .clogsheet{max-height:85vh}
 .setlist{display:flex;flex-direction:column;gap:10px}
+.sethead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.sethead h2{display:flex;align-items:center;gap:6px}
+.ndot{width:8px;height:8px;border-radius:50%;background:var(--danger);display:inline-block}
+.scard .sub{margin-top:6px}
+.checks-inline{display:flex;flex-wrap:wrap;gap:0 16px}
+.checks-inline .check{min-height:40px;font-size:.9rem;gap:8px}
+.checks-inline .check .sub{display:none}
 .setlist .rowbtn{margin-top:0;background:var(--surface);min-height:64px}
 .subhead h1{margin-top:8px}
 .rowbtn{all:unset;box-sizing:border-box;cursor:pointer;width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:56px;margin-top:12px;padding:8px 14px;border-radius:14px;background:var(--soft);border:1.5px solid var(--line);color:var(--ink)}
@@ -989,7 +996,7 @@ function textOnly(p){
 const APP_URL = () => location.origin + location.pathname.replace(/index\.html$/,"");
 // 更新紀錄：每版 1–3 行白話。發新版時在最上面加一筆，並把 index.html 開頭的 APP_VERSION 改成同一個號碼
 const CHANGELOG = [
-  {v:"0.7.1", d:"2026-10-17", items:["設定分成幾個分類，點進去再調整，不用一直往下滑","新增隱私權政策頁面"]},
+  {v:"0.7.1", d:"2026-10-17", items:["設定頁每個分類只放最常用的設定和目前狀態，細項按右上角再進去調","新增隱私權政策頁面"]},
   {v:"0.7.0", d:"2026-10-17", items:["可以直接備份到自己的 Google Drive，按一下就好；換手機時從 Google Drive 還原","也可以存到 Dropbox、OneDrive 等其他地方"]},
   {v:"0.6.2", d:"2026-10-16", items:["按鈕看起來更像按鈕：外框更清楚、可以展開的地方加上箭頭","「更新紀錄」改成一整列可以點的按鈕","修正搜尋框的放大鏡跑到輸入框上面"]},
   {v:"0.6.1", d:"2026-10-16", items:["電子名片的美術樣式（紙感、插畫、直排）也會套用你選的字體","更新紀錄改成按鈕，點開才顯示"]},
@@ -1189,10 +1196,28 @@ function renderSettings(){
     return '<div class="head subhead"><div><button type="button" class="pill line small" data-act="setPage" data-key="">‹ 設定</button><h1>'+pg.t+'</h1></div></div>'
       + pg.html() + '<div id="fb"></div>';
   }
+  // 設定首頁：每個分類一張卡，放最常用的設定和目前狀態；細項按右上角進去調
+  const card=(k,body)=>{ const p=PAGES[k];
+    return '<section class="tile set scard"><div class="sethead"><h2>'+p.t+(p.dot?'<span class="ndot" aria-label="有新功能"></span>':'')+'</h2>'
+      + '<button type="button" class="pill line small" data-act="setPage" data-key="'+k+'">'+p.more+' ›</button></div>'+body+'</section>'; };
+  PAGES.look.more="字體、深淺色"; PAGES.ecard.more="樣式"; PAGES.ocr.more="管理"; PAGES.backup.more="還原、匯出"; PAGES.about.more="更新紀錄";
+  const o=s.ocr, ocrReady=o.engine==="paddle"?o.paddleReady:o.ready;
+  const prof=data.active==="personal"?"cardColorPersonal":"cardColor";
   return '<div class="head"><div><div class="eyebrow">改了馬上套用</div><h1>設定</h1></div></div>'
-    + '<nav class="setlist" aria-label="設定分類">'
-    + Object.entries(PAGES).map(([k,p])=>'<button type="button" class="rowbtn'+(p.dot?' newdot':'')+'" data-act="setPage" data-key="'+k+'"><span><b>'+p.t+'</b><span class="sub">'+esc(p.d)+'</span></span><span class="chev" aria-hidden="true"></span></button>').join("")
-    + '</nav><div id="fb"></div>';
+    + preview
+    + card("look", '<div class="frow"><span class="flbl">'+PROFILE_LABEL[data.active]+'的顏色</span><span class="sub">'+CARD_COLORS[s[prof]].name+'</span></div><div class="swatches">'+sw(prof)+'</div>'
+        + '<p class="sub">字體：名字 '+FONTS[s.fonts.name].name+'・內文 '+FONTS[s.fonts.cardText].name+'｜'+THEMES[s.theme]+'</p>')
+    + card("ecard", '<p class="sub" style="margin-bottom:6px">名片和 QR code 上要顯示的資料：</p><div class="checks-inline">'+checks+'</div>'
+        + '<p class="sub">樣式：工作版 '+ESTYLES[s.styleWork]+'・個人版從 '+s.stylePersonal.map(k=>ESTYLES[k]).join("、")+' 抽一種</p>')
+    + card("ocr", '<label class="check" for="ocr-enabled-q"><input type="checkbox" id="ocr-enabled-q" data-ocr="enabled"'+(o.enabled?' checked':'')+'>拍完名片自動辨識文字</label>'
+        + '<p class="sub">'+(o.engine==="paddle"?"高準確度":"輕量")+(ocrReady?"・已下載":"・第一次辨識時才下載（"+ENGINES[o.engine].size+"）")+'</p>')
+    + '<section class="tile set scard"><div class="sethead"><h2>名片夾</h2></div><div class="choices two">'+Object.entries(VIEWS).map(([k,n])=>opt("bookView",k,n,s.bookView)).join("")+'</div>'
+        + (data.cards.some(c=>c.sample)?'<div class="row" style="margin-top:10px"><button type="button" class="pill line small" data-act="clearSamples">移除範例名片</button></div>':'')+'</section>'
+    + card("backup", '<p class="sub">'+(data.meta.lastBackup?'上次備份：'+when(data.meta.lastBackup):'還沒備份過')+(data.meta.sinceBackup?'・之後新增了 '+data.meta.sinceBackup+' 張':'')+'</p>'
+        + '<div class="row">'+(GDRIVE_CLIENT_ID?'<button type="button" class="pill strong" data-act="cloudBackup"'+(ui.cloudBusy?' disabled':'')+'>'+(ui.cloudBusy==="backup"?'備份中…':'備份到 Google Drive')+'</button>'
+          :'<button type="button" class="pill strong" data-act="exportJson">備份到雲端硬碟</button>')+'</div>')
+    + card("about", '<p class="sub">版本 '+esc(APP_VERSION)+(ui.aboutNew?'・有新功能':'')+'・不收費、沒有廣告、不收集資料</p>')
+    + '<div id="fb"></div>';
 }
 
 function render(){
