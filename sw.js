@@ -1,10 +1,10 @@
 // 離線快取：沒有網路時也能打開 app、遞名片。
-// 改版時把 CACHE 的版本號 +1，手機下次連線就會換成新版。
+// 改版時把 CACHE 的版本號 +1，index.html 裡程式檔的 ?v= 也一起改成同一個數字，手機下次連線就會換成新版。
 // 文字辨識的檔案（Tesseract、PaddleOCR、ONNX Runtime）放在另一個快取 OCR_CACHE：
 // 改版時不會被清掉，也不用重新下載；只有使用者在設定頁按「刪除」才會移除。
-const CACHE = "bizcard-v11";
+const CACHE = "bizcard-v15";
 const OCR_CACHE = "bizcard-ocr";
-const SHELL = ["./", "./index.html", "./cardparse.js", "./crop.js", "./paddle.js", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./apple-touch-icon.png"];
+const SHELL = ["./", "./index.html", "./cardparse.js?v=15", "./crop.js?v=15", "./paddle.js?v=15", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./apple-touch-icon.png"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)));

@@ -5,7 +5,7 @@
       「王小明 心理師」這種姓名職稱同一塊的也拆開。被拉開字距的姓名（林 怡 君）會合回來。
    2. 每張文字卡判斷像什麼：先看最有把握的（Email、電話、網址、地址），再看標籤，再用關鍵字認單位、職稱，最後用刪去法猜姓名。
    3. 分配到欄位：一個欄位可以放多張文字卡（例如地址折成兩行），沒被用到的文字卡保留下來給使用者自己放。
-   欄位名稱與 app 相同：name 姓名、title 職稱、org 單位、alt 其他語言、phone 手機、tel 公司電話、email、line、web、address 地址、note 備註。
+   欄位名稱與 app 相同：name 姓名、title 職稱、org 單位、alt 其他語言、phone 手機、tel 公司電話、fax 傳真、email、line、web、address 地址、note 備註。
    這個檔案不碰網路、不存任何資料。 */
 (function (root) {
   "use strict";
@@ -38,7 +38,7 @@
     ["title", /^(職稱|職位|職務)/],
   ];
   const ORG_RE = /(中心|醫院|診所|院區|醫學中心|衛生所|心理治療所|心理諮商所|諮商所|治療所|協會|學會|公會|基金會|股份有限公司|有限公司|公司|企業社|商行|工作室|大學|學院|學校|高中|國中|國小|幼兒園|事務所|政府|市政府|縣政府|區公所|公所|法院|地檢署|檢察署|警察局|分局|派出所|消防局|局|處|署|委員會|議會|教會|聯盟|銀行|集團|部|科|課|組|室|系|所|社|館|園)$|\b(inc\.?|ltd\.?|co\.?,? ?ltd|corp(oration)?|company|center|centre|hospital|clinic|university|college|school|association|foundation|institute|department|bureau|office|bank|group|studio|llc)\b/i;
-  const TITLE_WORDS = "心理師|臨床心理師|諮商心理師|社會工作師|社工師|社工員|社工督導|社工|督導|個案管理師|個管師|管理師|主任委員|副主任|主任|執行長|董事長|副總經理|總經理|總監|協理|經理|副理|襄理|專案經理|專員|組長|課長|科長|股長|處長|局長|署長|院長|副院長|校長|所長|隊長|理事長|秘書長|秘書|總幹事|幹事|護理長|護理師|醫師|主治醫師|住院醫師|藥師|營養師|職能治療師|物理治療師|語言治療師|治療師|教授|副教授|助理教授|講師|老師|教師|導師|研究員|助理|律師|會計師|代書|法官|檢察官|書記官|觀護人|警員|巡佐|工程師|設計師|顧問|創辦人|負責人|業務|店長|志工";
+  const TITLE_WORDS = "心理師|臨床心理師|諮商心理師|社會工作師|社工師|社工員|社工督導|社工|督導|個案管理師|個管師|管理師|主任委員|副主任|主任|執行長|董事長|副總經理|總經理|總監|協理|經理|副理|襄理|專案經理|專員|組長|課長|科長|股長|處長|局長|署長|院長|副院長|校長|所長|隊長|理事長|秘書長|秘書|總幹事|幹事|護理長|護理師|醫師|主治醫師|住院醫師|藥師|營養師|職能治療師|物理治療師|語言治療師|治療師|教授|副教授|助理教授|講師|老師|教師|導師|研究員|助理|律師|會計師|代書|法官|檢察官|書記官|觀護人|警員|巡佐|工程師|設計師|顧問|創辦人|負責人|業務|店長|志工|董事|總裁|副總裁|副總|營運長|財務長|技術長|行銷長|特助|合夥人|會長|社長|分析師|架構師|企劃|行銷|編輯|主編|記者|製作人|攝影師|建築師|技師|業務代表|經紀人|策展人|產品經理|行銷經理|業務經理|主廚|廚師|作家|插畫家|主持人|牧師|法師";
   const TITLE_RE = new RegExp("(" + TITLE_WORDS + ")$");
   // ---------- 從使用者的整理學到的規則（只存在使用者手機上，由 app 傳進來） ----------
   // exact：某段文字 → 欄位（"" 代表不要用）；titles：職稱詞；orgs：單位字尾
@@ -52,7 +52,9 @@
   const isTitleWord = v => TITLE_RE.test(v) || ((LEARN && LEARN.titles) || []).some(w => w && v.endsWith(w));
   const isOrgWord = v => ORG_RE.test(v) || ((LEARN && LEARN.orgs) || []).some(w => w && v.endsWith(w));
   const TITLE_ANY = new RegExp("(" + TITLE_WORDS + ")");
-  const TITLE_FULL = new RegExp("^(" + TITLE_WORDS + ")$");
+  // 職稱前面常見的修飾詞：「資深分析師」「首席顧問」整個是職稱，不要把「資深」當成名字拆開
+  const TITLE_MOD = "資深|高級|首席|專任|兼任|特約|執行|助理|行政|技術|專案|代理|榮譽|客座|駐點|實習|主任|副";
+  const TITLE_FULL = new RegExp("^(" + TITLE_MOD + ")*(" + TITLE_WORDS + ")$");
   const PAIR_RE = new RegExp("^([" + CJK + "]{2,4})\\s*(" + TITLE_WORDS + ")$");
   const PAIR_REV = new RegExp("^(" + TITLE_WORDS + ")\\s*([" + CJK + "]{2,4})$");
   const TITLE_EN = /\b(manager|director|engineer|officer|president|vice president|ceo|cto|cfo|coo|founder|co-founder|assistant|consultant|designer|psychologist|counsel+or|therapist|social worker|case manager|supervisor|coordinator|professor|lecturer|teacher|nurse|doctor|physician|pharmacist|specialist|researcher|attorney|lawyer|accountant|secretary|chairman|executive|representative|sales|lead|head|chief|partner|owner)\b/i;
@@ -164,6 +166,7 @@
     const firstOf = (k, f, more) => { tokens.filter(t => t.kind === k && !t.field).forEach((t, i) => { if (i === 0 && !has(f)) t.field = f; else if (more) more(t); }); };
     tokens.filter(t => t.kind && t.kind.startsWith("learn_")).forEach(t => { t.field = t.kind.slice(6); });
     firstOf("email", "email");
+    firstOf("fax", "fax");
     firstOf("line", "line");
     firstOf("web", "web");
     firstOf("phone", "phone", t => { if (!has("tel")) t.field = "tel"; });
@@ -196,9 +199,11 @@
   }
   // 文字卡放進某個欄位時，實際填入的值：去掉標籤；電話、Email、網址只取有效的那一段
   function valueFor(text, field) {
+    if (field === "note") return tidy(String(text || "").replace(/：/g, "：")).trim();   // 備註保留原文（含「電話：」這類字）
     let v = tidy(stripLabel(normalize(text)).value);
-    const m = field === "phone" || field === "tel" ? v.match(PHONE_RE) : field === "email" ? v.match(EMAIL_RE) : field === "web" ? v.match(URL_RE) : null;
-    if (m) v = field === "phone" || field === "tel" ? cleanPhone(m[0]) : m[0];
+    const isNum = field === "phone" || field === "tel" || field === "fax";
+    const m = isNum ? v.match(PHONE_RE) : field === "email" ? v.match(EMAIL_RE) : field === "web" ? v.match(URL_RE) : null;
+    if (m) v = isNum ? cleanPhone(m[0]) : m[0];
     return v;
   }
   const joinText = (a, b) => (reCJK.test(a.slice(-1)) && reCJK.test(b[0]) ? a + b : a + " " + b);
