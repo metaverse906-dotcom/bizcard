@@ -17,7 +17,7 @@
      對方打開電子名片時，只載入那張名片用到的字體，不載入辨識和裁切的程式，打開比較快。 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script>
-window.APP_VERSION = "0.6.2";
+window.APP_VERSION = "0.7.0";
 window.IS_ECARD = location.hash.indexOf("#c=") === 0;
 (function(){
   var G = "https://fonts.googleapis.com/css2?family=", F = {
@@ -489,7 +489,7 @@ textarea.fallback{font-size:12px;min-height:120px}
 
 <script>
 // ===== 上線前要填的地方 =====
-const GDRIVE_CLIENT_ID = "";   // Google Cloud 的 OAuth 用戶端 ID；空白時不顯示雲端備份
+const GDRIVE_CLIENT_ID = "1047138824936-09h8feukii3aich9qo54p0q4586c9j6e.apps.googleusercontent.com";   // Google Cloud 的 OAuth 用戶端 ID；空白時不顯示雲端備份
 const TIP_URL = "";
 // 許願池清單：status 用「收到了／製作中／已完成／先不做」
 const WISHES = [];
@@ -986,6 +986,7 @@ function textOnly(p){
 const APP_URL = () => location.origin + location.pathname.replace(/index\.html$/,"");
 // 更新紀錄：每版 1–3 行白話。發新版時在最上面加一筆，並把 index.html 開頭的 APP_VERSION 改成同一個號碼
 const CHANGELOG = [
+  {v:"0.7.0", d:"2026-10-17", items:["可以直接備份到自己的 Google Drive，按一下就好；換手機時從 Google Drive 還原","也可以存到 Dropbox、OneDrive 等其他地方"]},
   {v:"0.6.2", d:"2026-10-16", items:["按鈕看起來更像按鈕：外框更清楚、可以展開的地方加上箭頭","「更新紀錄」改成一整列可以點的按鈕","修正搜尋框的放大鏡跑到輸入框上面"]},
   {v:"0.6.1", d:"2026-10-16", items:["電子名片的美術樣式（紙感、插畫、直排）也會套用你選的字體","更新紀錄改成按鈕，點開才顯示"]},
   {v:"0.6.0", d:"2026-10-16", items:["第一次用到各個功能時，會出現一句簡短的說明","填好自己的名片後，可以用範例名片試試看自動讀字","新增名片多了會提醒你備份；對方打開電子名片更快"]},
@@ -1057,9 +1058,9 @@ function backupNudge(){
   if(ui.adding) return "";
   if(cloudPending()) return '<div class="nudge"><span>有新的名片還沒備份到雲端</span><button type="button" class="pill small" data-act="goSettings">去備份</button></div>';
   const m=data.meta, n=m.sinceBackup||0;
-  if(m.cloudConnected || n<5 || n<(m.snoozeAt||0)+5) return "";
+  if((m.cloudConnected&&GDRIVE_CLIENT_ID) || n<5 || n<(m.snoozeAt||0)+5) return "";
   return '<div class="nudge backup"><span>'+(m.lastBackup?'上次備份後新增了 '+n+' 張名片':'名片夾還沒備份過，已經有 '+n+' 張名片')+'。手機資料被清掉就救不回來，建議現在備份。</span>'
-    + '<span class="nb"><button type="button" class="pill small" data-act="exportJson">備份</button><button type="button" class="pill line small" data-act="backupLater">晚點</button></span></div>';
+    + '<span class="nb"><button type="button" class="pill small" data-act="'+(GDRIVE_CLIENT_ID?'cloudBackup':'exportJson')+'">備份</button><button type="button" class="pill line small" data-act="backupLater">晚點</button></span></div>';
 }
 function markBackup(){ Object.assign(data.meta,{sinceBackup:0, snoozeAt:0, lastBackup:new Date().toISOString()}); save({quiet:true}); }
 function supportNote(){
@@ -1160,7 +1161,7 @@ function renderSettings(){
     + '<section class="tile set"><h2>深淺色</h2><div class="choices seg">'+Object.entries(THEMES).map(([k,n])=>opt("theme",k,n,s.theme)).join("")+'</div></section>'
     + '<section class="tile set"><h2>備份與搬家</h2><p class="sub">名片只存在這支手機裡，不會上傳到任何伺服器。建議定期備份到你自己的雲端；換手機或想在電腦上用時，還原這份備份就好。</p>'
       + cloudHTML()
-      + '<div class="row"><button type="button" class="pill '+(GDRIVE_CLIENT_ID?'line':'strong')+'" data-act="exportJson">匯出備份檔（含照片）</button>'
+      + '<div class="row"><button type="button" class="pill '+(GDRIVE_CLIENT_ID?'line':'strong')+'" data-act="exportJson">'+(GDRIVE_CLIENT_ID?'存到其他地方（Dropbox、OneDrive…）':'備份到雲端硬碟（會跳出選單）')+'</button>'
       + '<button type="button" class="pill line" data-act="exportText">只匯出文字（不含照片）</button>'
       + '<button type="button" class="pill line" data-act="importPick">匯入備份</button>'
       + '<button type="button" class="pill line" data-act="exportVcf">匯出成聯絡人檔（.vcf）</button></div>'
@@ -1351,6 +1352,7 @@ function initCloud(){
   if(!GDRIVE_CLIENT_ID || document.getElementById("gis")) return;
   const s=document.createElement("script"); s.id="gis"; s.src="https://accounts.google.com/gsi/client"; s.async=true;
   s.onload=()=>{
+    if(!window.google || !google.accounts) return;   // 元件沒載入成功（例如離線）：按備份時會提示稍後再試
     cloud.client=google.accounts.oauth2.initTokenClient({
       client_id:GDRIVE_CLIENT_ID, scope:"https://www.googleapis.com/auth/drive.file",
       callback:r=>{ const p=cloud.pending; cloud.pending=null; if(!p) return;
@@ -1380,7 +1382,7 @@ async function findCloudFile(){
 }
 function cloudError(e){
   const m=e&&e.message;
-  if(m==="notready") toast("Google 登入元件還在載入，請過兩秒再按一次");
+  if(m==="notready") toast("Google 登入元件還沒載入，請確認有網路，過幾秒再按一次");
   else if(m==="popup_closed"||m==="access_denied") toast("已取消，沒有變更");
   else if(m==="popup_failed_to_open") toast("授權視窗被擋住了，請允許這個網站開啟彈出式視窗");
   else if(m==="auth") toast("Google 授權過期了，請再按一次");
@@ -1394,7 +1396,8 @@ async function cloudBackup(){
     await tokenP;
     const body=JSON.stringify(backupPayload());
     const f=await findCloudFile();
-    if(f){
+    if(new Blob([body]).size > 4.5e6){ await resumableUpload(f&&f.id, body); }   // 照片多、超過 5MB 時要分段上傳
+    else if(f){
       await gfetch("https://www.googleapis.com/upload/drive/v3/files/"+f.id+"?uploadType=media", {method:"PATCH", headers:{"Content-Type":"application/json"}, body});
     } else {
       const fd=new FormData();
@@ -1406,6 +1409,15 @@ async function cloudBackup(){
     toast("已備份到你的 Google Drive");
   }catch(e){ cloudError(e); }
   ui.cloudBusy=null; keepScroll(render);
+}
+// 大檔上傳：先跟 Drive 要一個上傳網址，再把整個檔案送過去（一般上傳上限 5MB）
+async function resumableUpload(id, body){
+  const url="https://www.googleapis.com/upload/drive/v3/files"+(id?"/"+id:"")+"?uploadType=resumable";
+  const r=await gfetch(url, {method:id?"PATCH":"POST", headers:{"Content-Type":"application/json; charset=UTF-8","X-Upload-Content-Type":"application/json"},
+    body: id ? "{}" : JSON.stringify({name:CLOUD_FILE, mimeType:"application/json"})});
+  const loc=r.headers.get("Location"); if(!loc) throw new Error("http0");
+  const r2=await fetch(loc, {method:"PUT", headers:{"Content-Type":"application/json"}, body});
+  if(!r2.ok) throw new Error("http"+r2.status);
 }
 async function cloudRestore(){
   if(ui.cloudBusy) return;
