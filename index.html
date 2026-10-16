@@ -11,17 +11,32 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<!-- 每個字體分開載入：一個失敗不影響其他。中文字體依 unicode-range 分片，只下載用到的字。 -->
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;700&display=swap">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&display=swap">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chiron+Sung+HK:wght@500;700&display=swap">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chiron+Hei+HK:wght@400;500;700&display=swap">
+<!-- 版本號只在這裡設定一次（語意化版本：主版本.次版本.修正號）。
+     程式檔網址、離線快取（sw.js）、「關於」裡的版本與更新紀錄都跟著它，改版時只改這一行。
+     字體：每個分開載入，一個失敗不影響其他；中文字體依 unicode-range 分片，只下載用到的字。
+     對方打開電子名片時，只載入那張名片用到的字體，不載入辨識和裁切的程式，打開比較快。 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
-<!-- 自己的程式檔加上版本號：改版時跟著 sw.js 的 CACHE 一起改，避免新的頁面配到舊的程式 -->
-<script src="cardparse.js?v=15"></script>
-<script src="crop.js?v=15"></script>
-<script src="paddle.js?v=15"></script>
+<script>
+window.APP_VERSION = "0.6.0";
+window.IS_ECARD = location.hash.indexOf("#c=") === 0;
+(function(){
+  var G = "https://fonts.googleapis.com/css2?family=", F = {
+    sans:"Noto+Sans+TC:wght@400;500;700", serif:"Noto+Serif+TC:wght@600;700", wenkai:"LXGW+WenKai+TC:wght@400;700",
+    sung:"Chiron+Sung+HK:wght@500;700", hei:"Chiron+Hei+HK:wght@400;500;700"};
+  var need = null;
+  if (IS_ECARD) {
+    need = {sans:1};
+    try {
+      var b = location.hash.slice(3).replace(/-/g,"+").replace(/_/g,"/"); while (b.length % 4) b += "=";
+      var bin = atob(b), u = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+      var o = JSON.parse(new TextDecoder().decode(u));
+      need[F[o.f] ? o.f : "serif"] = 1; if (o.s) need.serif = 1;   // 美術樣式用明體
+    } catch (e) { need.serif = 1; }
+  }
+  for (var k in F) if (!need || need[k]) document.write('<link rel="stylesheet" href="' + G + F[k] + '&display=swap">');
+  if (!IS_ECARD) ["cardparse.js","crop.js","paddle.js"].forEach(function(f){ document.write('<script src="' + f + '?v=' + APP_VERSION + '"><\/script>'); });
+})();
+</script>
 <style>
 /* Layout: phone app on a soft sage ground, rounded white tiles; my card is the one dark object on the page,
    collected cards stack like a card box. --card and --f-card are set from settings by JS. */
@@ -230,6 +245,18 @@ textarea.grow{min-height:0;resize:none;overflow:hidden;line-height:1.45;display:
 .cloud{background:var(--soft);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px}
 .nudge{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--sand);color:var(--sand-ink);border-radius:16px;padding:10px 10px 10px 16px;font-size:.9rem}
 .nudge .pill{background:var(--surface);color:var(--ink)}
+.nudge.backup{align-items:flex-start}
+.nudge .nb{display:flex;flex-direction:column;align-items:center;gap:2px;flex:none}
+.nudge .nb .textbtn{color:var(--sand-ink);min-height:32px}
+.tip{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--surface);color:var(--ink);border:1.5px dashed var(--line);border-radius:14px;padding:10px 10px 10px 14px;font-size:.88rem;line-height:1.55}
+.tip .pill{background:var(--soft);flex:none}
+.ocrintro p{margin:6px 0 12px}
+.empty p{margin:0}
+.clog{display:flex;flex-direction:column;gap:10px;margin-top:8px}
+.clog b{margin-right:8px}
+.clog ul{margin:4px 0 0;padding-left:1.2em;font-size:.88rem}
+#tab-set{position:relative}
+#tab-set.dot::after{content:"";position:absolute;top:6px;right:6px;width:9px;height:9px;border-radius:50%;background:var(--danger);box-shadow:0 0 0 2px var(--bg)}
 .ocrbox{background:var(--soft);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
 .ocrbox p{margin:0}
 .ocrrun{display:flex;align-items:center;gap:10px}
@@ -605,7 +632,10 @@ function normalize(d){
   d={profiles:{work:cleanMe(pf.work), personal:cleanMe(pf.personal)}, active:d.active==="personal"?"personal":"work",
      cards:d.cards.filter(c=>c&&typeof c==="object").map(cleanCard), settings:d.settings,
      learn:cleanLearn(d.learn),
-     meta:{cloudConnected:!!mt.cloudConnected, lastCloud:str(mt.lastCloud), lastChange:str(mt.lastChange), supportShown:!!mt.supportShown}};
+     meta:{cloudConnected:!!mt.cloudConnected, lastCloud:str(mt.lastCloud), lastChange:str(mt.lastChange), supportShown:!!mt.supportShown,
+       lastBackup:str(mt.lastBackup), sinceBackup:Number.isFinite(mt.sinceBackup)?mt.sinceBackup:null, snoozeAt:Number.isFinite(mt.snoozeAt)?mt.snoozeAt:0,
+       seenVersion:str(mt.seenVersion), tips:(mt.tips&&typeof mt.tips==="object")?mt.tips:{}}};
+  if(d.meta.sinceBackup===null) d.meta.sinceBackup = d.meta.lastBackup ? 0 : d.cards.filter(c=>!c.sample).length;   // 舊資料：還沒備份過，就從現有的名片算起
   const s=Object.assign(clone(DEFAULT_SETTINGS), d.settings||{});
   s.show=Object.assign(clone(DEFAULT_SETTINGS.show), (d.settings&&d.settings.show)||{});
   s.ocr=Object.assign({enabled:true, ready:false, jpn:false, chi_sim:false, engine:"paddle", paddleReady:false}, (d.settings&&d.settings.ocr)||{});
@@ -729,8 +759,10 @@ function renderMe(){
   return '<div class="head"><div><div class="eyebrow">'+greeting()+(m.name?'，'+esc(m.name):'')+'</div><h1>'+(m.name?'今天要遞名片嗎？':'先填上你的名片')+'</h1></div>'
     + (ui.editing?'':'<button type="button" class="pill" data-act="edit">編輯</button>')+'</div>'
     + (ui.editing?'':seg)
+    + (data.active==="personal" && m.name && !ui.editing ? tipHTML("personal","個人版用不同的顏色。遞出去之前看一眼顏色，就知道現在是哪一張。") : "")
     + '<div class="stackwrap">'+cardHTML(m)+'</div>'
     + editor
+    + ocrIntroHTML()
     + (ui.editing?'':'<button type="button" class="pill strong big" data-act="present">遞'+label+'給對方</button>')
     + '<div class="tiles"><div class="tile qrtile">'+qrSvg(qrPayload(m))+'<span class="sub">'+(qrMode()==="vcard"?"掃描直接存聯絡人":"掃描打開電子名片")+'</span></div>'
     + '<div class="stackcol"><button type="button" class="mini" data-act="shareEcard">'+ICON.share+'<span>分享電子名片連結</span></button>'
@@ -811,7 +843,12 @@ async function finishAddInner(fields, mode, targetId){
   let card, msg;
   if(mode==="edit" && (card=data.cards.find(x=>x.id===ui.editId))){ Object.assign(card, fields, {sample:false}); msg="已儲存修改"; }
   else if(mode==="update" && (card=data.cards.find(x=>x.id===targetId))){ await applyNewVersion(card, fields); msg="已更新，舊的收進「以前的名片」"; }
-  else { card=Object.assign({id:"c"+Date.now().toString(36), added:today()}, fields); data.cards.push(card); msg="已存入名片夾"; }
+  else {
+    card=Object.assign({id:"c"+Date.now().toString(36), added:today()}, fields); data.cards.push(card); msg="已存入名片夾";
+    if(ui.demo){ card.sample=true; msg="已存入名片夾（標成範例，可以在設定裡一起移除）"; }
+    else data.meta.sinceBackup=(data.meta.sinceBackup||0)+1;
+  }
+  ui.demo=false;
   save();
   ui.adding=false; ui.editId=null; ui.newFor=null; ui.draft=null; ui.draftPhoto=""; ui.draftBack=""; ui.openId=card.id; ui.paperBack=false; ui.query=""; render();
   toast(msg+(learned?"；記下了 "+learned+" 條你的整理方式":""));
@@ -858,7 +895,7 @@ function openHTML(c){
     c.address&&'<a href="https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(c.address)+'" target="_blank" rel="noopener">地圖</a>',
     mine&&'<button type="button" data-act="sendMine">回傳我的名片</button>'].filter(Boolean).join("");
   const hh=histHit(c, ui.query.trim().toLowerCase());
-  return '<div class="open">'+paperHTML(c)+'<div class="top"><div><div class="o">'+esc(c.org)+(hh?'・以前在 '+esc(hh.org||hh.title):'')+'</div><div class="n">'+esc(c.name)+'<small>'+esc(c.title)+'</small>'+(c.sample?'<span class="badge">範例</span>':'')+'</div>'+(c.alt?'<div class="alt">'+esc(c.alt)+'</div>':'')+'</div><span class="sub">'+short(c.added)+'</span></div>'
+  return '<div class="open">'+(c.photo||c.photoBack?tipHTML("paper","點名片可以翻面；右下角的按鈕可以放大看。"):"")+paperHTML(c)+'<div class="top"><div><div class="o">'+esc(c.org)+(hh?'・以前在 '+esc(hh.org||hh.title):'')+'</div><div class="n">'+esc(c.name)+'<small>'+esc(c.title)+'</small>'+(c.sample?'<span class="badge">範例</span>':'')+'</div>'+(c.alt?'<div class="alt">'+esc(c.alt)+'</div>':'')+'</div><span class="sub">'+short(c.added)+'</span></div>'
     + (kv?'<dl class="kv">'+kv+'</dl>':'')
     + (c.note?'<div class="memo">'+esc(c.note)+'</div>':'')
     + (acts?'<div class="acts">'+acts+'</div>':'')
@@ -870,7 +907,8 @@ function openHTML(c){
 }
 function renderCards(){
   const list=filtered();
-  if(!list.length) return '<div class="empty">'+(data.cards.length?"找不到符合的名片。":"名片夾是空的。按右上角的 ＋ 存下第一張。")+'</div>';
+  if(!list.length) return data.cards.length ? '<div class="empty">找不到符合的名片。</div>'
+    : '<div class="empty"><p>名片夾是空的。</p><p class="sub">拍一張名片，app 會自動讀出姓名和電話，幫你填好。</p><div class="row" style="justify-content:center;margin-top:10px"><button type="button" class="pill strong" data-act="snap" data-side="front">拍名片</button><button type="button" class="pill line" data-act="demoOcr">用範例名片試試看</button></div></div>';
   if(data.settings.bookView==="list"){
     return '<div class="list">'+list.slice().reverse().map(c=>{
       if(ui.openId===c.id) return openHTML(c);
@@ -910,7 +948,7 @@ function renderBook(){
     + (ui.adding?'':'<div class="quick"><button type="button" class="mini" data-act="snap" data-side="front">'+ICON.cam+'<span>拍名片</span></button>'
       + (CAN_SCAN?'<button type="button" class="mini" data-act="scan">'+ICON.qr+'<span>掃 QR code</span></button>':'<button type="button" class="mini" data-act="add">'+ICON.plus+'<span>手動輸入</span></button>')+'</div>')
     + add
-    + (!ui.adding && cloudPending() ? '<div class="nudge"><span>有新的名片還沒備份到雲端</span><button type="button" class="pill small" data-act="goSettings">去備份</button></div>' : '')
+    + backupNudge()
     + '<label class="search">'+ICON.search+'<input id="q" type="search" placeholder="搜尋姓名、單位、在哪認識" value="'+esc(ui.query)+'" aria-label="搜尋名片"></label>'
     + '<div class="chips"><button type="button" class="chip" data-act="sort" data-key="recent" aria-pressed="'+(ui.sort==="recent")+'">最近收到</button>'
     + '<button type="button" class="chip" data-act="sort" data-key="org" aria-pressed="'+(ui.sort==="org")+'">依單位</button>'
@@ -933,7 +971,22 @@ function textOnly(p){
   p.textOnly=true; return p;
 }
 const APP_URL = () => location.origin + location.pathname.replace(/index\.html$/,"");
-function aboutHTML(){
+// 更新紀錄：每版 1–3 行白話。發新版時在最上面加一筆，並把 index.html 開頭的 APP_VERSION 改成同一個號碼
+const CHANGELOG = [
+  {v:"0.6.0", d:"2026-10-16", items:["第一次用到各個功能時，會出現一句簡短的說明","填好自己的名片後，可以用範例名片試試看自動讀字","新增名片多了會提醒你備份；對方打開電子名片更快"]},
+  {v:"0.5.1", d:"2026-10-16", items:["範例和提示文字改成適合各行各業","職稱辨識更準，例如「資深分析師」不會再被拆開"]},
+  {v:"0.5.0", d:"2026-10-16", items:["電子名片有四種樣式，個人版遞出去時會抽一款","對方可以把電子名片存成圖片","名片詳情的按鈕改版：加入聯絡人放最前面，點手機號碼才撥打"]},
+  {v:"0.4.0", d:"2026-10-16", items:["修正按存檔沒反應、長的單位或地址被切掉","新增傳真欄位；背面的文字可以整批放進備註"]},
+  {v:"0.3.0", d:"2026-10-16", items:["會記住你整理文字的方式，下次自動照做"]},
+  {v:"0.2.0", d:"2026-10-15", items:["新增高準確度文字辨識，可以在設定裡管理和刪除"]},
+  {v:"0.1.0", d:"2026-10-15", items:["自動裁切名片、可以翻面的紙本名片、收到同一個人的新名片","工作版和個人版各自的顏色"]}
+];
+function changelogHTML(isNew){
+  return '<details class="raw"'+(isNew?' open':'')+'><summary>版本 '+esc(APP_VERSION)+(isNew?'・有新功能':'')+'・更新紀錄</summary><div class="clog">'
+    + CHANGELOG.map((c,i)=>'<div><b>'+esc(c.v)+'</b><span class="sub">'+esc(c.d)+'</span><ul>'+c.items.map(t=>'<li>'+esc(t)+'</li>').join("")+'</ul></div>').join("")
+    + '</div></details>';
+}
+function aboutHTML(isNew){
   return '<section class="tile set" id="about"><h2>關於隨身名片夾</h2>'
     + '<p>一個常常交換名片的人，替自己做的小工具。</p>'
     + '<p class="sub">不收費、沒有廣告、不收集任何資料。你的名片只存在這支手機和你自己的雲端裡，我看不到。</p>'
@@ -946,8 +999,44 @@ function aboutHTML(){
       + '<li>正在做的，會放進下面的清單，讓你看到進度。</li>'
       + '<li>需要把你的名片資料上傳到別處的功能，不會做。</li></ul>'
       + (WISHES.length?'<ul class="wishes">'+WISHES.map(w=>'<li><span class="wst">'+esc(w.status)+'</span>'+esc(w.text)+'</li>').join("")+'</ul>':'<p class="sub">目前還沒有願望。</p>')+'</details>':'')
-    + '<p class="sub">'+(TIP_URL?'':'')+'不支持也能用全部功能。</p></section>';
+    + '<p class="sub">'+(TIP_URL?'':'')+'不支持也能用全部功能。</p>'
+    + changelogHTML(isNew) + '</section>';
 }
+/* ---------- 第一次遇到時的小提示：按「知道了」就不再出現 ---------- */
+function tipHTML(key, text){
+  if(data.meta.tips[key]) return "";
+  return '<div class="tip" role="note"><span>'+text+'</span><button type="button" class="pill small" data-act="tipOk" data-key="'+key+'">知道了</button></div>';
+}
+function ocrIntroHTML(){
+  const real=data.cards.filter(c=>!c.sample).length;
+  if(data.meta.tips.ocrIntro || ui.editing || real || !data.profiles.work.name) return "";
+  return '<section class="tile ocrintro"><h2>再來試試收名片</h2><p>拍一張名片，app 會自動讀出姓名、電話、Email，幫你填好表單。照片不會上傳。</p>'
+    + '<div class="row"><button type="button" class="pill strong" data-act="demoOcr" data-tip="ocrIntro">用範例名片試試看</button>'
+    + '<button type="button" class="pill line" data-act="snap" data-side="front" data-tip="ocrIntro">現在拍一張</button>'
+    + '<button type="button" class="textbtn" data-act="tipOk" data-key="ocrIntro" data-rerender="1">先不用</button></div></section>';
+}
+// 範例名片照片：當場用畫布畫一張虛構的名片，不需要另外下載圖檔
+function demoCardPhoto(){
+  const W=1200, H=712, c=document.createElement("canvas"); c.width=W; c.height=H;
+  const g=c.getContext("2d"), SANS='"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif';
+  g.fillStyle="#FFFFFF"; g.fillRect(0,0,W,H);
+  g.fillStyle="#2A3F5F"; g.fillRect(0,0,24,H);
+  g.fillStyle="#2A3F5F"; g.font="500 40px "+SANS; g.fillText("範例設計有限公司", 90, 120);
+  g.fillStyle="#1E2B3D"; g.font="700 92px "+SANS; g.fillText("王小明", 90, 330);
+  g.fillStyle="#5A6A80"; g.font="400 44px "+SANS; g.fillText("產品設計師", 94, 410);
+  g.fillStyle="#1E2B3D"; g.font="400 38px "+SANS;
+  g.fillText("手機 0912-000-000", 94, 540); g.fillText("hello@example.com", 94, 600); g.fillText("台北市中正區範例路 1 號", 94, 660);
+  return new Promise(res=>c.toBlob(b=>res({file:new File([b],"範例名片.jpg",{type:"image/jpeg"}), url:c.toDataURL("image/jpeg",.82)}),"image/jpeg",.9));
+}
+function backupNudge(){
+  if(ui.adding) return "";
+  if(cloudPending()) return '<div class="nudge"><span>有新的名片還沒備份到雲端</span><button type="button" class="pill small" data-act="goSettings">去備份</button></div>';
+  const m=data.meta, n=m.sinceBackup||0;
+  if(m.cloudConnected || n<5 || n<(m.snoozeAt||0)+5) return "";
+  return '<div class="nudge backup"><span>'+(m.lastBackup?'上次備份後新增了 '+n+' 張名片':'名片夾還沒備份過，已經有 '+n+' 張名片')+'。手機資料被清掉就救不回來，建議現在備份。</span>'
+    + '<span class="nb"><button type="button" class="pill small" data-act="exportJson">備份</button><button type="button" class="textbtn" data-act="backupLater">晚點</button></span></div>';
+}
+function markBackup(){ Object.assign(data.meta,{sinceBackup:0, snoozeAt:0, lastBackup:new Date().toISOString()}); save({quiet:true}); }
 function supportNote(){
   const real=data.cards.filter(c=>!c.sample).length;
   if(real<10 || data.meta.supportShown || ui.adding) return "";
@@ -1020,6 +1109,8 @@ function estyleSettingsHTML(){
 }
 function renderSettings(){
   const s=data.settings, nm=esc(me().name||"名字");
+  const isNew=data.meta.seenVersion!==APP_VERSION;
+  if(isNew){ data.meta.seenVersion=APP_VERSION; save({quiet:true}); }
   const imp=ui.importing;
   const importBox = imp ? '<div class="importbox"><p>檔案裡有 '+imp.cards.length+' 張名片，其中 <b>'+imp.fresh.length+'</b> 張是名片夾裡還沒有的。</p><div class="row">'
     + (imp.fresh.length?'<button type="button" class="pill strong" data-act="importCards">加入 '+imp.fresh.length+' 張新名片</button>':'')
@@ -1050,7 +1141,7 @@ function renderSettings(){
       + '<button type="button" class="pill line" data-act="exportVcf">匯出成聯絡人檔（.vcf）</button></div>'
       + importBox
       + '<p class="sub">'+backupSizeText()+'只有文字的備份通常不到 1MB，適合用 Email 寄給自己或快速搬家。.vcf 可以直接匯入 Google 聯絡人。範例名片不會被匯出。</p></section>'
-    + aboutHTML()
+    + aboutHTML(isNew)
     + '<section class="tile set"><h2>其他</h2>'
       + '<div class="row">'
       + (data.cards.some(c=>c.sample)?'<button type="button" class="pill line" data-act="clearSamples">移除範例名片</button>':'')
@@ -1063,6 +1154,8 @@ function render(){
   if(ui.tab==="set") refreshOcrUsage();
   growAll();
   ["me","book","set"].forEach(t=>document.getElementById("tab-"+t).setAttribute("aria-current", ui.tab===t?"page":"false"));
+  const ts=document.getElementById("tab-set"), fresh=data.meta.seenVersion!==APP_VERSION;   // 改版後第一次：設定旁邊出現小點
+  ts.classList.toggle("dot", fresh); ts.setAttribute("aria-label", fresh?"設定（有新功能）":"設定");
 }
 const rerenderCards = () => { const el=document.getElementById("cards"); if(el) el.innerHTML=renderCards(); };
 function keepScroll(fn){ const y=window.scrollY; fn(); window.scrollTo(0,y); }
@@ -1127,7 +1220,7 @@ function renderCrop(){
   if(c.busy){ box.innerHTML='<div class="crop" role="dialog" aria-modal="true" aria-label="調整名片範圍"><p class="sub" role="status">正在找名片的邊緣…</p></div>'; return; }
   const ar=c.canvas.width/c.canvas.height, label=c.side==="back"?"背面":"正面";
   box.innerHTML='<div class="crop" role="dialog" aria-modal="true" aria-labelledby="crop-t">'
-    + '<div><h2 id="crop-t">調整名片'+label+'的範圍</h2><p class="sub">'+(c.found?'已自動找到名片邊緣，四個角可以拖曳微調。':'沒有找到名片邊緣，請把四個黃點拖到名片的四個角上。')+'</p></div>'
+    + '<div><h2 id="crop-t">調整名片'+label+'的範圍</h2><p class="sub">'+(c.found?'已自動找到名片邊緣，四個角可以拖曳微調。':'沒有找到名片邊緣，請把四個黃點拖到名片的四個角上。')+'</p>'+tipHTML("crop","拖曳四個黃點對準名片的四個角。按完成後，只會存下拉正的名片，不留原圖。")+'</div>'
     + '<div class="crop-stage" id="cropStage" style="aspect-ratio:'+ar.toFixed(4)+';width:min(100%, calc(56vh * '+ar.toFixed(4)+'))">'
     + '<img src="'+c.url+'" alt="">'
     + '<svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path class="shade" fill-rule="evenodd" d="M0 0H100V100H0Z '+quadPath(c.q)+'"/><path class="edge" d="'+quadPath(c.q)+'"/></svg>'
@@ -1284,7 +1377,7 @@ async function cloudBackup(){
       fd.append("file", new Blob([body], {type:"application/json"}));
       await gfetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart", {method:"POST", body:fd});
     }
-    data.meta.cloudConnected=true; data.meta.lastCloud=new Date().toISOString(); save({quiet:true});
+    data.meta.cloudConnected=true; data.meta.lastCloud=new Date().toISOString(); markBackup();
     toast("已備份到你的 Google Drive");
   }catch(e){ cloudError(e); }
   ui.cloudBusy=null; keepScroll(render);
@@ -1459,6 +1552,7 @@ function renderReview(){
       +(sel.field?'<button type="button" data-act="tokOut">移出</button>':'<button type="button" data-act="tokSel" data-id="">取消</button>')+'</div>';
   }
   return '<div class="head"><div><div class="eyebrow">步驟 1 / 2・整理文字</div><h1>把文字放到對的地方</h1></div></div>'
+    + tipHTML("review","點一塊文字，選它要放哪一欄。你放過的位置，下次遇到一樣的字會自動照做。")
     + (photo ? '<div class="rv-photo"><img src="'+photo+'" alt="名片'+(side==="back"?'背面':'正面')+'">'+hl+'</div>'
       + (both?'<div class="chips"><button type="button" class="chip" data-act="rvSide" data-side="front" aria-pressed="'+(side==="front")+'">正面</button><button type="button" class="chip" data-act="rvSide" data-side="back" aria-pressed="'+(side==="back")+'">背面</button></div>':'')
       + '<p class="sub">點文字卡，照片上會框出它的位置。</p>' : '')
@@ -1832,6 +1926,7 @@ function openPresent(){
     +'<button type="button" data-act="qrMode" data-key="vcard" aria-pressed="'+(qrMode()==="vcard")+'">直接存聯絡人</button></div>'
     +'<p class="pwho'+(data.active==="personal"?' personal':'')+'">正在遞：'+PROFILE_LABEL[data.active]+(data.active==="personal"?'（不是工作版）':'')+'</p>'
     +'<p class="pdraw" id="pdraw">'+drawLine()+'</p>'
+    +tipHTML("present","名片和 QR code 已經轉向對面。請對方用手機相機掃描，就能存下你的聯絡方式。")
     +'<div class="pbtns"><button type="button" class="pill line" data-act="flip" id="flipBtn">'+flipLabel()+'</button><button type="button" class="pill strong" data-act="closePresent">收起</button></div></div>';
   p.classList.remove("flip"); p.hidden=false; document.body.style.overflow="hidden";
   requestAnimationFrame(()=>requestAnimationFrame(()=>p.classList.toggle("flip", !!data.settings.presentFlip)));
@@ -1934,6 +2029,7 @@ function onScanned(raw){
 document.addEventListener("click", e=>{
   const el=e.target.closest("[data-act]"); if(!el) return;
   const a=el.dataset.act, id=el.dataset.id;
+  if(el.dataset.tip){ data.meta.tips[el.dataset.tip]=1; save({quiet:true}); }   // 從提示卡按下去，提示就不再出現
   if(a==="tab"){ ui.tab=el.dataset.tab; ui.editing=false; ui.confirmReset=false; if(ui.rv){ ui.rv.sel=null; ui.rv.mode=null; } render(); window.scrollTo(0,0); }
   else if(a==="edit"){ ui.editing=true; render(); document.getElementById("me-name")?.focus(); }
   else if(a==="cancelEdit"){ ui.editing=false; render(); }
@@ -1979,7 +2075,7 @@ document.addEventListener("click", e=>{
     if(navigator.share){ navigator.share({title, text:"這是我的名片：", url}).catch(()=>{}); } else copy(url);
   }
   else if(a==="add"){ ui.adding=true; ui.editId=null; ui.draft={}; ui.draftPhoto=""; ui.draftBack=""; ui.auto=new Set(); ui.ocrAsk=null; resetReview(); render(); document.getElementById("add-name")?.focus(); }
-  else if(a==="cancelAdd"){ cropKeep.src={}; ui.newFor=null; ui.same=null; ocrCancel(); resetReview(); ui.adding=false; ui.editId=null; ui.draft=null; ui.draftPhoto=""; ui.draftBack=""; ui.auto=new Set(); ui.ocrAsk=null; render(); }
+  else if(a==="cancelAdd"){ ui.demo=false; cropKeep.src={}; ui.newFor=null; ui.same=null; ocrCancel(); resetReview(); ui.adding=false; ui.editId=null; ui.draft=null; ui.draftPhoto=""; ui.draftBack=""; ui.auto=new Set(); ui.ocrAsk=null; render(); }
   else if(a==="ocrYes"){ const ask=ui.ocrAsk; ui.ocrAsk=null; data.settings.ocr.consented=true; save({quiet:true}); if(ask) runOCR(ask.side, ask.file); }
   else if(a==="ocrLite"){ const ask=ui.ocrAsk; ui.ocrAsk=null; data.settings.ocr.engine="tess"; data.settings.ocr.consented=true; save({quiet:true}); if(ask) runOCR(ask.side, ask.file); }
   else if(a==="engGet"){
@@ -2033,6 +2129,15 @@ document.addEventListener("click", e=>{
     if(!parsed.tokens.length){ keepScroll(render); toast("沒有找到可以用的文字"); return; }
     addTokens("paste", parsed.tokens); setRaw("貼上", t);
     const msg=afterTokens("貼上"); render(); window.scrollTo(0,0); toast(msg);
+  }
+  else if(a==="tipOk"){
+    data.meta.tips[el.dataset.key]=1; save({quiet:true});
+    if(el.dataset.rerender) keepScroll(render); else el.closest(".tip")?.remove();
+  }
+  else if(a==="backupLater"){ data.meta.snoozeAt=data.meta.sinceBackup||0; save({quiet:true}); keepScroll(render); }
+  else if(a==="demoOcr"){
+    if(ui.adding){ toast("先完成或取消正在新增的名片"); return; }
+    demoCardPhoto().then(({file,url})=>{ ui.demo=true; usePhoto("front", url, file, false); toast("這是一張虛構的範例名片"); });
   }
   else if(a==="snap"){ syncDraft(); ui.snapSide=el.dataset.side||"front"; document.getElementById("snapFile").click(); }
   else if(a==="pickPhoto"){ syncDraft(); ui.snapSide=el.dataset.side||"front"; document.getElementById("pickFile").click(); }
@@ -2098,7 +2203,7 @@ document.addEventListener("click", e=>{
   else if(a==="set"){ data.settings[el.dataset.group]=el.dataset.key; save(); applySettings(); keepScroll(render); }
   else if(a==="font"){ data.settings.fonts[el.dataset.role]=el.dataset.key; save(); applySettings(); keepScroll(render); }
   else if(a==="exportText"){
-    deliver("名片夾備份-文字-"+today()+".json", JSON.stringify(textOnly(backupPayload())), "application/json");
+    markBackup(); deliver("名片夾備份-文字-"+today()+".json", JSON.stringify(textOnly(backupPayload())), "application/json");
   }
   else if(a==="shareApp"){
     const url=APP_URL(), text="一個存名片、遞名片的小工具，資料只存在自己手機裡：";
@@ -2107,7 +2212,7 @@ document.addEventListener("click", e=>{
   else if(a==="supportOk"){ data.meta.supportShown=true; save({quiet:true}); keepScroll(render); }
   else if(a==="supportGo"){ data.meta.supportShown=true; save({quiet:true}); ui.tab="set"; render(); document.getElementById("about")?.scrollIntoView(); }
   else if(a==="exportJson"){
-    deliver("名片夾備份-"+today()+".json", JSON.stringify(backupPayload()), "application/json");
+    markBackup(); if(ui.tab==="book") keepScroll(render); deliver("名片夾備份-"+today()+".json", JSON.stringify(backupPayload()), "application/json");
   }
   else if(a==="cloudBackup"){ cloudBackup(); }
   else if(a==="cloudRestore"){ cloudRestore(); }
@@ -2206,11 +2311,13 @@ document.addEventListener("change", async e=>{
   try{ raw=await idbGet("data"); }catch(e){}
   if(!raw){ try{ const ls=localStorage.getItem(STORE_KEY); if(ls){ raw=JSON.parse(ls); await idbSet("data", raw); } }catch(e){} }
   data=normalize(raw);
+  if(!raw) data.meta.seenVersion=APP_VERSION;   // 第一次安裝：不用提示「有新功能」
   ui.editing=!data.profiles.work.name;   // 第一次打開：直接進入填寫自己的名片
   applySettings(); render(); initCloud();
   try{ navigator.storage && navigator.storage.persist && navigator.storage.persist(); }catch(e){} // 請瀏覽器不要自動清掉資料
 })();
-if("serviceWorker" in navigator){ addEventListener("load", ()=>navigator.serviceWorker.register("./sw.js").catch(()=>{})); }
+// 對方看電子名片時不安裝離線快取：不替別人的手機下載整個 app
+if("serviceWorker" in navigator && !IS_ECARD){ addEventListener("load", ()=>navigator.serviceWorker.register("./sw.js?v="+encodeURIComponent(APP_VERSION)).catch(()=>{})); }
 </script>
 </body>
 </html>
