@@ -17,7 +17,7 @@
      對方打開電子名片時，只載入那張名片用到的字體，不載入辨識和裁切的程式，打開比較快。 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script>
-window.APP_VERSION = "0.6.0";
+window.APP_VERSION = "0.6.1";
 window.IS_ECARD = location.hash.indexOf("#c=") === 0;
 (function(){
   var G = "https://fonts.googleapis.com/css2?family=", F = {
@@ -30,7 +30,7 @@ window.IS_ECARD = location.hash.indexOf("#c=") === 0;
       var b = location.hash.slice(3).replace(/-/g,"+").replace(/_/g,"/"); while (b.length % 4) b += "=";
       var bin = atob(b), u = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
       var o = JSON.parse(new TextDecoder().decode(u));
-      need[F[o.f] ? o.f : "serif"] = 1; if (o.s) need.serif = 1;   // 美術樣式用明體
+      need[F[o.f] ? o.f : "serif"] = 1; if (F[o.ft]) need[o.ft] = 1;   // 名字和內文用使用者選的字體
     } catch (e) { need.serif = 1; }
   }
   for (var k in F) if (!need || need[k]) document.write('<link rel="stylesheet" href="' + G + F[k] + '&display=swap">');
@@ -252,7 +252,11 @@ textarea.grow{min-height:0;resize:none;overflow:hidden;line-height:1.45;display:
 .tip .pill{background:var(--soft);flex:none}
 .ocrintro p{margin:6px 0 12px}
 .empty p{margin:0}
-.clog{display:flex;flex-direction:column;gap:10px;margin-top:8px}
+.clog{display:flex;flex-direction:column;gap:12px;overflow-y:auto;max-height:60vh;padding-right:4px}
+.clogsheet{max-height:85vh}
+.verrow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
+.newdot{position:relative}
+.newdot::after{content:"";position:absolute;top:-2px;right:-2px;width:9px;height:9px;border-radius:50%;background:var(--danger)}
 .clog b{margin-right:8px}
 .clog ul{margin:4px 0 0;padding-left:1.2em;font-size:.88rem}
 #tab-set{position:relative}
@@ -327,15 +331,15 @@ body.es{--surface:rgba(255,255,255,.66);--soft:rgba(255,255,255,.5);--strong:var
 body.es-paper{--bg:#EFEBE3;--ink:#2A2A26;--muted:#857D70;background:#EFEBE3 url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .45 0 0 0 0 .4 0 0 0 0 .33 0 0 0 .13 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>")}
 body.es-illu{--bg:#EEF2EE;--ink:#263430;--muted:#587569}
 body.es-vert{--bg:#F7F2E7;--ink:#22201C;--muted:#776D5F}
-.art{container-type:inline-size;animation:artin .95s cubic-bezier(.2,.8,.2,1) both;transform-origin:50% 60%}
+.art{container-type:inline-size;font-family:var(--f-cardtext);animation:artin .95s cubic-bezier(.2,.8,.2,1) both;transform-origin:50% 60%}
 @keyframes artin{0%{opacity:0;transform:perspective(1000px) rotateY(-75deg) translateY(14px)}55%{opacity:1}100%{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){.art{animation:none}}
 .art.paper{padding:12px 4px 20px}
 .pp{position:relative;aspect-ratio:91/54;border-radius:5px;background:#FBF9F4;padding:6cqw 6.5cqw;display:flex;flex-direction:column;justify-content:space-between;transform:rotate(-2deg);
   box-shadow:0 1.5px 0 #DCD5C7,0 20px 30px -16px rgba(60,50,35,.5),0 4px 10px -4px rgba(60,50,35,.18)}
 .pp-top{display:flex;justify-content:space-between;align-items:flex-start;gap:3cqw;font-size:3cqw;letter-spacing:.14em;color:#6E7A6F}
-.pp-seal{flex:none;width:6.6cqw;height:6.6cqw;border-radius:50%;border:1.5px solid var(--acc);display:grid;place-items:center;font-family:"Noto Serif TC",serif;font-size:3.2cqw;color:var(--acc)}
-.pp-nm{font-family:"Noto Serif TC",serif;font-weight:700;font-size:8.6cqw;letter-spacing:.2em;color:#23312C;line-height:1.25;text-shadow:0 1px 0 #FFFFFF}
+.pp-seal{flex:none;width:6.6cqw;height:6.6cqw;border-radius:50%;border:1.5px solid var(--acc);display:grid;place-items:center;font-family:var(--f-card);font-size:3.2cqw;color:var(--acc)}
+.pp-nm{font-family:var(--f-card);font-weight:700;font-size:8.6cqw;letter-spacing:.2em;color:#23312C;line-height:1.25;text-shadow:0 1px 0 #FFFFFF}
 .pp-tt{font-size:3.3cqw;letter-spacing:.28em;color:var(--acc)}
 .pp-tg{font-size:3cqw;color:#6E6A60;margin-top:1cqw}
 .pp-ct{font-size:3cqw;color:#5E6660;border-top:1px solid #E5DFD3;padding-top:2cqw;display:flex;flex-wrap:wrap;justify-content:space-between;gap:.4cqw 4cqw;overflow-wrap:anywhere}
@@ -343,19 +347,19 @@ body.es-vert{--bg:#F7F2E7;--ink:#22201C;--muted:#776D5F}
 .il-bg{position:absolute;top:0;left:0;width:100%;height:auto;pointer-events:none;overflow:visible}
 .il-txt{position:relative}
 .il-org{font-size:3.3cqw;letter-spacing:.24em;color:#587569}
-.il-nm{font-family:"Noto Serif TC",serif;font-weight:700;font-size:12cqw;letter-spacing:.14em;line-height:1.2;margin-top:1cqw;color:#263430}
+.il-nm{font-family:var(--f-card);font-weight:700;font-size:12cqw;letter-spacing:.14em;line-height:1.2;margin-top:1cqw;color:#263430}
 .il-tt{font-size:3.8cqw;letter-spacing:.28em;color:var(--acc)}
-.il-q{font-family:"Noto Serif TC",serif;font-size:4.2cqw;line-height:1.85;color:#4A5B55;margin-top:4cqw;padding-left:3.5cqw;border-left:2px solid #E8C98A}
+.il-q{font-family:var(--f-card);font-size:4.2cqw;line-height:1.85;color:#4A5B55;margin-top:4cqw;padding-left:3.5cqw;border-left:2px solid #E8C98A}
 .art.vert{position:relative;border:1px solid #D9CFBC;padding:8cqw 7cqw;aspect-ratio:1/1;display:flex;flex-direction:row-reverse;gap:5cqw;overflow:hidden}
 /* 直排不用 writing-mode：一個字一格往下排，換什麼字體都不會擠在一起 */
 .vc{display:flex;flex-direction:column;align-items:center;flex:none}
 .vc i{font-style:normal;line-height:1.12;display:block}
-.vt-nm{font-family:"Noto Serif TC","Noto Serif CJK TC",serif;font-weight:700;color:#22201C}
-.vt-tt{font-family:"Noto Serif TC","Noto Serif CJK TC",serif;font-size:4.4cqw;color:var(--acc);padding-top:2cqw}
+.vt-nm{font-family:var(--f-card);font-weight:700;color:#22201C}
+.vt-tt{font-family:var(--f-card);font-size:4.4cqw;color:var(--acc);padding-top:2cqw}
 .vt-org{color:#776D5F;padding-top:2.4cqw}
 .vt-tg{position:absolute;left:8cqw;top:8cqw;color:#776D5F}
 .vt-seal{position:absolute;left:8cqw;bottom:8cqw;width:15cqw;height:15cqw;background:#B5402F;color:#F7F2E7;border-radius:3px;display:flex;flex-direction:row-reverse;align-items:center;justify-content:center;gap:.6cqw;
-  font-family:"Noto Serif TC","Noto Serif CJK TC",serif;font-weight:700;transform:rotate(-3deg);box-shadow:inset 0 0 0 2px #F7F2E7,inset 0 0 0 3.5px #B5402F}
+  font-family:var(--f-card);font-weight:700;transform:rotate(-3deg);box-shadow:inset 0 0 0 2px #F7F2E7,inset 0 0 0 3.5px #B5402F}
 .vt-seal .vc i{line-height:1.02}
 .importbox{background:var(--soft);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px}
 .photo{width:100%;border-radius:12px}
@@ -973,6 +977,7 @@ function textOnly(p){
 const APP_URL = () => location.origin + location.pathname.replace(/index\.html$/,"");
 // 更新紀錄：每版 1–3 行白話。發新版時在最上面加一筆，並把 index.html 開頭的 APP_VERSION 改成同一個號碼
 const CHANGELOG = [
+  {v:"0.6.1", d:"2026-10-16", items:["電子名片的美術樣式（紙感、插畫、直排）也會套用你選的字體","更新紀錄改成按鈕，點開才顯示"]},
   {v:"0.6.0", d:"2026-10-16", items:["第一次用到各個功能時，會出現一句簡短的說明","填好自己的名片後，可以用範例名片試試看自動讀字","新增名片多了會提醒你備份；對方打開電子名片更快"]},
   {v:"0.5.1", d:"2026-10-16", items:["範例和提示文字改成適合各行各業","職稱辨識更準，例如「資深分析師」不會再被拆開"]},
   {v:"0.5.0", d:"2026-10-16", items:["電子名片有四種樣式，個人版遞出去時會抽一款","對方可以把電子名片存成圖片","名片詳情的按鈕改版：加入聯絡人放最前面，點手機號碼才撥打"]},
@@ -981,10 +986,21 @@ const CHANGELOG = [
   {v:"0.2.0", d:"2026-10-15", items:["新增高準確度文字辨識，可以在設定裡管理和刪除"]},
   {v:"0.1.0", d:"2026-10-15", items:["自動裁切名片、可以翻面的紙本名片、收到同一個人的新名片","工作版和個人版各自的顏色"]}
 ];
+// 「關於」裡只放版本號和一顆按鈕；更新紀錄在彈出的視窗裡，紀錄再多也不會把設定頁拉長
 function changelogHTML(isNew){
-  return '<details class="raw"'+(isNew?' open':'')+'><summary>版本 '+esc(APP_VERSION)+(isNew?'・有新功能':'')+'・更新紀錄</summary><div class="clog">'
-    + CHANGELOG.map((c,i)=>'<div><b>'+esc(c.v)+'</b><span class="sub">'+esc(c.d)+'</span><ul>'+c.items.map(t=>'<li>'+esc(t)+'</li>').join("")+'</ul></div>').join("")
-    + '</div></details>';
+  return '<div class="verrow"><span class="sub">版本 '+esc(APP_VERSION)+'</span>'
+    + '<button type="button" class="pill line small'+(isNew?' newdot':'')+'" data-act="clogOpen">'+(isNew?'看看新功能':'更新紀錄')+'</button></div>';
+}
+function renderClog(){
+  let z=document.getElementById("clogBox");
+  if(!z){ z=document.createElement("div"); z.id="clogBox"; document.body.appendChild(z); }
+  if(!ui.clog){ z.innerHTML=""; document.body.style.overflow=""; return; }
+  document.body.style.overflow="hidden";
+  z.innerHTML='<div class="scrim" data-act="clogClose"></div><div class="sheet clogsheet" role="dialog" aria-modal="true" aria-labelledby="clog-t">'
+    + '<h2 class="sheet-t" id="clog-t" style="font-size:1.1rem">更新紀錄</h2><div class="clog">'
+    + CHANGELOG.map(c=>'<div><b>'+esc(c.v)+'</b><span class="sub">'+esc(c.d)+'</span><ul>'+c.items.map(t=>'<li>'+esc(t)+'</li>').join("")+'</ul></div>').join("")
+    + '</div><button type="button" class="pill strong big" data-act="clogClose">關閉</button></div>';
+  z.querySelector('[data-act="clogClose"].pill').focus();
 }
 function aboutHTML(isNew){
   return '<section class="tile set" id="about"><h2>關於隨身名片夾</h2>'
@@ -1674,7 +1690,7 @@ function drawStyle(){   // 抽樣式：三種以上時，不連續兩次一樣�
 function ecardUrl(p, style){
   const v=visible(p), s=data.settings;
   const o={v:1, n:v.name, t:v.title, o:v.org, g:v.tagline, p:v.phone, e:v.email, l:v.line, w:v.web, a:p.address, i:p.intro,
-    k:(p.links||[]).map(x=>[x.label,x.url]), c:colorKey(), f:s.fonts.name, s:style&&style!=="classic"?style:""};
+    k:(p.links||[]).map(x=>[x.label,x.url]), c:colorKey(), f:s.fonts.name, ft:s.fonts.cardText!=="sans"?s.fonts.cardText:"", s:style&&style!=="classic"?style:""};
   Object.keys(o).forEach(k=>{ if(o[k]==="" || (Array.isArray(o[k]) && !o[k].length)) delete o[k]; });
   return location.origin + location.pathname.replace(/index\.html$/,"") + "#c=" + b64u.enc(JSON.stringify(o));
 }
@@ -1684,7 +1700,7 @@ function readEcard(hash){
     const p=cleanMe({name:o.n,title:o.t,org:o.o,tagline:o.g,phone:o.p,email:o.e,line:o.l,web:o.w,address:o.a,intro:o.i,
       links:(Array.isArray(o.k)?o.k:[]).map(x=>({label:Array.isArray(x)?x[0]:"", url:Array.isArray(x)?x[1]:""}))});
     p.web=p.web?safeUrl(p.web):"";
-    return {p, color:CARD_COLORS[o.c]?o.c:"green", font:FONTS[o.f]?o.f:"serif", style:ESTYLES[o.s]?o.s:"classic"};
+    return {p, color:CARD_COLORS[o.c]?o.c:"green", font:FONTS[o.f]?o.f:"serif", textFont:FONTS[o.ft]?o.ft:"sans", style:ESTYLES[o.s]?o.s:"classic"};
   }catch(e){ return null; }
 }
 const lineUrl = id => /^@/.test(id) ? "https://line.me/R/ti/p/"+encodeURIComponent(id) : "https://line.me/ti/p/~"+encodeURIComponent(id);
@@ -1755,9 +1771,10 @@ async function drawEcardImage(card){
   const p=card.p, st=card.style||"classic", acc=(CARD_COLORS[card.color]||CARD_COLORS.green).c;
   const W=1080, H=1440, cv=document.createElement("canvas"); cv.width=W; cv.height=H;
   const g=cv.getContext("2d");
-  const SERIF='"Noto Serif TC","Songti TC",serif', SANS='"Noto Sans TC","PingFang TC",sans-serif', NAMEF=(FONTS[card.font]||FONTS.serif).stack;
+  // 名字跟著「名字」字體、其他文字跟著「名片內文」字體，和使用者在設定裡選的一樣
+  const NAMEF=(FONTS[card.font]||FONTS.serif).stack, SERIF=NAMEF, SANS=(FONTS[card.textFont]||FONTS.sans).stack;
   const all=[p.name,p.title,p.org,p.tagline,"掃描存下我的聯絡方式・隨身名片夾"].join("");
-  try{ await Promise.race([Promise.all(['700 80px "Noto Serif TC"','400 30px "Noto Sans TC"','700 30px "Noto Sans TC"','700 80px '+NAMEF.split(",")[0]].map(f=>document.fonts.load(f, all))), new Promise(r=>setTimeout(r,3000))]); }catch(e){}
+  try{ await Promise.race([Promise.all(['700 80px '+NAMEF.split(",")[0],'400 30px '+SANS.split(",")[0],'500 30px '+SANS.split(",")[0],'400 30px "Noto Sans TC"'].map(f=>document.fonts.load(f, all))), new Promise(r=>setTimeout(r,3000))]); }catch(e){}
   const name=p.name||"", org=p.org||"", title=p.title||"", tg=p.tagline||"";
   if(st==="paper"){
     g.fillStyle="#EFEBE3"; g.fillRect(0,0,W,H);
@@ -1941,6 +1958,7 @@ function closePresent(){
 document.addEventListener("keydown", e=>{
   if(e.key==="Enter" && e.target.id==="tokEdit"){ e.preventDefault(); document.querySelector('[data-act="tokSave"]')?.click(); return; }
   if(e.key!=="Escape") return;
+  if(ui.clog){ ui.clog=false; renderClog(); return; }
   if(!document.getElementById("present").hidden) closePresent();
   if(!document.getElementById("scanner").hidden) stopScan(); });
 
@@ -2130,6 +2148,8 @@ document.addEventListener("click", e=>{
     addTokens("paste", parsed.tokens); setRaw("貼上", t);
     const msg=afterTokens("貼上"); render(); window.scrollTo(0,0); toast(msg);
   }
+  else if(a==="clogOpen"){ ui.clog=true; renderClog(); }
+  else if(a==="clogClose"){ ui.clog=false; renderClog(); document.querySelector('[data-act="clogOpen"]')?.focus(); }
   else if(a==="tipOk"){
     data.meta.tips[el.dataset.key]=1; save({quiet:true});
     if(el.dataset.rerender) keepScroll(render); else el.closest(".tip")?.remove();
@@ -2301,7 +2321,7 @@ document.addEventListener("change", async e=>{
 (async function boot(){
   if(location.hash.startsWith("#c=")){
     const card=readEcard(location.hash);
-    data=normalize(null); data.settings.cardColor=card?card.color:"green"; data.settings.fonts.name=card?card.font:"serif"; data.settings.show={phone:true,email:true,line:true,web:true,tagline:true};
+    data=normalize(null); data.settings.cardColor=card?card.color:"green"; data.settings.fonts.name=card?card.font:"serif"; data.settings.fonts.cardText=card?card.textFont:"sans"; data.settings.show={phone:true,email:true,line:true,web:true,tagline:true};
     applySettings();
     if(card) renderEcardView(card);
     else { document.getElementById("tabs").hidden=true; document.getElementById("app").innerHTML='<div class="empty">這個名片連結不完整，請對方重新給你一次 QR code。</div>'; }
