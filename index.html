@@ -17,7 +17,7 @@
      對方打開電子名片時，只載入那張名片用到的字體，不載入辨識和裁切的程式，打開比較快。 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script>
-window.APP_VERSION = "0.9.0";
+window.APP_VERSION = "0.9.1";
 window.IS_ECARD = location.hash.indexOf("#c=") === 0;
 (function(){
   var G = "https://fonts.googleapis.com/css2?family=", F = {
@@ -111,7 +111,7 @@ svg.i{width:22px;height:22px;flex:none}
 .bcard .org i{font-style:normal;color:var(--brass)}
 .bcard .nm{font-family:var(--f-card);font-weight:700;font-size:8.8cqw;line-height:1.2;letter-spacing:.1em}
 .bcard .tt{font-size:3.6cqw;color:var(--brass);letter-spacing:.18em}
-.bcard .tg{font-size:3.2cqw;color:rgba(255,255,255,.74);margin-top:1cqw}
+.bcard .tg{font-size:3.9cqw;color:rgba(255,255,255,.82);margin-top:1.2cqw}
 .bcard .ct{font-size:3.1cqw;color:rgba(255,255,255,.88);border-top:1px solid rgba(232,201,138,.5);padding-top:2.2cqw;display:flex;flex-wrap:wrap;justify-content:space-between;gap:.4cqw 4cqw;min-width:0;overflow-wrap:anywhere}
 
 .tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
@@ -390,7 +390,7 @@ body.es-vert{--bg:#F7F2E7;--ink:#22201C;--muted:#776D5F}
 .pp-seal{flex:none;width:6.6cqw;height:6.6cqw;border-radius:50%;border:1.5px solid var(--acc);display:grid;place-items:center;font-family:var(--f-card);font-size:3.2cqw;color:var(--acc)}
 .pp-nm{font-family:var(--f-card);font-weight:700;font-size:8.6cqw;letter-spacing:.2em;color:#23312C;line-height:1.25;text-shadow:0 1px 0 #FFFFFF}
 .pp-tt{font-size:3.3cqw;letter-spacing:.28em;color:var(--acc)}
-.pp-tg{font-size:3cqw;color:#6E6A60;margin-top:1cqw}
+.pp-tg{font-size:3.8cqw;color:#5F5B52;margin-top:1.4cqw}
 .pp-ct{font-size:3cqw;color:#5E6660;border-top:1px solid #E5DFD3;padding-top:2cqw;display:flex;flex-wrap:wrap;justify-content:space-between;gap:.4cqw 4cqw;overflow-wrap:anywhere}
 .art.illu{position:relative;padding-top:68cqw}
 .il-bg{position:absolute;top:0;left:0;width:100%;height:auto;pointer-events:none;overflow:visible}
@@ -398,7 +398,7 @@ body.es-vert{--bg:#F7F2E7;--ink:#22201C;--muted:#776D5F}
 .il-org{font-size:3.3cqw;letter-spacing:.24em;color:#587569}
 .il-nm{font-family:var(--f-card);font-weight:700;font-size:12cqw;letter-spacing:.14em;line-height:1.2;margin-top:1cqw;color:#263430}
 .il-tt{font-size:3.8cqw;letter-spacing:.28em;color:var(--acc)}
-.il-q{font-family:var(--f-card);font-size:4.2cqw;line-height:1.85;color:#4A5B55;margin-top:4cqw;padding-left:3.5cqw;border-left:2px solid #E8C98A}
+.il-q{font-family:var(--f-card);font-size:4.8cqw;line-height:1.85;color:#4A5B55;margin-top:4cqw;padding-left:3.5cqw;border-left:2px solid #E8C98A}
 .art.vert{position:relative;border:1px solid #D9CFBC;padding:8cqw 7cqw;aspect-ratio:1/1;display:flex;flex-direction:row-reverse;gap:5cqw;overflow:hidden}
 /* 直排不用 writing-mode：一個字一格往下排，換什麼字體都不會擠在一起 */
 .vc{display:flex;flex-direction:column;align-items:center;flex:none}
@@ -406,7 +406,7 @@ body.es-vert{--bg:#F7F2E7;--ink:#22201C;--muted:#776D5F}
 .vt-nm{font-family:var(--f-card);font-weight:700;color:#22201C}
 .vt-tt{font-family:var(--f-card);font-size:4.4cqw;color:var(--acc);padding-top:2cqw}
 .vt-org{color:#776D5F;padding-top:2.4cqw}
-.vt-tg{position:absolute;left:8cqw;top:8cqw;color:#776D5F}
+.vt-tg{position:absolute;left:7cqw;top:8cqw;color:#5F574B;display:flex;flex-direction:row-reverse;gap:1.6cqw;font-size:4cqw}
 .vt-seal{position:absolute;left:8cqw;bottom:8cqw;width:15cqw;height:15cqw;background:#B5402F;color:#F7F2E7;border-radius:3px;display:flex;flex-direction:row-reverse;align-items:center;justify-content:center;gap:.6cqw;
   font-family:var(--f-card);font-weight:700;transform:rotate(-3deg);box-shadow:inset 0 0 0 2px #F7F2E7,inset 0 0 0 3.5px #B5402F}
 .vt-seal .vc i{line-height:1.02}
@@ -1027,6 +1027,7 @@ function textOnly(p){
 const APP_URL = () => location.origin + location.pathname.replace(/index\.html$/,"");
 // 更新紀錄：每版 1–3 行白話。發新版時在最上面加一筆，並把 index.html 開頭的 APP_VERSION 改成同一個號碼
 const CHANGELOG = [
+  {v:"0.9.1", d:"2026-10-17", items:["電子名片上的「一句話介紹」放大；直排樣式的介紹太長時會換欄，不會縮到看不見"]},
   {v:"0.9.0", d:"2026-10-17", items:["第一次打開會有三頁簡短介紹","存好自己的名片後，會用一步一步的圖示教你把 App 放到手機桌面","在 LINE 裡打開時，一進來就會提醒改用手機瀏覽器"]},
   {v:"0.8.1", d:"2026-10-17", items:["有新版本時，App 上方會出現「重新整理」提醒，不用再把 App 完全關掉"]},
   {v:"0.8.0", d:"2026-10-17", items:["第一次打開會先簡單介紹怎麼用","提醒你把 App 安裝到手機桌面","分享出去的連結在 LINE 裡點開，會改用手機瀏覽器開啟；在 LINE 裡打開時也會提醒"]},
@@ -1929,15 +1930,16 @@ function artHTML(p, st){
       + (tg?'<p class="il-q">'+tg+'</p>':'')+'</div></div>';
   }
   // 直排
+  const chunk=(a,n)=>{ const o=[]; for(let i=0;i<a.length;i+=n) o.push(a.slice(i,i+n)); return o; };
   const vc=(t,gap)=>'<span class="vc" style="gap:'+gap+'">'+[...t].map(c=>'<i>'+esc(c)+'</i>').join("")+'</span>';
   const len=t=>[...(t||"")].length||1;
-  const fs=Math.min(19, 74/(len(p.name)*1.2)), os=Math.min(3.4, 68/(len(p.org)*1.3)), ts=Math.min(3.2, 44/(len(p.tagline)*1.25));
+  const fs=Math.min(19, 74/(len(p.name)*1.2)), os=Math.min(3.4, 68/(len(p.org)*1.3)), tcol=11;   // 一句話介紹：固定字級，一欄最多 11 個字，太長就換到左邊下一欄
   const seal=sealText(p.name), sc=[...seal.t], sfs=seal.lat?6:(sc.length<=1?8:sc.length<=2?5.4:4.6);
   const sealIn = seal.lat ? '<span>'+esc(seal.t)+'</span>' : [sc.slice(0,2),sc.slice(2,4)].filter(c=>c.length).map(c=>vc(c.join(""),"0")).join("");
   return '<div class="art vert"><div class="vt-nm" style="font-size:'+fs.toFixed(1)+'cqw">'+vc(p.name||"",(fs*.18).toFixed(1)+'cqw')+'</div>'
     + (p.title?'<div class="vt-tt">'+vc(p.title,"1.6cqw")+'</div>':'')
     + (p.org?'<div class="vt-org" style="font-size:'+os.toFixed(2)+'cqw">'+vc(p.org,(os*.28).toFixed(2)+'cqw')+'</div>':'')
-    + (p.tagline?'<div class="vt-tg" style="font-size:'+ts.toFixed(2)+'cqw">'+vc(p.tagline,(ts*.18).toFixed(2)+'cqw')+'</div>':'')
+    + (p.tagline?'<div class="vt-tg">'+chunk([...p.tagline],tcol).map(c=>vc(c.join(""),".5cqw")).join("")+'</div>':'')
     + '<div class="vt-seal" aria-hidden="true" style="font-size:'+sfs+'cqw">'+sealIn+'</div></div>';
 }
 
@@ -1983,7 +1985,7 @@ async function drawEcardImage(card){
     g.fillStyle=acc; g.font="500 28px "+SERIF; g.textAlign="center"; g.fillText([...(name||"·")][0], x+cw-82, y+80); g.textAlign="left";
     g.fillStyle="#23312C"; const f=fitFont(g,name,"700",86,SERIF,cw-160); spaced(g,name,x+60,y+300,f*.2,"left");
     g.fillStyle=acc; g.font="400 32px "+SANS; spaced(g,title,x+62,y+356,9,"left");
-    if(tg){ g.fillStyle="#6E6A60"; fitFont(g,tg,"400",28,SANS,cw-120); g.fillText(tg,x+62,y+404); }
+    if(tg){ g.fillStyle="#5F5B52"; fitFont(g,tg,"400",36,SANS,cw-120); g.fillText(tg,x+62,y+410); }
     g.restore();
   } else if(st==="illu"){
     g.fillStyle="#EEF2EE"; g.fillRect(0,0,W,H);
@@ -2007,7 +2009,8 @@ async function drawEcardImage(card){
     let x=W-150-fs-40;
     if(title){ g.fillStyle=acc; g.font="500 44px "+SERIF; vtext(g,title,x,150,44,20); x-=90; }
     if(org){ const len=[...org].length, os=Math.min(32, 680/(len*1.3)); g.fillStyle="#776D5F"; g.font="400 "+os+"px "+SANS; vtext(g,org,x,150,os,os*.3); }
-    if(tg){ const len=[...tg].length, ts=Math.min(30, 560/(len*1.25)); g.fillStyle="#776D5F"; g.font="400 "+ts+"px "+SANS; vtext(g,tg,140,130,ts,ts*.2); }
+    if(tg){ const ch=[...tg], ts=40, per=12, cols=Math.ceil(ch.length/per); g.fillStyle="#5F574B"; g.font="400 "+ts+"px "+SANS;
+      for(let c=0;c<cols;c++) vtext(g, ch.slice(c*per,(c+1)*per).join(""), 120+(cols-1-c)*(ts+16), 130, ts, ts*.12); }
     const seal=sealText(name); g.save(); g.translate(190,800); g.rotate(-3*Math.PI/180);
     g.fillStyle="#B5402F"; rrect(g,-70,-70,140,140,6); g.fill(); g.strokeStyle="#F7F2E7"; g.lineWidth=4; rrect(g,-60,-60,120,120,4); g.stroke();
     g.fillStyle="#F7F2E7"; g.textAlign="center"; g.textBaseline="middle";
@@ -2029,7 +2032,7 @@ async function drawEcardImage(card){
     g.fillStyle="#E8C98A"; g.font="400 24px "+SANS; g.fillText("●", x+cw-82, y+84);
     g.fillStyle="#F4F1EA"; const f=fitFont(g,name,"700",86,NAMEF,cw-120); spaced(g,name,x+58,y+330,f*.1,"left");
     g.fillStyle="#E8C98A"; g.font="400 34px "+SANS; spaced(g,title,x+60,y+392,6,"left");
-    if(tg){ g.fillStyle="rgba(255,255,255,.74)"; fitFont(g,tg,"400",30,SANS,cw-120); g.fillText(tg,x+60,y+446); }
+    if(tg){ g.fillStyle="rgba(255,255,255,.82)"; fitFont(g,tg,"400",36,SANS,cw-120); g.fillText(tg,x+60,y+450); }
   }
   // QR code：連回這張電子名片
   const qs=380, qx=W/2-qs/2, qy=960;
