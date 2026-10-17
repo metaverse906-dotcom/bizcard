@@ -17,7 +17,7 @@
      對方打開電子名片時，只載入那張名片用到的字體，不載入辨識和裁切的程式，打開比較快。 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script>
-window.APP_VERSION = "0.8.1";
+window.APP_VERSION = "0.9.0";
 window.IS_ECARD = location.hash.indexOf("#c=") === 0;
 (function(){
   var G = "https://fonts.googleapis.com/css2?family=", F = {
@@ -252,6 +252,30 @@ textarea.grow{min-height:0;resize:none;overflow:hidden;line-height:1.45;display:
 .installcard p,.welcome p{margin:6px 0 10px}
 .installcard.warn{border:2px solid var(--danger)}
 .welcome ul{margin:8px 0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px}
+.mscrim{z-index:30}
+.mwrap{position:fixed;inset:0;z-index:31;display:flex;align-items:flex-end;justify-content:center;padding:16px;padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));pointer-events:none}
+.mcard{pointer-events:auto;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;background:var(--surface);color:var(--ink);border-radius:24px;padding:20px;display:flex;flex-direction:column;gap:12px;box-shadow:0 20px 50px -20px rgba(0,0,0,.5);animation:mup .25s ease-out}
+@keyframes mup{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.mcard{animation:none}}
+.mwrap.still .mcard{animation:none}
+.mcard.warn{border:2px solid var(--danger)}
+.mcard p{margin:0;line-height:1.7}
+.mtitle{font-size:1.2rem;color:var(--ink);letter-spacing:0;font-weight:700}
+.mtop{display:flex;align-items:center;justify-content:space-between}
+.mbtns{display:flex;gap:10px}
+.mbtns .pill{flex:1}
+.wslide{text-align:center;padding:12px 4px 4px;min-height:230px;display:flex;flex-direction:column;align-items:center;gap:10px}
+.wslide h2{font-size:1.35rem;color:var(--ink);letter-spacing:.04em;font-weight:700}
+.wicon{width:88px;height:88px;border-radius:26px;background:var(--soft);display:grid;place-items:center}
+.wicon svg{width:52px;height:52px;fill:none;stroke:var(--link);stroke-width:2.4;stroke-linejoin:round;stroke-linecap:round}
+.wdots{display:flex;justify-content:center;gap:8px}
+.wdots i{width:8px;height:8px;border-radius:50%;background:var(--line)}
+.wdots i.on{background:var(--link);width:22px;border-radius:4px}
+.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.steps li{display:flex;align-items:center;gap:12px;background:var(--soft);border-radius:14px;padding:10px 12px}
+.sicon{width:40px;height:40px;flex:none;border-radius:12px;background:var(--surface);display:grid;place-items:center}
+.sicon svg{width:24px;height:24px;fill:none;stroke:var(--link);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.sicon svg circle{fill:var(--link);stroke:none}
 .updbar{position:fixed;left:12px;right:12px;top:calc(10px + env(safe-area-inset-top,0px));z-index:20;max-width:520px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:10px;
   background:var(--strong);color:var(--strong-ink);border-radius:16px;padding:10px 10px 10px 16px;font-size:.9rem;box-shadow:0 8px 24px -8px rgba(0,0,0,.35)}
 .updbar .pill{background:var(--surface);color:var(--ink);flex:none}
@@ -787,7 +811,7 @@ function renderMe(){
   }
   return '<div class="head"><div><div class="eyebrow">'+greeting()+(m.name?'，'+esc(m.name):'')+'</div><h1>'+(m.name?'今天要遞名片嗎？':'先填上你的名片')+'</h1></div>'
     + (ui.editing?'':'<button type="button" class="pill" data-act="edit">編輯</button>')+'</div>'
-    + installHTML() + welcomeHTML()
+    + installHTML()
     + (ui.editing?'':seg)
     + (data.active==="personal" && m.name && !ui.editing ? tipHTML("personal","個人版用不同的顏色。遞出去之前看一眼顏色，就知道現在是哪一張。") : "")
     + '<div class="stackwrap">'+cardHTML(m)+'</div>'
@@ -1003,6 +1027,7 @@ function textOnly(p){
 const APP_URL = () => location.origin + location.pathname.replace(/index\.html$/,"");
 // 更新紀錄：每版 1–3 行白話。發新版時在最上面加一筆，並把 index.html 開頭的 APP_VERSION 改成同一個號碼
 const CHANGELOG = [
+  {v:"0.9.0", d:"2026-10-17", items:["第一次打開會有三頁簡短介紹","存好自己的名片後，會用一步一步的圖示教你把 App 放到手機桌面","在 LINE 裡打開時，一進來就會提醒改用手機瀏覽器"]},
   {v:"0.8.1", d:"2026-10-17", items:["有新版本時，App 上方會出現「重新整理」提醒，不用再把 App 完全關掉"]},
   {v:"0.8.0", d:"2026-10-17", items:["第一次打開會先簡單介紹怎麼用","提醒你把 App 安裝到手機桌面","分享出去的連結在 LINE 裡點開，會改用手機瀏覽器開啟；在 LINE 裡打開時也會提醒"]},
   {v:"0.7.1", d:"2026-10-17", items:["設定頁每個分類只放最常用的設定和目前狀態，細項按右上角再進去調","新增隱私權政策頁面"]},
@@ -1056,36 +1081,87 @@ const IS_IOS = /iPhone|iPad|iPod/.test(UA) || (navigator.platform==="MacIntel" &
 const IS_ANDROID = /Android/i.test(UA);
 const isStandalone = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone===true;
 let installEvt = null;
-addEventListener("beforeinstallprompt", e=>{ e.preventDefault(); installEvt=e; if(data && !IS_ECARD && ui.tab==="me") keepScroll(render); });
-addEventListener("appinstalled", ()=>{ installEvt=null; if(data){ data.meta.tips.install=1; save({quiet:true}); if(!IS_ECARD) keepScroll(render); } toast("已安裝到手機桌面"); });
-function installHTML(){
-  if(IS_ECARD || isStandalone()) return "";
-  if(INAPP){   // 在 LINE、Facebook 裡面打開：資料可能不會留下，也不能安裝，一定要提醒
-    const url=APP_URL();
-    const btn = INAPP==="LINE" ? '<a class="pill strong small" href="'+esc(url+EXT)+'">用手機瀏覽器打開</a>'
-      : IS_ANDROID ? '<a class="pill strong small" href="intent://'+esc(url.replace(/^https?:\/\//,""))+'#Intent;scheme=https;package=com.android.chrome;end">用 Chrome 打開</a>'
-      : '';
-    return '<section class="tile installcard warn"><h2>你現在是在 '+INAPP+' 裡面打開</h2>'
-      + '<p>在這裡存的名片，關掉之後可能會不見，也沒辦法安裝到手機桌面。請改用手機的瀏覽器打開。</p>'
-      + (btn?'<div class="row">'+btn+'</div>':'<p class="sub">點右上角的「⋯」，選「在 Safari 中開啟」。</p>')+'</section>';
+addEventListener("beforeinstallprompt", e=>{ e.preventDefault(); installEvt=e; if(ui.modal==="install") renderModal(); });
+addEventListener("appinstalled", ()=>{ installEvt=null; if(data){ data.meta.tips.install=1; save({quiet:true}); } if(ui.modal==="install"){ ui.modal=null; renderModal(); } toast("已安裝到手機桌面"); });
+function installHTML(){   // 頁面上只留「在 LINE 裡打開」的紅框提醒；安裝說明改成彈出視窗
+  if(IS_ECARD || isStandalone() || !INAPP) return "";
+  return '<section class="tile installcard warn"><h2>你現在是在 '+INAPP+' 裡面打開</h2>'
+    + '<p>在這裡存的名片，關掉之後可能會不見，也沒辦法安裝到手機桌面。請改用手機的瀏覽器打開。</p>'
+    + '<div class="row">'+inappButton()+'</div></section>';
+}
+function inappButton(){
+  const url=APP_URL();
+  if(INAPP==="LINE") return '<a class="pill strong" href="'+esc(url+EXT)+'">用手機瀏覽器打開</a>';
+  if(IS_ANDROID) return '<a class="pill strong" href="intent://'+esc(url.replace(/^https?:\/\//,""))+'#Intent;scheme=https;package=com.android.chrome;end">用 Chrome 打開</a>';
+  return '<p class="sub">點右上角的「⋯」，選「在 Safari 中開啟」。</p>';
+}
+const canInstall = () => !IS_ECARD && !isStandalone() && !INAPP && (installEvt || IS_IOS || IS_ANDROID);
+
+/* ---------- 彈出視窗：歡迎（第一次打開）、安裝到桌面（存好自己的名片後）、在 LINE 裡打開
+   不會兩個疊在一起；每個都能關掉，關了就不再自動出現。 ---------- */
+const WELCOME = [
+  {icon:'<svg viewBox="0 0 48 48" aria-hidden="true"><rect x="6" y="6" width="14" height="14" rx="2"/><rect x="28" y="6" width="14" height="14" rx="2"/><rect x="6" y="28" width="14" height="14" rx="2"/><path d="M28 28h6v6h-6zM36 36h6v6h-6zM36 28h6M28 40h4"/></svg>',
+   t:"遞名片", d:"打開 App 就是你的名片。對方用手機相機掃 QR code，就能存下你的聯絡方式，不用裝任何東西。"},
+  {icon:'<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M6 16h8l3-5h14l3 5h8v22H6z"/><circle cx="24" cy="26" r="7"/></svg>',
+   t:"收名片", d:"拍下對方的紙本名片，自動讀出姓名、電話、Email，收進名片夾，之後用名字或單位就找得到。"},
+  {icon:'<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 5l16 6v11c0 10-7 18-16 21C15 40 8 32 8 22V11z"/><path d="M17 24l5 5 9-10"/></svg>',
+   t:"資料只在你手上", d:"名片只存在這支手機和你自己的雲端，不經過任何伺服器，連開發者都看不到。"}
+];
+function modalHTML(){
+  const m=ui.modal;
+  if(m==="welcome"){
+    const i=ui.wStep||0, w=WELCOME[i], last=i===WELCOME.length-1;
+    return '<div class="mcard welcomecard" role="dialog" aria-modal="true" aria-labelledby="m-t">'
+      + '<div class="mtop"><span class="sub">歡迎使用隨身名片夾</span><button type="button" class="pill line small" data-act="modalClose">略過</button></div>'
+      + '<div class="wslide" id="wslide"><div class="wicon">'+w.icon+'</div><h2 id="m-t">'+w.t+'</h2><p>'+w.d+'</p></div>'
+      + '<div class="wdots" aria-hidden="true">'+WELCOME.map((_,k)=>'<i class="'+(k===i?'on':'')+'"></i>').join("")+'</div>'
+      + '<div class="mbtns">'+(i?'<button type="button" class="pill line" data-act="wPrev">上一頁</button>':'')
+      + '<button type="button" class="pill strong big" data-act="'+(last?'modalClose':'wNext')+'">'+(last?'開始填我的名片':'下一步')+'</button></div></div>';
   }
-  if(data.meta.tips.install) return "";
-  const later='<button type="button" class="pill line small" data-act="tipOk" data-key="install" data-rerender="1">之後再說</button>';
-  if(installEvt) return '<section class="tile installcard"><h2>安裝到手機桌面</h2><p>裝好之後像一般 App 一樣，點桌面圖示就能打開；沒有網路也能遞名片。不佔什麼空間。</p>'
-    + '<div class="row"><button type="button" class="pill strong small" data-act="install">安裝</button>'+later+'</div></section>';
-  if(IS_IOS) return '<section class="tile installcard"><h2>加到主畫面，像 App 一樣用</h2><p>在 Safari 按下方的分享按鈕（方框加向上箭頭），往下找到「加入主畫面」。之後點桌面圖示就能打開，沒有網路也能遞名片。</p>'
-    + '<div class="row">'+later.replace("之後再說","知道了")+'</div></section>';
-  if(IS_ANDROID) return '<section class="tile installcard"><h2>安裝到手機桌面</h2><p>點瀏覽器右上角的「⋮」，選「安裝應用程式」或「加到主畫面」。之後點桌面圖示就能打開，沒有網路也能遞名片。</p>'
-    + '<div class="row">'+later.replace("之後再說","知道了")+'</div></section>';
+  if(m==="install"){
+    const step=(ic,t)=>'<li><span class="sicon" aria-hidden="true">'+ic+'</span><span>'+t+'</span></li>';
+    const IOS_SHARE='<svg viewBox="0 0 24 24"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M6 11v9h12v-9"/></svg>';
+    const PLUS='<svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M12 8v8M8 12h8"/></svg>';
+    const DOTS='<svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>';
+    const OK='<svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg>';
+    let body;
+    if(installEvt) body='<div class="mbtns"><button type="button" class="pill strong big" data-act="install">安裝到桌面</button></div>';
+    else if(IS_IOS) body='<ol class="steps">'+step(IOS_SHARE,'在 Safari 點下方的<b>分享</b>按鈕')+step(PLUS,'往下滑，選<b>「加入主畫面」</b>')+step(OK,'按右上角的<b>「新增」</b>')+'</ol>';
+    else body='<ol class="steps">'+step(DOTS,'點瀏覽器右上角的<b>「⋮」</b>')+step(PLUS,'選<b>「安裝應用程式」</b>或<b>「加到主畫面」</b>')+step(OK,'按<b>「安裝」</b>')+'</ol>';
+    return '<div class="mcard" role="dialog" aria-modal="true" aria-labelledby="m-t"><h2 id="m-t" class="mtitle">把名片夾放到手機桌面</h2>'
+      + '<p>之後像一般 App 一樣，點桌面圖示就能打開；沒有網路也能遞名片，不佔什麼空間。</p>'+body
+      + '<div class="mbtns"><button type="button" class="pill line" data-act="modalClose">'+(installEvt?'之後再說':'知道了')+'</button></div>'
+      + '<p class="sub">之後想裝，可以到「設定 → 關於」。</p></div>';
+  }
+  if(m==="inapp"){
+    return '<div class="mcard warn" role="dialog" aria-modal="true" aria-labelledby="m-t"><h2 id="m-t" class="mtitle">請改用手機瀏覽器打開</h2>'
+      + '<p>你現在是在 '+INAPP+' 裡面打開。在這裡存的名片，關掉之後可能會不見，也沒辦法安裝到手機桌面。</p>'
+      + '<div class="mbtns">'+inappButton()+'</div>'
+      + '<button type="button" class="textbtn" data-act="modalClose" style="align-self:center">我知道了，繼續使用</button></div>';
+  }
   return "";
 }
-function welcomeHTML(){
-  if(data.meta.tips.welcome || data.profiles.work.name) return "";
-  return '<section class="tile welcome"><h2>歡迎使用隨身名片夾</h2><ul>'
-    + '<li><b>遞名片</b>：對方用手機相機掃你的 QR code，就能存下你的聯絡方式</li>'
-    + '<li><b>收名片</b>：拍下對方的紙本名片，自動讀出姓名、電話，收進名片夾</li>'
-    + '<li><b>資料只在你手上</b>：存在這支手機和你自己的雲端，不經過任何伺服器</li></ul>'
-    + '<p class="sub">先在下面填好你的名片，大約一分鐘。</p></section>';
+function renderModal(){
+  let z=document.getElementById("modalBox");
+  if(!z){ z=document.createElement("div"); z.id="modalBox"; document.body.appendChild(z); }
+  if(!ui.modal){ z.innerHTML=""; z.dataset.m=""; if(!ui.clog) document.body.style.overflow=""; return; }
+  document.body.style.overflow="hidden";
+  const again=z.dataset.m===ui.modal; z.dataset.m=ui.modal;   // 換頁時不要重播滑入動畫
+  z.innerHTML='<div class="scrim mscrim"></div><div class="mwrap'+(again?' still':'')+'">'+modalHTML()+'</div>';
+  const f=z.querySelector(".pill.strong")||z.querySelector("button"); f&&f.focus();
+  const sl=document.getElementById("wslide");
+  if(sl){ let x0=null; sl.addEventListener("touchstart",e=>{ x0=e.touches[0].clientX; },{passive:true});
+    sl.addEventListener("touchend",e=>{ if(x0===null) return; const dx=e.changedTouches[0].clientX-x0; x0=null;
+      if(dx<-50 && ui.wStep<WELCOME.length-1){ ui.wStep++; renderModal(); } else if(dx>50 && ui.wStep>0){ ui.wStep--; renderModal(); } }); }
+}
+function openModal(m, auto){
+  if(auto && ui.modal) return;   // 不疊在另一個視窗上；歡迎看完、存好名片後才會問安裝
+  ui.modal=m; ui.wStep=0; renderModal();
+}
+function closeModal(){
+  const m=ui.modal; ui.modal=null; renderModal();
+  if(m==="welcome"){ data.meta.tips.welcome=1; save({quiet:true}); document.getElementById("me-name")?.focus(); }
+  if(m==="install"){ data.meta.tips.install=1; save({quiet:true}); }
 }
 
 /* ---------- 第一次遇到時的小提示：按「知道了」就不再出現 ---------- */
@@ -1264,7 +1340,8 @@ function renderSettings(){
     + card("backup", '<p class="sub">'+(data.meta.lastBackup?'上次備份：'+when(data.meta.lastBackup):'還沒備份過')+(data.meta.sinceBackup?'・之後新增了 '+data.meta.sinceBackup+' 張':'')+'</p>'
         + '<div class="row">'+(GDRIVE_CLIENT_ID?'<button type="button" class="pill strong" data-act="cloudBackup"'+(ui.cloudBusy?' disabled':'')+'>'+(ui.cloudBusy==="backup"?'備份中…':'備份到 Google Drive')+'</button>'
           :'<button type="button" class="pill strong" data-act="exportJson">備份到雲端硬碟</button>')+'</div>')
-    + card("about", '<p class="sub">版本 '+esc(APP_VERSION)+(ui.aboutNew?'・有新功能':'')+'・不收費、沒有廣告、不收集資料</p>')
+    + card("about", '<p class="sub">版本 '+esc(APP_VERSION)+(ui.aboutNew?'・有新功能':'')+'・不收費、沒有廣告、不收集資料</p>'
+        + (canInstall()?'<div class="row" style="margin-top:8px"><button type="button" class="pill line small" data-act="openInstall">安裝到手機桌面</button></div>':''))
     + '<div id="fb"></div>';
 }
 
@@ -2074,6 +2151,7 @@ function closePresent(){
 document.addEventListener("keydown", e=>{
   if(e.key==="Enter" && e.target.id==="tokEdit"){ e.preventDefault(); document.querySelector('[data-act="tokSave"]')?.click(); return; }
   if(e.key!=="Escape") return;
+  if(ui.modal){ closeModal(); return; }
   if(ui.clog){ ui.clog=false; renderClog(); return; }
   if(!document.getElementById("present").hidden) closePresent();
   if(!document.getElementById("scanner").hidden) stopScan(); });
@@ -2268,9 +2346,13 @@ document.addEventListener("click", e=>{
   else if(a==="clogOpen"){ ui.clog=true; renderClog(); }
   else if(a==="clogClose"){ ui.clog=false; renderClog(); document.querySelector('[data-act="clogOpen"]')?.focus(); }
   else if(a==="install"){
-    if(!installEvt){ toast("請從瀏覽器選單選「安裝應用程式」"); return; }
-    installEvt.prompt(); installEvt.userChoice.then(c=>{ if(c && c.outcome==="accepted"){ data.meta.tips.install=1; save({quiet:true}); } installEvt=null; keepScroll(render); }).catch(()=>{});
+    if(!installEvt){ renderModal(); return; }
+    installEvt.prompt(); installEvt.userChoice.then(c=>{ installEvt=null; if(c && c.outcome==="accepted"){ data.meta.tips.install=1; save({quiet:true}); ui.modal=null; } renderModal(); }).catch(()=>{});
   }
+  else if(a==="openInstall"){ openModal("install"); }
+  else if(a==="modalClose"){ closeModal(); }
+  else if(a==="wNext"){ ui.wStep=Math.min((ui.wStep||0)+1, WELCOME.length-1); renderModal(); }
+  else if(a==="wPrev"){ ui.wStep=Math.max((ui.wStep||0)-1, 0); renderModal(); }
   else if(a==="tipOk"){
     data.meta.tips[el.dataset.key]=1; save({quiet:true});
     if(el.dataset.rerender) keepScroll(render); else el.closest(".tip")?.remove();
@@ -2387,6 +2469,7 @@ document.addEventListener("submit", e=>{
       links:[0,1,2].map(i=>({label:val("me-ll"+i), url:val("me-lu"+i)}))});
     data.meta.tips.welcome=1;
     if(save()) toast("名片已更新"); ui.editing=false; render();
+    if(!data.meta.tips.install && canInstall()) setTimeout(()=>openModal("install", true), 700);   // 剛存好名片，最適合問要不要裝到桌面
   } else if(e.target.id==="addForm"){
     const name=val("add-name");
     if(!name){ toast("至少要填姓名"); document.getElementById("add-name").focus(); return; }
@@ -2457,6 +2540,8 @@ document.addEventListener("change", async e=>{
   if(!raw) data.meta.seenVersion=APP_VERSION;   // 第一次安裝：不用提示「有新功能」
   ui.editing=!data.profiles.work.name;   // 第一次打開：直接進入填寫自己的名片
   applySettings(); render(); initCloud();
+  if(INAPP) openModal("inapp", true);
+  else if(!data.meta.tips.welcome && !data.profiles.work.name) openModal("welcome", true);
   try{ navigator.storage && navigator.storage.persist && navigator.storage.persist(); }catch(e){} // 請瀏覽器不要自動清掉資料
 })();
 // 對方看電子名片時不安裝離線快取：不替別人的手機下載整個 app
