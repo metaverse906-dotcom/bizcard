@@ -23,7 +23,7 @@ self.addEventListener("fetch", (e) => {
   // 頁面本身：先拿網路上的新版，離線時用快取
   if (req.mode === "navigate") {
     e.respondWith(
-      fetch(req)
+      fetch(req, {cache: "no-cache"})   // 不用瀏覽器暫存的舊頁面（GitHub Pages 會讓頁面暫存 10 分鐘），有網路就拿最新版
         .then((res) => { const copy = res.clone(); caches.open(CACHE).then((c) => c.put("./index.html", copy)); return res; })
         .catch(() => caches.match("./index.html"))
     );
@@ -31,6 +31,7 @@ self.addEventListener("fetch", (e) => {
   }
   // 只快取 app 自己的檔案、字體、QR code 與文字辨識元件；Google 登入與 Drive 的請求一律直接上網、不留存
   const url = new URL(req.url);
+  if (url.searchParams.has("vcheck")) return;   // 檢查新版本：一定直接上網，不經過快取
   const isOcr = url.hostname === "cdn.jsdelivr.net" || url.pathname.includes("/ocr-models/");
   const cacheable = isOcr || url.origin === self.location.origin ||
     ["fonts.googleapis.com", "fonts.gstatic.com", "cdnjs.cloudflare.com"].includes(url.hostname);
