@@ -19,7 +19,7 @@
      對方打開電子名片時，只載入那張名片用到的字體，不載入辨識和裁切的程式，打開比較快。 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script>
-window.APP_VERSION = "0.10.0";
+window.APP_VERSION = "0.11.0";
 window.IS_ECARD = location.hash.indexOf("#c=") === 0;
 (function(){
   var G = "https://fonts.googleapis.com/css2?family=", F = {
@@ -225,7 +225,7 @@ textarea.grow{min-height:0;resize:none;overflow:hidden;line-height:1.45;display:
 .kv .num{font:inherit;color:var(--link);background:none;border:none;padding:0;text-align:left;text-decoration:underline;text-underline-offset:3px;cursor:pointer;min-height:28px}
 .nummenu{display:flex;gap:8px;margin:6px 0 4px}
 .nummenu a,.nummenu button{flex:1;min-height:44px;border-radius:12px;border:none;background:var(--soft);color:var(--ink);font:inherit;font-size:.86rem;display:grid;place-items:center;text-decoration:none}
-.quick{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.quick{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .quick .mini{min-height:88px}
 .photobtns{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .sides{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
@@ -278,7 +278,11 @@ textarea.grow{min-height:0;resize:none;overflow:hidden;line-height:1.45;display:
 .sicon{width:40px;height:40px;flex:none;border-radius:12px;background:var(--surface);display:grid;place-items:center}
 .sicon svg{width:24px;height:24px;fill:none;stroke:var(--link);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .sicon svg circle{fill:var(--link);stroke:none}
-.ver{cursor:default;-webkit-tap-highlight-color:transparent;user-select:none}
+.ver{cursor:default;-webkit-tap-highlight-color:transparent;user-select:none;display:inline-block}
+.ver.boing{animation:boing .32s ease}
+@keyframes boing{0%{transform:scale(1)}35%{transform:scale(1.12,.9)}65%{transform:scale(.96,1.05)}100%{transform:scale(1)}}
+.eggmark{color:#C9A24A}
+@media (prefers-reduced-motion:reduce){.ver.boing{animation:none}}
 .eggcard{position:relative;overflow:hidden;align-items:stretch}
 .eggflip{perspective:600px;display:flex;justify-content:center;margin-top:8px}
 .eggface{width:180px;aspect-ratio:91/54;border-radius:12px;background:var(--card);color:#F4F1EA;display:grid;place-items:center;font-family:var(--f-card);font-size:1.7rem;font-weight:700;letter-spacing:.08em;
@@ -288,6 +292,26 @@ textarea.grow{min-height:0;resize:none;overflow:hidden;line-height:1.45;display:
 .confetti i{position:absolute;top:-12px;width:7px;height:12px;border-radius:2px;opacity:.85;animation:fall 2.6s linear infinite}
 @keyframes fall{to{transform:translateY(420px) rotate(320deg)}}
 @media (prefers-reduced-motion:reduce){.eggface,.confetti i{animation:none}.confetti{display:none}}
+.give2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.pill.give{min-height:72px;width:100%;flex-direction:column;gap:4px;padding:10px 8px;text-align:center;line-height:1.3}
+.pill.give>span{display:flex;flex-direction:column;align-items:center}
+.pill.give b{font-size:1.04rem}
+.pill.give small{font-size:.76rem;font-weight:400;opacity:.85}
+#tour{position:fixed;inset:0;z-index:40;pointer-events:none}
+#tour .tb{position:fixed;pointer-events:auto;background:transparent}
+#tour .thole{position:fixed;border-radius:14px;box-shadow:0 0 0 200vmax rgba(10,18,16,.66);outline:2.5px solid #F4E3B5;outline-offset:0;transition:all .25s ease;pointer-events:none}
+#tour.center .thole{outline:none}
+#tour .tcatch{position:fixed;pointer-events:auto;background:transparent;border:0;border-radius:14px;padding:0;cursor:pointer}
+#tour .tbub{position:fixed;pointer-events:auto;background:var(--surface);color:var(--ink);border-radius:18px;padding:16px 18px 14px;box-shadow:0 18px 40px -14px rgba(0,0,0,.55);transition:top .25s ease,left .25s ease}
+#tour .tbub h2{margin:2px 0 6px;font-size:1.12rem}
+#tour .tbub p{margin:0 0 12px;line-height:1.6}
+#tour .tbub .row{justify-content:flex-end;margin:0}
+#tour .tnum{font-size:.78rem;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){#tour .thole,#tour .tbub{transition:none}}
+.ioskeep{border:1.5px solid #C9A24A}
+.ownhint{display:block;margin:2px auto 0;text-align:center}
+.ownsteps{margin:0}
+.ownsteps ol{margin:6px 0 0;padding-left:1.3em;line-height:1.7}
 .updbar{position:fixed;left:12px;right:12px;top:calc(10px + env(safe-area-inset-top,0px));z-index:20;max-width:520px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:10px;
   background:var(--strong);color:var(--strong-ink);border-radius:16px;padding:10px 10px 10px 16px;font-size:.9rem;box-shadow:0 8px 24px -8px rgba(0,0,0,.35)}
 .updbar .pill{background:var(--surface);color:var(--ink);flex:none}
@@ -489,7 +513,7 @@ nav.tabs button[aria-current="page"] span{display:inline}
   padding:12px max(20px,env(safe-area-inset-right,0px)) calc(14px + env(safe-area-inset-bottom,0px)) max(20px,env(safe-area-inset-left,0px))}
 .pctrl .pill{flex:1;max-width:220px}
 
-.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));background:var(--strong);color:var(--strong-ink);padding:9px 18px;border-radius:999px;font-size:.86rem;z-index:30;max-width:calc(100% - 40px)}
+.toast{z-index:45 !important;position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));background:var(--strong);color:var(--strong-ink);padding:9px 18px;border-radius:999px;font-size:.86rem;z-index:30;max-width:calc(100% - 40px)}
 textarea.fallback{font-size:12px;min-height:120px}
 @media (prefers-reduced-motion:no-preference){.open{animation:rise .22s ease-out}@keyframes rise{from{transform:translateY(8px);opacity:.6}to{transform:none;opacity:1}}}
 @media (prefers-reduced-motion:reduce){.present .stage{transition:none}}
@@ -535,7 +559,7 @@ textarea.fallback{font-size:12px;min-height:120px}
 <div class="scanner" id="scanner" role="dialog" aria-modal="true" aria-label="掃描 QR code" hidden>
   <video id="scanVideo" playsinline muted></video>
   <div class="frame" aria-hidden="true"></div>
-  <div class="bar"><p>把對方名片上的 QR code 放進框裡</p><button type="button" class="pill" data-act="scanStop">取消</button></div>
+  <div class="bar"><p>把對方名片上的 QR code 放進框裡</p><div class="row" style="justify-content:center"><button type="button" class="pill" data-act="qrImage">從相簿選截圖</button><button type="button" class="pill" data-act="scanStop">取消</button></div></div>
 </div>
 <div class="toast" id="toast" role="status" hidden></div>
 
@@ -798,6 +822,7 @@ function growAll(root){ (root||document).querySelectorAll("textarea.grow").forEa
 const ICON = {
   copy:'<svg class="i" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg>',
   cup:'<svg class="i" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M5 9h11v5a5 5 0 0 1-5 5H10a5 5 0 0 1-5-5zM16 10h1.5a2.5 2.5 0 0 1 0 5H16"/></svg>',
+  link:'<svg class="i" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>',
   plus:'<svg class="i" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>',
   cam:'<svg class="i" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>',
   qr:'<svg class="i" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><path d="M14 14h2v2h-2zM18 18h2v2h-2zM14 20h2M20 14v2"/></svg>',
@@ -833,9 +858,10 @@ function renderMe(){
     + '<div class="stackwrap">'+cardHTML(m)+'</div>'
     + editor
     + ocrIntroHTML()
-    + (ui.editing?'':'<button type="button" class="pill strong big" data-act="present">遞'+label+'給對方</button>')
+    + (ui.editing?'':'<div class="give2"><button type="button" class="pill strong give" data-act="present">'+ICON.qr+'<span><b>當面遞名片</b><small>對方用相機掃 QR code</small></span></button>'
+      + '<button type="button" class="pill strong give" data-act="shareEcard">'+ICON.share+'<span><b>線上傳連結</b><small>傳到 LINE、Email</small></span></button></div>')
     + '<div class="tiles"><div class="tile qrtile">'+qrSvg(qrPayload(m))+'<span class="sub">'+(qrMode()==="vcard"?"掃描直接存聯絡人":"掃描打開電子名片")+'</span></div>'
-    + '<div class="stackcol"><button type="button" class="mini" data-act="shareEcard">'+ICON.share+'<span>分享電子名片連結</span></button>'
+    + '<div class="stackcol"><button type="button" class="mini" data-act="copyLink">'+ICON.copy+'<span>複製電子名片連結</span></button>'
     + '<button type="button" class="mini" data-act="copyMe">'+ICON.copy+'<span>複製文字版</span></button></div></div>'
     + '<p class="sub" style="text-align:center">名片和 QR code 只包含設定裡打開的欄位，不經過任何伺服器。</p>';
 }
@@ -1016,8 +1042,10 @@ function renderBook(){
   return sameSheet()+'<div class="head"><div><div class="eyebrow">'+n+' 張'+(samples?'・含 '+samples+' 張範例':'')+'</div><h1>名片夾</h1></div>'
     + (ui.adding?'':'<button type="button" class="round" data-act="add" aria-label="手動新增名片">'+ICON.plus+'</button>')+'</div>'
     + (ui.adding?'':'<div class="quick"><button type="button" class="mini" data-act="snap" data-side="front">'+ICON.cam+'<span>拍名片</span></button>'
-      + (CAN_SCAN?'<button type="button" class="mini" data-act="scan">'+ICON.qr+'<span>掃 QR code</span></button>':'<button type="button" class="mini" data-act="add">'+ICON.plus+'<span>手動輸入</span></button>')+'</div>')
+      + (CAN_SCAN?'<button type="button" class="mini" data-act="scan">'+ICON.qr+'<span>掃 QR code</span></button>':'<button type="button" class="mini" data-act="qrImage">'+ICON.qr+'<span>讀 QR 截圖</span></button>')
+      + '<button type="button" class="mini" data-act="pasteLink">'+ICON.link+'<span>貼上連結</span></button></div>')
     + add
+    + (ui.adding?'':iosKeepHTML())
     + backupNudge()
     + '<label class="search">'+ICON.search+'<input id="q" type="search" placeholder="搜尋姓名、單位、在哪認識" value="'+esc(ui.query)+'" aria-label="搜尋名片"></label>'
     + '<div class="chips"><button type="button" class="chip" data-act="sort" data-key="recent" aria-pressed="'+(ui.sort==="recent")+'">最近收到</button>'
@@ -1043,7 +1071,9 @@ function textOnly(p){
 const APP_URL = () => location.origin + location.pathname.replace(/index\.html$/,"");
 // 更新紀錄：每版 1–3 行白話。發新版時在最上面加一筆，並把 index.html 開頭的 APP_VERSION 改成同一個號碼
 const CHANGELOG = [
-  {v:"0.10.0", d:"2026-10-17", items:["藏了一個小彩蛋","加上使用授權說明"]},
+  {v:"0.11.0", d:"2026-10-19", items:["新的互動教學：跟著亮起來的地方做一遍就會用；設定 → 關於可以重看","線上認識的人也能交換：傳連結給對方，收到的連結按「貼上連結」就收進名片夾","可以從相簿的截圖讀 QR code；打開別人的電子名片時，可以直接存進自己的名片夾","iPhone：可以直接用相機掃 QR code；安裝步驟改成 iOS 26 的新位置；在 Safari 裡使用時會提醒加到主畫面"]},
+  {v:"0.10.1", d:"2026-10-19", items:["「使用授權」改成直接在 App 裡打開的頁面，不再下載檔案"]},
+  {v:"0.10.0", d:"2026-10-17", items:["有個數字，好像有點怕癢","加上使用授權說明"]},
   {v:"0.9.1", d:"2026-10-17", items:["電子名片上的「一句話介紹」放大；直排樣式的介紹太長時會換欄，不會縮到看不見"]},
   {v:"0.9.0", d:"2026-10-17", items:["第一次打開會有三頁簡短介紹","存好自己的名片後，會用一步一步的圖示教你把 App 放到手機桌面","在 LINE 裡打開時，一進來就會提醒改用手機瀏覽器"]},
   {v:"0.8.1", d:"2026-10-17", items:["有新版本時，App 上方會出現「重新整理」提醒，不用再把 App 完全關掉"]},
@@ -1089,20 +1119,29 @@ function aboutHTML(isNew){
       + '<li>需要把你的名片資料上傳到別處的功能，不會做。</li></ul>'
       + (WISHES.length?'<ul class="wishes">'+WISHES.map(w=>'<li><span class="wst">'+esc(w.status)+'</span>'+esc(w.text)+'</li>').join("")+'</ul>':'<p class="sub">目前還沒有願望。</p>')+'</details>':'')
     + '<p class="sub">'+(TIP_URL?'':'')+'不支持也能用全部功能。</p>'
+    + '<div class="row"><button type="button" class="pill line" data-act="tourStart">重新看教學</button></div>'
     + changelogHTML(isNew)
     + '<a class="rowbtn" href="privacy.html"><span><b>隱私權政策</b><span class="sub">不收集資料；雲端備份只存取 app 自己建立的檔案</span></span><span class="chev" aria-hidden="true"></span></a>'
-    + '<a class="rowbtn" href="LICENSE" target="_blank" rel="noopener"><span><b>使用授權</b><span class="sub">可以免費使用；未經同意請勿複製重新發布</span></span><span class="chev" aria-hidden="true"></span></a></section>';
+    + '<a class="rowbtn" href="license.html"><span><b>使用授權</b><span class="sub">可以免費使用；未經同意請勿複製重新發布</span></span><span class="chev" aria-hidden="true"></span></a></section>';
 }
 /* ---------- 在哪裡打開：App 內建瀏覽器（LINE 等）、能不能安裝到桌面 ---------- */
 const UA = navigator.userAgent;
 const INAPP = /\bLine\//i.test(UA) ? "LINE" : /FBAN|FBAV|FB_IAB|FBIOS/i.test(UA) ? "Facebook" : /Instagram/i.test(UA) ? "Instagram" : /MicroMessenger/i.test(UA) ? "微信" : "";
 const IS_IOS = /iPhone|iPad|iPod/.test(UA) || (navigator.platform==="MacIntel" && navigator.maxTouchPoints>1);
 const IS_ANDROID = /Android/i.test(UA);
+const IOS_VER = (()=>{ const m=UA.match(/Version\/(\d+)/)||UA.match(/OS (\d+)_/); return m?+m[1]:0; })();
+const iosSafari = () => IS_IOS && !IS_ECARD && !INAPP && !isStandalone();   // iPhone 在 Safari 裡用，還沒加到主畫面
 const isStandalone = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone===true;
 let installEvt = null;
 addEventListener("beforeinstallprompt", e=>{ e.preventDefault(); installEvt=e; if(ui.modal==="install") renderModal(); });
 addEventListener("appinstalled", ()=>{ installEvt=null; if(data){ data.meta.tips.install=1; save({quiet:true}); } if(ui.modal==="install"){ ui.modal=null; renderModal(); } toast("已安裝到手機桌面"); });
+function iosKeepHTML(){   // iPhone 的 Safari 會清掉一段時間沒打開的網站資料；加到主畫面的 App 不會
+  if(!iosSafari()) return "";
+  return '<div class="nudge ioskeep"><span>你現在是在 Safari 裡使用。iPhone 可能會清掉一段時間沒打開的網站資料，請<b>加到主畫面</b>，或定期備份。</span>'
+    + '<span class="nb"><button type="button" class="pill small" data-act="openInstall">怎麼加</button></span></div>';
+}
 function installHTML(){   // 頁面上只留「在 LINE 裡打開」的紅框提醒；安裝說明改成彈出視窗
+  if(iosSafari()) return iosKeepHTML();
   if(IS_ECARD || isStandalone() || !INAPP) return "";
   return '<section class="tile installcard warn"><h2>你現在是在 '+INAPP+' 裡面打開</h2>'
     + '<p>在這裡存的名片，關掉之後可能會不見，也沒辦法安裝到手機桌面。請改用手機的瀏覽器打開。</p>'
@@ -1145,6 +1184,8 @@ function modalHTML(){
     const OK='<svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg>';
     let body;
     if(installEvt) body='<div class="mbtns"><button type="button" class="pill strong big" data-act="install">安裝到桌面</button></div>';
+    else if(IS_IOS && IOS_VER>=26) body='<ol class="steps">'+step('<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>','點網址列旁邊的<b>「⋯」</b>，再點<b>「分享」</b>')+step(PLUS,'往下滑，選<b>「加入主畫面」</b>')
+      +step(OK,'確認<b>「以網頁 App 開啟」</b>是打開的，按右上角的<b>「新增」</b>')+'</ol><p class="sub">「以網頁 App 開啟」沒打開的話，加上去的只是書籤，資料仍然可能被清掉。</p>';
     else if(IS_IOS) body='<ol class="steps">'+step(IOS_SHARE,'在 Safari 點下方的<b>分享</b>按鈕')+step(PLUS,'往下滑，選<b>「加入主畫面」</b>')+step(OK,'按右上角的<b>「新增」</b>')+'</ol>';
     else body='<ol class="steps">'+step(DOTS,'點瀏覽器右上角的<b>「⋮」</b>')+step(PLUS,'選<b>「安裝應用程式」</b>或<b>「加到主畫面」</b>')+step(OK,'按<b>「安裝」</b>')+'</ol>';
     return '<div class="mcard" role="dialog" aria-modal="true" aria-labelledby="m-t"><h2 id="m-t" class="mtitle">把名片夾放到手機桌面</h2>'
@@ -1159,7 +1200,14 @@ function modalHTML(){
       + '<h2 id="m-t" class="mtitle" style="text-align:center">你找到彩蛋了</h2>'
       + '<p style="text-align:center">心理師隨手做的APP<br>希望大家能喜歡</p>'
       + '<p class="sub" style="text-align:center">— '+esc(MAKER)+'・隨身名片夾・2026</p>'
-      + '<div class="mbtns"><button type="button" class="pill strong big" data-act="modalClose">收下</button></div></div>';
+      + (ui.eggFirst?'<p class="sub" style="text-align:center">已經放在「設定 → 關於」的版本號旁邊，點一下就能再看。</p>':'')
+      + '<div class="mbtns"><button type="button" class="pill strong big" data-act="eggClose">'+(ui.eggFirst?'收下 ✦':'好')+'</button></div></div>';
+  }
+  if(m==="tourAsk"){
+    return '<div class="mcard" role="dialog" aria-modal="true" aria-labelledby="m-t"><h2 id="m-t" class="mtitle">新的操作教學上線了</h2>'
+      + '<p>30 秒的互動教學，帶你走一遍：當面遞名片、線上傳連結、收別人的名片。</p>'
+      + '<div class="mbtns"><button type="button" class="pill strong big" data-act="tourStart">看教學</button><button type="button" class="pill line" data-act="modalClose">不用了</button></div>'
+      + '<p class="sub">之後想看，到「設定 → 關於」。</p></div>';
   }
   if(m==="inapp"){
     return '<div class="mcard warn" role="dialog" aria-modal="true" aria-labelledby="m-t"><h2 id="m-t" class="mtitle">請改用手機瀏覽器打開</h2>'
@@ -1183,13 +1231,102 @@ function renderModal(){
       if(dx<-50 && ui.wStep<WELCOME.length-1){ ui.wStep++; renderModal(); } else if(dx>50 && ui.wStep>0){ ui.wStep--; renderModal(); } }); }
 }
 function openModal(m, auto){
-  if(auto && ui.modal) return;   // 不疊在另一個視窗上；歡迎看完、存好名片後才會問安裝
+  if(auto && (ui.modal || ui.tour)) return;   // 不疊在另一個視窗上；歡迎看完、存好名片後才會問安裝
   ui.modal=m; ui.wStep=0; renderModal();
 }
 function closeModal(){
   const m=ui.modal; ui.modal=null; renderModal();
   if(m==="welcome"){ data.meta.tips.welcome=1; save({quiet:true}); document.getElementById("me-name")?.focus(); }
   if(m==="install"){ data.meta.tips.install=1; save({quiet:true}); }
+  if(m==="tourAsk"){ data.meta.tips.tourAsk=1; save({quiet:true}); }
+}
+
+/* ---------- 互動教學：畫面變暗，只有教學的地方亮著能按，旁邊跳出說明
+   新使用者第一次打開自動開始；舊使用者更新後問一次要不要看；設定 → 關於可以重看 ---------- */
+const TOUR=[
+  {center:true, t:"30 秒帶你走一遍", d:"跟著亮起來的地方做。隨時可以按「略過」，之後在「設定 → 關於」也能重看。", go:"開始"},
+  {sel:"#me-name", tab:"me", name:true, t:"先填你的姓名", d:"其他欄位之後再補也可以。填好按「下一步」，名片就存好了。"},
+  {sel:'[data-act="present"]', tab:"me", t:"當面交換：遞名片", d:"按這裡，名片和 QR code 會轉向對面。對方用手機相機一掃，就能存下你的聯絡方式。"},
+  {sel:'[data-act="shareEcard"]', tab:"me", t:"線上認識：傳連結", d:"沒見到面也能交換。把電子名片連結傳到 LINE 或 Email，對方點開就看得到。"},
+  {sel:'.quick', tab:"book", t:"收別人的名片", d:"拍紙本名片，會自動讀出姓名和電話。對方傳連結給你的話，複製連結後按「貼上連結」。"},
+  {sel:'#tab-set', tab:"book", t:"記得備份", d:"名片只存在這支手機。到「設定 → 備份」，可以一鍵存到你自己的 Google Drive。", go:"完成"}
+];
+function tourStart(){
+  closePresent(); if(ui.modal){ ui.modal=null; renderModal(); }
+  data.meta.tips.tourAsk=1; save({quiet:true});
+  if(!me().name && data.profiles.work.name){ data.active="work"; save({quiet:true}); applySettings(); }
+  ui.tour={i:0}; ui.adding=false; ui.setPage=null; ui.tab="me"; render(); window.scrollTo(0,0); tourShow();
+}
+function tourStepOk(i){ const st=TOUR[i]; return !(st.name && me().name && !ui.editing); }   // 已經有名片就跳過填姓名
+function tourShow(){
+  const st=TOUR[ui.tour.i];
+  if(st.tab && ui.tab!==st.tab){ ui.tab=st.tab; ui.setPage=null; ui.adding=false; render(); window.scrollTo(0,0); }
+  if(st.name && !ui.editing){ ui.editing=true; render(); }
+  if(!st.name && ui.editing){ ui.editing=false; render(); }
+  let box=document.getElementById("tour");
+  if(!box){ box=document.createElement("div"); box.id="tour"; document.body.appendChild(box);
+    addEventListener("scroll", tourPlaceSoon, {passive:true}); addEventListener("resize", tourPlaceSoon);
+    window.visualViewport && visualViewport.addEventListener("resize", tourPlaceSoon); }
+  const steps=TOUR.length-1, n=ui.tour.i;
+  box.className=st.center?"center":"";
+  box.innerHTML='<div class="tb"></div><div class="tb"></div><div class="tb"></div><div class="tb"></div><div class="thole"></div>'
+    + (st.name||st.center?'':'<button type="button" class="tcatch" data-act="tourNext" aria-label="下一步"></button>')
+    + '<div class="tbub" role="dialog" aria-modal="true" aria-labelledby="tour-t">'
+    + (n?'<span class="tnum">'+n+' / '+steps+'</span>':'')
+    + '<h2 id="tour-t">'+st.t+'</h2><p>'+st.d+'</p>'
+    + '<div class="row"><button type="button" class="pill line small" data-act="tourSkip">略過</button>'
+    + '<button type="button" class="pill strong small" data-act="tourNext">'+(st.go||"下一步")+'</button></div></div>';
+  const el=st.sel && document.querySelector(st.sel);
+  if(el && !st.center) el.scrollIntoView({block:"center"});
+  tourPlace();
+  if(st.name) setTimeout(()=>document.getElementById("me-name")?.focus(), 250);
+  else box.querySelector(".tbub .pill.strong")?.focus();
+}
+let tourRaf=0;
+function tourPlaceSoon(){ if(!ui.tour) return; cancelAnimationFrame(tourRaf); tourRaf=requestAnimationFrame(tourPlace); }
+function tourPlace(){
+  const box=document.getElementById("tour"); if(!box || !ui.tour) return;
+  const st=TOUR[ui.tour.i], vw=innerWidth, vh=(window.visualViewport?visualViewport.height:innerHeight);
+  let el=st.sel && document.querySelector(st.sel); if(el && st.name) el=el.closest("label")||el;
+  let r;
+  if(el && !st.center){ const b=el.getBoundingClientRect(), pad=6; r={l:b.left-pad, t:b.top-pad, r:b.right+pad, b:b.bottom+pad}; }
+  else r={l:vw/2, t:vh/2, r:vw/2, b:vh/2};
+  const [T,B,L,R]=box.querySelectorAll(".tb"), px=v=>Math.round(v)+"px";
+  Object.assign(T.style,{left:0,top:0,width:"100%",height:px(Math.max(0,r.t))});
+  Object.assign(B.style,{left:0,top:px(r.b),width:"100%",bottom:0});
+  Object.assign(L.style,{left:0,top:px(r.t),width:px(Math.max(0,r.l)),height:px(r.b-r.t)});
+  Object.assign(R.style,{left:px(r.r),top:px(r.t),right:0,height:px(r.b-r.t)});
+  const hole=box.querySelector(".thole"); Object.assign(hole.style,{left:px(r.l),top:px(r.t),width:px(r.r-r.l),height:px(r.b-r.t)});
+  const c=box.querySelector(".tcatch"); if(c) Object.assign(c.style,{left:px(r.l),top:px(r.t),width:px(r.r-r.l),height:px(r.b-r.t)});
+  const bub=box.querySelector(".tbub"), w=Math.min(340, vw-32); bub.style.width=w+"px";
+  const h=bub.offsetHeight, cx=(r.l+r.r)/2;
+  bub.style.left=px(Math.min(vw-16-w, Math.max(16, cx-w/2)));
+  let top;
+  if(st.center) top=(vh-h)/2;
+  else if(vh-r.b >= h+20) top=r.b+12;
+  else if(r.t >= h+20) top=r.t-12-h;
+  else top=vh-h-16;
+  bub.style.top=px(top);
+}
+function tourNext(){
+  const st=TOUR[ui.tour.i];
+  if(st.name){
+    const v=(document.getElementById("me-name")?.value||"").trim();
+    if(!v){ toast("先填上你的姓名"); document.getElementById("me-name")?.focus(); return; }
+    document.getElementById("meForm").requestSubmit();
+  }
+  let i=ui.tour.i+1; while(i<TOUR.length && !tourStepOk(i)) i++;
+  if(i>=TOUR.length){ tourEnd(true); return; }
+  ui.tour.i=i; tourShow();
+}
+function tourEnd(done){
+  ui.tour=null; document.getElementById("tour")?.remove();
+  removeEventListener("scroll", tourPlaceSoon); removeEventListener("resize", tourPlaceSoon);
+  window.visualViewport && visualViewport.removeEventListener("resize", tourPlaceSoon);
+  Object.assign(data.meta.tips, {tour:1, tourAsk:1, welcome:1}); save({quiet:true});
+  ui.tab="me"; ui.setPage=null; ui.editing=!me().name; render(); window.scrollTo(0,0);
+  if(done) toast("完成了！之後想再看，到「設定 → 關於」");
+  if(me().name && !data.meta.tips.install && canInstall()) setTimeout(()=>openModal("install", true), 900);
 }
 
 /* ---------- 第一次遇到時的小提示：按「知道了」就不再出現 ---------- */
@@ -1222,7 +1359,8 @@ function backupNudge(){
   if(ui.adding) return "";
   if(cloudPending()) return '<div class="nudge"><span>有新的名片還沒備份到雲端</span><button type="button" class="pill small" data-act="goSettings">去備份</button></div>';
   const m=data.meta, n=m.sinceBackup||0;
-  if((m.cloudConnected&&GDRIVE_CLIENT_ID) || n<5 || n<(m.snoozeAt||0)+5) return "";
+  const k=iosSafari()?2:5;   // iPhone 在 Safari 裡用：資料比較容易被清掉，早一點提醒
+  if((m.cloudConnected&&GDRIVE_CLIENT_ID) || n<k || n<(m.snoozeAt||0)+k) return "";
   return '<div class="nudge backup"><span>'+(m.lastBackup?'上次備份後新增了 '+n+' 張名片':'名片夾還沒備份過，已經有 '+n+' 張名片')+'。手機資料被清掉就救不回來，建議現在備份。</span>'
     + '<span class="nb"><button type="button" class="pill small" data-act="'+(GDRIVE_CLIENT_ID?'cloudBackup':'exportJson')+'">備份</button><button type="button" class="pill line small" data-act="backupLater">晚點</button></span></div>';
 }
@@ -1368,8 +1506,9 @@ function renderSettings(){
     + card("backup", '<p class="sub">'+(data.meta.lastBackup?'上次備份：'+when(data.meta.lastBackup):'還沒備份過')+(data.meta.sinceBackup?'・之後新增了 '+data.meta.sinceBackup+' 張':'')+'</p>'
         + '<div class="row">'+(GDRIVE_CLIENT_ID?'<button type="button" class="pill strong" data-act="cloudBackup"'+(ui.cloudBusy?' disabled':'')+'>'+(ui.cloudBusy==="backup"?'備份中…':'備份到 Google Drive')+'</button>'
           :'<button type="button" class="pill strong" data-act="exportJson">備份到雲端硬碟</button>')+'</div>')
-    + card("about", '<p class="sub"><span class="ver" data-act="egg">版本 '+esc(APP_VERSION)+'</span>'+(ui.aboutNew?'・有新功能':'')+'・不收費、沒有廣告、不收集資料</p>'
-        + (canInstall()?'<div class="row" style="margin-top:8px"><button type="button" class="pill line small" data-act="openInstall">安裝到手機桌面</button></div>':''))
+    + card("about", '<p class="sub"><span class="ver" data-act="egg">版本 '+esc(APP_VERSION)+(data.meta.tips.egg?' <span class="eggmark" aria-label="已找到彩蛋">✦</span>':'')+'</span>'+(ui.aboutNew?'・有新功能':'')+'・不收費、沒有廣告、不收集資料</p>'
+        + '<div class="row" style="margin-top:8px"><button type="button" class="pill line small" data-act="tourStart">重新看教學</button>'
+        + (canInstall()?'<button type="button" class="pill line small" data-act="openInstall">安裝到手機桌面</button>':'')+'</div>')
     + '<div id="fb"></div>';
 }
 
@@ -1380,6 +1519,7 @@ function render(){
   ["me","book","set"].forEach(t=>document.getElementById("tab-"+t).setAttribute("aria-current", ui.tab===t?"page":"false"));
   const ts=document.getElementById("tab-set"), fresh=data.meta.seenVersion!==APP_VERSION;   // 改版後第一次：設定旁邊出現小點
   ts.classList.toggle("dot", fresh); ts.setAttribute("aria-label", fresh?"設定（有新功能）":"設定");
+  if(ui.tour) tourPlaceSoon();
 }
 const rerenderCards = () => { const el=document.getElementById("cards"); if(el) el.innerHTML=renderCards(); };
 function keepScroll(fn){ const y=window.scrollY; fn(); window.scrollTo(0,y); }
@@ -1883,12 +2023,13 @@ function ocrBox(){
   } else if(ui.ocr){
     inner='<div class="ocrrun"><span class="spin" aria-hidden="true"></span><span role="status">'+esc(ui.ocr.status)+'</span><button type="button" class="pill line small" data-act="ocrStop">停止</button></div>';
   } else if(d.paste!==undefined){
-    inner='<label for="pasteText"><span>貼上名片文字（例如用 Google 智慧鏡頭複製的文字）</span><textarea id="pasteText" rows="5">'+esc(d.paste)+'</textarea></label>'
+    inner='<label for="pasteText"><span>貼上對方傳來的電子名片連結，或名片上的文字</span><textarea id="pasteText" rows="5">'+esc(d.paste)+'</textarea></label>'
       +'<div class="row"><button type="button" class="pill strong small" data-act="pasteParse">拆成欄位</button><button type="button" class="pill line small" data-act="pasteClose">收起</button></div>';
   } else {
     const n=(ui.review&&ui.review.tokens.length)||0, u=unusedTokens().length;
     return '<div id="ocrbox" class="ocrlinks">'+(n?'<button type="button" class="pill line small" data-act="rvOpen">整理文字'+(u?'（'+u+' 塊還沒用到）':'')+'</button>':'')
-      +'<button type="button" class="pill line small" data-act="pasteOpen">貼上文字自動填寫</button></div>';
+      +'<button type="button" class="pill line small" data-act="pasteOpen">貼上文字自動填寫</button>'
+      +(IS_IOS?'<p class="sub" style="flex-basis:100%;margin:6px 0 0">iPhone 小技巧：在「照片」打開名片照片，長按上面的字選「全選」→「拷貝」，再按「貼上文字自動填寫」，通常比自動讀字更準。</p>':'')+'</div>';
   }
   return '<div id="ocrbox" class="ocrbox">'+inner+'</div>';
 }
@@ -2100,7 +2241,7 @@ async function saveEcardImage(btn){
     const fn=(card.p.name||"電子名片")+"的名片.png";
     const file=new File([blob], fn, {type:"image/png"});
     let shared=false;
-    try{ if(navigator.canShare && navigator.canShare({files:[file]})){ await navigator.share({files:[file], title:fn}); shared=true; } }
+    try{ if(navigator.canShare && navigator.canShare({files:[file]})){ if(IS_IOS) toast("在分享選單選「儲存影像」，就會存進照片"); await navigator.share({files:[file], title:fn}); shared=true; } }
     catch(e){ if(e && e.name==="AbortError") shared=true; }
     if(!shared){
       const url=URL.createObjectURL(blob), a=document.createElement("a");
@@ -2136,13 +2277,42 @@ function renderEcardView(card){
   document.getElementById("app").innerHTML=
     '<p class="sub" style="text-align:center">'+esc(p.name||"")+' 的電子名片</p>'
     + (st==="classic" ? '<div class="stackwrap">'+cardHTML(p)+'</div>' : artHTML(p, st))
-    + '<button type="button" class="pill strong big" data-act="ecardSave">'+ICON.addp+'加入聯絡人</button>'
+    + '<div id="ownSave"></div>'
+    + '<button type="button" class="pill strong big" data-act="ecardSave" id="ecardSaveBtn">'+ICON.addp+'加入聯絡人</button>'
     + (acts.length?'<div class="eacts" style="grid-template-columns:repeat('+Math.min(acts.length,5)+',minmax(0,1fr))">'+acts.join("")+'</div>':'')
     + '<button type="button" class="pill line big" data-act="ecardImage">存成圖片</button>'
     + (full && p.intro ? '<section class="tile"><h2 style="color:var(--link)">關於我</h2><p class="intro">'+esc(p.intro)+'</p></section>' : '')
     + (full && p.links.length ? '<div class="elinks">'+p.links.map(l=>'<a href="'+esc(l.url)+'" target="_blank" rel="noopener"><span>'+esc(l.label||l.url.replace(/^https?:\/\//,""))+'</span><span aria-hidden="true">↗</span></a>').join("")+'</div>' : '')
     + '<p class="sub efoot">這張名片的資料只存在你看到的這個網址裡，沒有經過任何伺服器。<br><a href="'+esc(location.origin+location.pathname)+'">用「隨身名片夾」製作</a></p>';
   ui.ecard=p;
+  checkOwnBook();
+}
+// 對方的手機（同一個瀏覽器）也有用隨身名片夾時，多一顆「存進我的名片夾」
+async function checkOwnBook(){
+  let raw=null; try{ raw=await idbGet("data"); }catch(e){}
+  const box=document.getElementById("ownSave"); if(!box) return;
+  if(!raw || !raw.profiles || !((raw.profiles.work||{}).name || (raw.cards||[]).length)){
+    box.innerHTML='<button type="button" class="textbtn ownhint" data-act="ecardCopyLink">有在用隨身名片夾？複製連結，回 App 存進名片夾</button>';
+    return;
+  }
+  box.innerHTML='<button type="button" class="pill strong big" data-act="ecardKeep">'+ICON.plus+'存進我的名片夾</button>';
+  const b=document.getElementById("ecardSaveBtn"); if(b){ b.classList.remove("strong"); b.classList.add("line"); }
+}
+async function keepEcard(){
+  const p=ui.ecard; if(!p) return;
+  let raw=null; try{ raw=await idbGet("data"); }catch(e){}
+  if(!raw){ toast("找不到你的名片夾"); return; }
+  const mine=normalize(raw);
+  const fields={name:p.name,title:p.title||"",org:p.org||"",alt:"",phone:p.phone||"",tel:"",fax:"",email:p.email||"",line:p.line||"",web:p.web||((p.links&&p.links[0]&&p.links[0].url)||""),
+    address:p.address||"",note:"",ocrText:"",photo:"",photoBack:""};
+  const keep=data; data=mine; const same=findSame(fields); data=keep;
+  const box=document.getElementById("ownSave"), open='<a class="pill line big" href="'+esc(APP_URL())+'">打開我的名片夾</a>';
+  if(same){ box.innerHTML='<p class="sub" style="text-align:center">你的名片夾裡已經有「'+esc(same.card.name)+'」了</p>'+open; return; }
+  mine.cards.push(Object.assign({id:"c"+Date.now().toString(36), added:today()}, fields));
+  mine.meta.sinceBackup=(mine.meta.sinceBackup||0)+1; mine.meta.lastChange=new Date().toISOString();
+  try{ await idbSet("data", mine); }catch(e){ toast("沒存進去，請再試一次"); return; }
+  box.innerHTML='<p class="sub" style="text-align:center">已存進你的名片夾</p>'+open;
+  toast("已存進你的名片夾");
 }
 // 單張名片存成聯絡人檔：手機打開 .vcf 會直接跳到「新增聯絡人」
 function contactFile(c){
@@ -2197,6 +2367,7 @@ function closePresent(){
 document.addEventListener("keydown", e=>{
   if(e.key==="Enter" && e.target.id==="tokEdit"){ e.preventDefault(); document.querySelector('[data-act="tokSave"]')?.click(); return; }
   if(e.key!=="Escape") return;
+  if(ui.tour){ tourEnd(false); return; }
   if(ui.modal){ closeModal(); return; }
   if(ui.clog){ ui.clog=false; renderClog(); return; }
   if(!document.getElementById("present").hidden) closePresent();
@@ -2210,11 +2381,19 @@ function syncDraft(){   // 重新繪製表單前，先把已經打的字存起�
     email:val("add-email"),line:val("add-line"),web:val("add-web"),address:val("add-address"),note:val("add-note"),ocrText:keep.ocrText||"",
     paste:document.getElementById("pasteText")?.value ?? keep.paste};
 }
-const CAN_SCAN = ("BarcodeDetector" in window) && !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+const CAN_SCAN = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);   // 有內建偵測就用內建，沒有（iPhone）就用 jsQR 讀畫面
 const scan={stream:null, timer:null};
 async function startScan(){
-  let det;
-  try{ det=new BarcodeDetector({formats:["qr_code"]}); }catch(e){ toast("這個瀏覽器不支援掃描 QR code"); return; }
+  let det=null;
+  try{ if("BarcodeDetector" in window) det=new BarcodeDetector({formats:["qr_code"]}); }catch(e){}
+  if(!det){
+    try{ if(!window.jsQR) await loadScript(JSQR_LIB); }catch(e){ toast("掃描元件沒載入，請確認有連上網路"); return; }
+    const cv=document.createElement("canvas"), g=cv.getContext("2d",{willReadFrequently:true});
+    det={detect:async v=>{ const w=v.videoWidth, h=v.videoHeight; if(!w) return [];
+      const k=Math.min(1, 720/Math.max(w,h)); cv.width=Math.round(w*k); cv.height=Math.round(h*k); g.drawImage(v,0,0,cv.width,cv.height);
+      const r=window.jsQR(g.getImageData(0,0,cv.width,cv.height).data, cv.width, cv.height, {inversionAttempts:"dontInvert"});
+      return r&&r.data ? [{rawValue:r.data}] : []; }};
+  }
   try{ scan.stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"},audio:false}); }
   catch(e){ toast(e && e.name==="NotAllowedError" ? "相機權限被拒絕了。請到 Chrome 的網站設定，允許這個網站使用相機。" : "打不開相機，請再試一次"); return; }
   const v=document.getElementById("scanVideo");
@@ -2227,17 +2406,55 @@ async function startScan(){
   };
   tick();
 }
+// 從相簿的圖片讀 QR code（對方傳來的截圖）。手機支援的話用內建的，不支援才下載解碼程式
+const JSQR_LIB = "https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js";
+function loadScript(src){ return new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src=src; sc.onload=res; sc.onerror=rej; document.head.appendChild(sc); }); }
+async function decodeQrFile(file){
+  const bmp=await createImageBitmap(file);
+  if("BarcodeDetector" in window){ try{ const r=await new BarcodeDetector({formats:["qr_code"]}).detect(bmp); if(r && r.length) return r[0].rawValue; }catch(e){} }
+  if(!window.jsQR) await loadScript(JSQR_LIB);
+  for(const max of [1400, 800]){   // 大圖先縮小；讀不到再換一個尺寸試
+    const k=Math.min(1, max/Math.max(bmp.width,bmp.height)), w=Math.round(bmp.width*k), h=Math.round(bmp.height*k);
+    const cv=document.createElement("canvas"); cv.width=w; cv.height=h; const g=cv.getContext("2d"); g.drawImage(bmp,0,0,w,h);
+    const r=window.jsQR(g.getImageData(0,0,w,h).data, w, h, {inversionAttempts:"attemptBoth"}); if(r && r.data) return r.data;
+  }
+  return "";
+}
+function pickQrImage(){
+  const inp=document.createElement("input"); inp.type="file"; inp.accept="image/*";
+  inp.onchange=async()=>{ const f=inp.files && inp.files[0]; if(!f) return;
+    toast("正在讀 QR code…");
+    let raw=""; try{ raw=await decodeQrFile(f); }catch(e){ toast("讀不到，請確認有連上網路再試一次"); return; }
+    if(!raw){ toast("這張圖片裡找不到 QR code，請截圖時讓 QR code 完整、清楚"); return; }
+    onScanned(raw); };
+  inp.click();
+}
+async function pasteLink(){
+  let t=""; try{ if(navigator.clipboard && navigator.clipboard.readText) t=(await navigator.clipboard.readText())||""; }catch(e){}
+  const c=t && parseContact(t);
+  if(c && c.name){ onScanned(t); return; }
+  ui.tab="book"; ui.adding=true; ui.editId=null; ui.newFor=null; ui.draft={paste:""}; ui.draftPhoto=""; ui.draftBack=""; render();
+  const ta=document.getElementById("pasteText"); if(ta){ ta.scrollIntoView({block:"center"}); ta.focus(); }
+  toast("把對方傳來的連結貼在這裡，再按「拆成欄位」");
+}
 function stopScan(){
   clearTimeout(scan.timer);
   if(scan.stream){ scan.stream.getTracks().forEach(t=>t.stop()); scan.stream=null; }
   document.getElementById("scanVideo").srcObject=null;
   document.getElementById("scanner").hidden=true; document.body.style.overflow="";
 }
-document.addEventListener("visibilitychange", ()=>{ if(document.hidden && scan.stream) stopScan(); });
+document.addEventListener("visibilitychange", ()=>{ if(document.hidden && scan.stream) stopScan();
+  if(!document.hidden && !IS_ECARD && data && !ui.adding && !ui.editing && !ui.tour) idbGet("data").then(raw=>{
+    if(raw && raw.meta && (raw.meta.lastChange||"") > (data.meta.lastChange||"")){ data=normalize(raw); keepScroll(render); } }).catch(()=>{}); });
 
 // 讀懂 QR code 裡的名片：vCard（大多數數位名片）與 MECARD（部分手機產生的格式）
 function parseContact(raw){
   const t=String(raw).trim(), o={};
+  const ec=t.match(/#c=([A-Za-z0-9_\-+\/=%]+)/);   // 隨身名片夾的電子名片連結
+  if(ec){ const c=readEcard("#c="+decodeURIComponent(ec[1])); if(c && c.p.name){ const q=c.p;
+    ["name","title","org","phone","email","line","web","address"].forEach(k=>{ if(q[k]) o[k]=str(q[k]); });
+    if(!o.web && q.links && q.links[0] && q.links[0].url) o.web=str(q.links[0].url);
+    o.fromEcard=true; return o; } }
   const un=s=>s.replace(/\\n/gi,"\n").replace(/\\([,;:\\])/g,"$1").trim();
   const joinName=(fam,giv)=>{ fam=(fam||"").trim(); giv=(giv||"").trim(); return /^[\x00-\x7F]*$/.test(fam+giv) ? [giv,fam].filter(Boolean).join(" ") : fam+giv; };
   if(/^BEGIN:VCARD/i.test(t)){
@@ -2279,7 +2496,7 @@ function parseContact(raw){
 }
 function onScanned(raw){
   const c=parseContact(raw);
-  if(c && c.name){ ui.draft=c; toast("讀到「"+c.name+"」的名片，確認後按存入"); }
+  if(c && c.name){ const fe=c.fromEcard; delete c.fromEcard; ui.draft=c; toast("讀到「"+c.name+"」的"+(fe?"電子名片":"名片")+"，確認後按存入"); }
   else { ui.draft={note:str(raw)}; toast("這不是名片格式的 QR code，內容先放在備註裡"); }
   ui.tab="book"; ui.adding=true; ui.editId=null; ui.draftPhoto=""; ui.draftBack=""; render(); window.scrollTo(0,0);
 }
@@ -2298,8 +2515,9 @@ document.addEventListener("click", e=>{
   else if(a==="copyMe"){ copy(plainText(visible(me()))); }
   else if(a==="shareEcard"){
     const url=ecardUrl(me(), drawStyle(), true), title=(me().name||"")+" 的電子名片";
-    if(navigator.share){ navigator.share({title, url}).catch(()=>{}); } else copy(url);
+    if(navigator.share){ navigator.share({title, text:"這是我的電子名片，點開就能存下我的聯絡方式：", url}).catch(()=>{}); } else copy(url);
   }
+  else if(a==="copyLink"){ copy(ecardUrl(me(), drawStyle(), true)); }
   else if(a==="profile"){ data.active=el.dataset.key; ui.editing=false; save({quiet:true}); applySettings(); render(); }
   else if(a==="setupPersonal"){ data.profiles.personal.name=data.profiles.work.name; ui.editing=true; render(); document.getElementById("me-name")?.focus(); }
   else if(a==="qrMode"){
@@ -2310,6 +2528,12 @@ document.addEventListener("click", e=>{
     document.querySelectorAll('[data-act="qrMode"]').forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.key===qrMode())));
   }
   else if(a==="ecardSave"){ saveEcardContact(); }
+  else if(a==="ecardKeep"){ keepEcard(); }
+  else if(a==="ecardCopyLink"){
+    const url=location.origin+location.pathname+location.hash;
+    navigator.clipboard.writeText(url).then(()=>{}).catch(()=>{});
+    document.getElementById("ownSave").innerHTML='<div class="tile ownsteps"><b>連結已複製</b><ol><li>打開手機桌面上的「隨身名片夾」</li><li>到「名片夾」，按<b>「貼上連結」</b></li><li>確認內容，按「存入名片夾」</li></ol></div>';
+  }
   else if(a==="ecardImage"){ saveEcardImage(el); }
   else if(a==="redraw"){
     drawStyle();
@@ -2383,6 +2607,7 @@ document.addEventListener("click", e=>{
   else if(a==="pasteClose"){ syncDraft(); delete ui.draft.paste; keepScroll(render); }
   else if(a==="pasteParse"){
     syncDraft(); const t=(ui.draft.paste||"").trim(); if(!t){ toast("先貼上名片文字"); return; }
+    const pc=parseContact(t); if(pc && pc.name){ onScanned(t); return; }   // 貼的是電子名片連結或聯絡人格式
     const parsed=CardParse.parse(t,{side:"paste", learn:data.learn});
     delete ui.draft.paste;
     if(!parsed.tokens.length){ keepScroll(render); toast("沒有找到可以用的文字"); return; }
@@ -2397,9 +2622,15 @@ document.addEventListener("click", e=>{
   }
   else if(a==="openInstall"){ openModal("install"); }
   else if(a==="modalClose"){ closeModal(); }
+  else if(a==="tourStart"){ tourStart(); }
+  else if(a==="tourNext"){ if(ui.tour) tourNext(); }
+  else if(a==="tourSkip"){ if(ui.tour) tourEnd(false); }
+  else if(a==="eggClose"){ closeModal(); if(ui.tab==="set" && !ui.setPage) keepScroll(render); }
   else if(a==="egg"){
+    el.classList.remove("boing"); void el.offsetWidth; el.classList.add("boing");   // 每點一下都輕輕彈一下
+    if(data.meta.tips.egg){ ui.eggFirst=false; openModal("egg"); return; }   // 找到過：點一下就能再看
     const now=Date.now(); ui.eggN = (now-(ui.eggT||0) < 1500) ? (ui.eggN||0)+1 : 1; ui.eggT=now;
-    if(ui.eggN>=7){ ui.eggN=0; if(!data.meta.tips.egg){ data.meta.tips.egg=1; save({quiet:true}); } openModal("egg"); }
+    if(ui.eggN>=7){ ui.eggN=0; data.meta.tips.egg=1; save({quiet:true}); ui.eggFirst=true; openModal("egg"); }
     else if(ui.eggN>=4) toast("再點 "+(7-ui.eggN)+" 下…");
   }
   else if(a==="wNext"){ ui.wStep=Math.min((ui.wStep||0)+1, WELCOME.length-1); renderModal(); }
@@ -2443,6 +2674,8 @@ document.addEventListener("click", e=>{
     ui.draftPhoto=c.photo||""; ui.draftBack=c.photoBack||""; render(); window.scrollTo(0,0);
   }
   else if(a==="scan"){ startScan(); }
+  else if(a==="qrImage"){ if(scan.stream) stopScan(); pickQrImage(); }
+  else if(a==="pasteLink"){ pasteLink(); }
   else if(a==="scanStop"){ stopScan(); }
   else if(a==="pick"){ ui.openId = (data.settings.bookView==="list" && ui.openId===id) ? null : id; ui.confirmId=null; ui.paperBack=false; rerenderCards(); }
   else if(a==="flipPaper"){
@@ -2592,7 +2825,8 @@ document.addEventListener("change", async e=>{
   ui.editing=!data.profiles.work.name;   // 第一次打開：直接進入填寫自己的名片
   applySettings(); render(); initCloud();
   if(INAPP) openModal("inapp", true);
-  else if(!data.meta.tips.welcome && !data.profiles.work.name) openModal("welcome", true);
+  else if(!data.meta.tips.welcome && !data.profiles.work.name) tourStart();   // 新使用者：直接開始互動教學
+  else if(!data.meta.tips.tour && !data.meta.tips.tourAsk) openModal("tourAsk", true);   // 舊使用者：問一次要不要看新教學
   try{ navigator.storage && navigator.storage.persist && navigator.storage.persist(); }catch(e){} // 請瀏覽器不要自動清掉資料
 })();
 // 對方看電子名片時不安裝離線快取：不替別人的手機下載整個 app
