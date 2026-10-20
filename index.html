@@ -19,7 +19,7 @@
      對方打開電子名片時，只載入那張名片用到的字體，不載入辨識和裁切的程式，打開比較快。 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script>
-window.APP_VERSION = "0.12.2";
+window.APP_VERSION = "0.13.0";
 window.IS_ECARD = /^#[cd]=/.test(location.hash);
 (function(){
   var G = "https://fonts.googleapis.com/css2?family=", F = {
@@ -363,23 +363,50 @@ textarea.grow{min-height:0;resize:none;overflow:hidden;line-height:1.45;display:
 .bk-ab{margin:0;font-size:3.6cqw;line-height:1.6;opacity:.9;overflow:hidden;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical}
 .bk-ct{margin:auto 0 0;display:grid;grid-template-columns:auto 1fr;gap:.6cqw 3cqw;font-size:3.2cqw}
 .bk-ct dt{opacity:.6}.bk-ct dd{margin:0;overflow-wrap:anywhere}
-.glare{position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:5;overflow:hidden;
-  --band:linear-gradient(90deg,rgba(214,178,104,0) 0%,rgba(214,178,104,.30) 30%,rgba(255,244,214,.75) 48%,rgba(170,205,240,.45) 58%,rgba(214,178,104,0) 100%)}
-.glare::before,.glare::after{content:"";position:absolute;top:-60%;bottom:-60%;width:46%;background:var(--band);transform:rotate(18deg)}
-/* 跟著手機角度走的那道光：平常很淡，轉動時變亮 */
-.glare::before{left:calc(var(--gx,50%)*1.4 - 43%);opacity:calc(.22 + var(--ga,0) * .78);transition:opacity .2s}
-/* 打開時自動掃過一次，讓人知道這張名片會反光 */
-.glare::after{left:-70%;opacity:0;animation:sweep 1.5s 1s ease-in-out both}
-@keyframes sweep{0%{left:-70%;opacity:0}15%{opacity:1}85%{opacity:1}100%{left:125%;opacity:0}}
-/* 深色卡（經典款）：用變亮的混合，像燙金；淺色卡：直接疊上金色珠光 */
-.bcard .glare,.bk-classic .glare{mix-blend-mode:screen}
-.pp .glare,.art.vert .glare,.bk:not(.bk-classic) .glare{mix-blend-mode:multiply;--band:linear-gradient(90deg,rgba(201,162,74,0) 0%,rgba(201,162,74,.16) 35%,rgba(222,190,120,.38) 50%,rgba(150,185,220,.24) 60%,rgba(201,162,74,0) 100%)}
 .pp{overflow:hidden}
 .serial{position:absolute;right:2%;top:-6px;z-index:6;transform:rotate(8deg) translateZ(30px);border:1.5px solid var(--acc,var(--link));color:var(--acc,var(--link));border-radius:6px;padding:3px 8px;
   font-size:.7rem;line-height:1.3;display:flex;flex-direction:column;align-items:center;background:rgba(255,255,255,.75);letter-spacing:.06em;font-variant-numeric:tabular-nums;pointer-events:none}
 .serial b{font-size:.82rem}
 .fliphint{text-align:center;margin:2px 0 6px}
-@media (prefers-reduced-motion:reduce){.eflip{transition:none}.glare::after{animation:none}}
+@media (prefers-reduced-motion:reduce){.eflip{transition:none}}
+/* 信封 */
+.envi{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;cursor:pointer;animation:envout .35s 1.55s ease both}
+@keyframes envout{to{opacity:0;visibility:hidden}}
+.env{position:relative;width:min(70vw,290px);aspect-ratio:1.55;animation:envin .45s cubic-bezier(.2,.8,.2,1) both;perspective:900px}
+@keyframes envin{from{opacity:0;transform:translateY(46px) scale(.9)}}
+.env-back{position:absolute;inset:0;border-radius:6px;background:#E6DAC4;box-shadow:0 22px 34px -20px rgba(60,45,25,.55)}
+.env-card{position:absolute;left:7%;right:7%;top:8%;height:80%;z-index:1;border-radius:4px;background:#FBF9F4;box-shadow:0 2px 8px rgba(0,0,0,.14);padding:9% 9%;display:flex;flex-direction:column;gap:9%;
+  animation:cardout .6s .85s cubic-bezier(.3,.7,.2,1) both}
+.env-card span{display:block;height:9%;border-radius:3px;background:#E3DCCD}
+.env-card span:first-child{width:46%;height:14%;background:var(--acc,var(--link));opacity:.85}
+.env-card span:nth-child(2){width:30%}.env-card span:nth-child(3){width:62%;margin-top:auto}
+@keyframes cardout{to{transform:translateY(-58%)}}
+.env-front{position:absolute;inset:0;z-index:2;border-radius:6px;background:#F1E7D4;clip-path:polygon(0 28%,50% 64%,100% 28%,100% 100%,0 100%)}
+.env-flap{position:absolute;left:0;right:0;top:0;height:64%;z-index:3;transform-origin:50% 0;background:#EADFCB;clip-path:polygon(0 0,100% 0,50% 100%);animation:flap .45s .4s ease-in both}
+.env-flap i{position:absolute;left:50%;bottom:4%;width:17%;aspect-ratio:1;border-radius:50%;transform:translateX(-50%);background:var(--acc,var(--link));box-shadow:inset 0 0 0 3px rgba(255,255,255,.25)}
+@keyframes flap{0%{transform:rotateX(0);z-index:3}49%{z-index:3}50%{z-index:0}100%{transform:rotateX(180deg);z-index:0}}
+/* 信封打開後，真的名片從上面落下來 */
+body.env-on .tiltwrap .art,body.env-on .tiltwrap .bcard{animation:settle .55s var(--envd,1.6s) cubic-bezier(.2,.8,.2,1) both}
+body.env-on .meetnote{animation:settle .5s calc(var(--envd,1.6s) + .3s) both}
+body.env-on .serial{animation:fadein .4s calc(var(--envd,1.6s) + .9s) both}
+@keyframes settle{from{opacity:0;transform:translateY(-40px) scale(.94)}}
+@keyframes fadein{from{opacity:0}}
+/* 蓋章 */
+.tiltwrap{--stampd:1s}
+body.env-on .tiltwrap{--stampd:calc(var(--envd,1.6s) + .6s)}
+.tiltwrap .pp-seal,.tiltwrap .vt-seal,.estamp{animation:stampin .45s var(--stampd) cubic-bezier(.3,1.5,.5,1) both}
+.tiltwrap .ef-front{animation:thump .25s calc(var(--stampd) + .18s) ease-out both}
+.vt-seal{--rot:-3deg}
+@keyframes stampin{0%{opacity:0;transform:scale(2.3) rotate(calc(var(--rot,0deg) - 12deg))}55%{opacity:1;transform:scale(.9) rotate(var(--rot,0deg))}100%{opacity:1;transform:scale(1) rotate(var(--rot,0deg))}}
+@keyframes thump{50%{transform:translateY(2px)}}
+.ef-front{position:relative}
+.estamp{--rot:-4deg;position:absolute;z-index:4;width:40px;height:40px;border-radius:3px;background:#B5402F;color:#F7F2E7;display:flex;flex-direction:row-reverse;align-items:center;justify-content:center;gap:1px;
+  font-family:var(--f-card);font-weight:700;box-shadow:inset 0 0 0 2px #F7F2E7,inset 0 0 0 3px #B5402F,0 2px 6px rgba(0,0,0,.18);transform:rotate(var(--rot));line-height:1}
+.estamp .vc i{line-height:1.02}
+.estamp.n1{font-size:20px}.estamp.n2{font-size:14px}.estamp.n3{font-size:11px}
+.estamp.es-classic{top:calc(26px + 30%);right:5%}
+.estamp.es-illu{right:4%;bottom:6%}
+@media (prefers-reduced-motion:reduce){.tiltwrap .pp-seal,.tiltwrap .vt-seal,.estamp,.tiltwrap .ef-front{animation:none}}
 .updbar{position:fixed;left:12px;right:12px;top:calc(10px + env(safe-area-inset-top,0px));z-index:20;max-width:520px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:10px;
   background:var(--strong);color:var(--strong-ink);border-radius:16px;padding:10px 10px 10px 16px;font-size:.9rem;box-shadow:0 8px 24px -8px rgba(0,0,0,.35)}
 .updbar .pill{background:var(--surface);color:var(--ink);flex:none}
@@ -1162,6 +1189,8 @@ function textOnly(p){
 const APP_URL = () => location.origin + location.pathname.replace(/index\.html$/,"");
 // 更新紀錄：每版 1–3 行白話。發新版時在最上面加一筆，並把 index.html 開頭的 APP_VERSION 改成同一個號碼
 const CHANGELOG = [
+  {v:"0.13.0", d:"2026-10-20", items:["對方打開電子名片時，名片會從信封裡滑出來，最後蓋上印章（點一下可以跳過）"]},
+  {v:"0.12.3", d:"2026-10-20", items:["拿掉電子名片的反光效果"]},
   {v:"0.12.2", d:"2026-10-20", items:["反光看得更清楚：打開時會有一道金色的光掃過名片，轉動手機時光會跟著移動"]},
   {v:"0.12.1", d:"2026-10-20", items:["電子名片的反光改成像燙金：名片本身不動、字看得清楚，只有反光跟著手機角度走"]},
   {v:"0.12.0", d:"2026-10-20", items:["「我的名片」可以直接看到並挑選電子名片樣式","對方打開電子名片時，轉一下手機，名片會像燙金一樣反光；點一下可以翻到背面","遞名片前可以加一句這次相遇的話；也可以替遞出去的名片蓋上編號戳（設定 → 電子名片）"]},
@@ -2403,8 +2432,8 @@ function renderEcardView(card){
     + (card.meet?'<div class="meetnote"><span>「'+esc(card.meet)+'」</span><small>— '+esc(p.name||"")+'</small></div>':'')
     + '<div class="tiltwrap s-'+st+'" id="tilt">'
     + (card.serial?'<div class="serial" aria-label="第 '+card.serial.n+' 張"><b>No. '+String(card.serial.n).padStart(3,"0")+'</b><span>'+card.serial.d+'</span></div>':'')
-    + '<div class="eflip" id="flip" data-act="flipEcard" role="button" tabindex="0" aria-label="翻到背面"><div class="ef ef-front">'+front+'</div><div class="ef ef-back">'+backHTML(p, st)+'</div></div></div>'
-    + '<p class="sub fliphint">點名片翻面・稍微轉一下手機看看反光</p>'
+    + '<div class="eflip" id="flip" data-act="flipEcard" role="button" tabindex="0" aria-label="翻到背面"><div class="ef ef-front">'+front+(st==="classic"||st==="illu"?stampHTML(p.name, st):"")+'</div><div class="ef ef-back">'+backHTML(p, st)+'</div></div></div>'
+    + '<p class="sub fliphint">點名片翻到背面</p>'
     + '<div id="ownSave"></div>'
     + '<button type="button" class="pill strong big" data-act="ecardSave" id="ecardSaveBtn">'+ICON.addp+'加入聯絡人</button>'
     + (acts.length?'<div class="eacts" style="grid-template-columns:repeat('+Math.min(acts.length,5)+',minmax(0,1fr))">'+acts.join("")+'</div>':'')
@@ -2413,9 +2442,24 @@ function renderEcardView(card){
     + (full && p.links.length ? '<div class="elinks">'+p.links.map(l=>'<a href="'+esc(l.url)+'" target="_blank" rel="noopener"><span>'+esc(l.label||l.url.replace(/^https?:\/\//,""))+'</span><span aria-hidden="true">↗</span></a>').join("")+'</div>' : '')
     + '<p class="sub efoot">這張名片的資料只存在你看到的這個網址裡，沒有經過任何伺服器。<br><a href="'+esc(location.origin+location.pathname)+'">用「隨身名片夾」製作</a></p>';
   ui.ecard=p;
-  document.querySelectorAll("#flip .bcard, #flip .pp, #flip .art.vert, #flip .bk").forEach(el=>el.insertAdjacentHTML("beforeend",'<i class="glare" aria-hidden="true"></i>'));
-  initTilt();
+  envIntro();
   checkOwnBook();
+}
+// 經典、插畫樣式沒有印章，電子名片上補一個小印
+function stampHTML(name, st){
+  const sl=sealText(name), sc=[...sl.t];
+  const inner = sl.lat ? '<span>'+esc(sl.t)+'</span>' : [sc.slice(0,2),sc.slice(2,4)].filter(c=>c.length).map(c=>'<span class="vc">'+c.map(x=>'<i>'+esc(x)+'</i>').join("")+'</span>').join("");
+  return '<span class="estamp es-'+st+' n'+(sl.lat?2:Math.min(sc.length,3))+'" aria-hidden="true">'+inner+'</span>';
+}
+// 收到名片的小儀式：信封掀開、名片滑出、最後蓋章。約 2 秒，點一下就跳過；播完名片就靜止
+function envIntro(){
+  if(matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  document.body.classList.add("env-on");
+  const o=document.createElement("div"); o.id="envIntro"; o.className="envi";
+  o.innerHTML='<div class="env" aria-hidden="true"><div class="env-back"></div><div class="env-card"><span></span><span></span><span></span></div><div class="env-front"></div><div class="env-flap"><i></i></div></div><p class="sub">點一下直接打開</p>';
+  o.addEventListener("click", ()=>{ document.body.style.setProperty("--envd","0s"); o.remove(); });
+  document.body.appendChild(o);
+  setTimeout(()=>o.remove(), 2100);
 }
 // 名片背面：自我介紹（沒有就用一句話介紹）＋聯絡方式
 function backHTML(p, st){
@@ -2424,25 +2468,6 @@ function backHTML(p, st){
   return '<div class="bk bk-'+st+'"><div class="bk-nm">'+esc(p.name||"")+(p.title?'<small>'+esc(p.title)+'</small>':'')+'</div>'
     + (about?'<p class="bk-ab">'+esc(about)+'</p>':'')
     + '<dl class="bk-ct">'+rows.map(r=>'<dt>'+r[0]+'</dt><dd>'+esc(r[1])+'</dd>').join("")+'</dl></div>';
-}
-// 像燙金名片：名片本身不動（字才看得清楚），只有表面的反光跟著手機角度走（電腦上用滑鼠、手機上也可以用手指滑）
-function initTilt(){
-  const t=document.getElementById("tilt"); if(!t || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-  let tx=0, ty=0, cx=0, cy=0, raf=0, base=null;
-  const step=()=>{ cx+=(tx-cx)*.12; cy+=(ty-cy)*.12;
-    t.style.setProperty("--gx",(50+cx*45).toFixed(1)+"%"); t.style.setProperty("--gy",(50+cy*45).toFixed(1)+"%"); t.style.setProperty("--ga",(Math.min(1,Math.hypot(cx,cy))*.9+.1).toFixed(2));
-    raf = (Math.abs(tx-cx)+Math.abs(ty-cy)>.003) ? requestAnimationFrame(step) : 0; };
-  const set=(x,y)=>{ tx=Math.max(-1,Math.min(1,x)); ty=Math.max(-1,Math.min(1,y)); if(!raf) raf=requestAnimationFrame(step); };
-  t.addEventListener("pointermove", e=>{ const r=t.getBoundingClientRect(); set(((e.clientX-r.left)/r.width-.5)*2, ((e.clientY-r.top)/r.height-.5)*2); });
-  t.addEventListener("pointerleave", ()=>set(0,0));
-  const dz=(d,w)=>{ const a=Math.abs(d)<3?0:d-Math.sign(d)*3; return a/w; };   // 3 度以內當作手在微晃，不動；要刻意轉一下光才會跑
-  const onOri=e=>{ if(e.beta==null) return; if(!base) base={b:e.beta, g:e.gamma};
-    set(dz(e.gamma-base.g, 30), dz(e.beta-base.b, 30));
-    base.b+=(e.beta-base.b)*.02; base.g+=(e.gamma-base.g)*.02; };   // 換個姿勢拿著，光會慢慢回到中間
-  const start=()=>addEventListener("deviceorientation", onOri);
-  if(typeof DeviceOrientationEvent!=="undefined" && typeof DeviceOrientationEvent.requestPermission==="function")   // iPhone：要對方點一下才能讀傾斜
-    ui.needOri=()=>DeviceOrientationEvent.requestPermission().then(r=>{ if(r==="granted") start(); }).catch(()=>{});
-  else start();
 }
 // 對方的手機（同一個瀏覽器）也有用隨身名片夾時，多一顆「存進我的名片夾」
 async function checkOwnBook(){
@@ -2686,7 +2711,6 @@ document.addEventListener("click", e=>{
     save({quiet:true}); keepScroll(render);
   }
   else if(a==="flipEcard"){
-    if(ui.needOri){ const f=ui.needOri; ui.needOri=null; f(); }
     const f=document.getElementById("flip"); if(f){ f.classList.toggle("on"); f.setAttribute("aria-label", f.classList.contains("on")?"翻回正面":"翻到背面"); }
   }
   else if(a==="profile"){ data.active=el.dataset.key; ui.editing=false; save({quiet:true}); applySettings(); render(); }
