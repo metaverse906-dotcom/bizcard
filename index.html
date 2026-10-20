@@ -19,8 +19,8 @@
      對方打開電子名片時，只載入那張名片用到的字體，不載入辨識和裁切的程式，打開比較快。 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script>
-window.APP_VERSION = "0.11.0";
-window.IS_ECARD = location.hash.indexOf("#c=") === 0;
+window.APP_VERSION = "0.11.1";
+window.IS_ECARD = /^#[cd]=/.test(location.hash);
 (function(){
   var G = "https://fonts.googleapis.com/css2?family=", F = {
     sans:"Noto+Sans+TC:wght@400;500;700", serif:"Noto+Serif+TC:wght@600;700", wenkai:"LXGW+WenKai+TC:wght@400;700",
@@ -31,7 +31,9 @@ window.IS_ECARD = location.hash.indexOf("#c=") === 0;
     try {
       var b = location.hash.slice(3).replace(/-/g,"+").replace(/_/g,"/"); while (b.length % 4) b += "=";
       var bin = atob(b), u = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
-      var o = JSON.parse(new TextDecoder().decode(u));
+      var t = new TextDecoder().decode(u), o;
+      if (location.hash.charAt(1) === "d") { var a = t.split("\u001d"); o = {f: a[12] || "serif", ft: a[13] || ""}; }   // 精簡格式：第 13、14 欄是字體
+      else o = JSON.parse(t);
       need[F[o.f] ? o.f : "serif"] = 1; if (F[o.ft]) need[o.ft] = 1;   // 名字和內文用使用者選的字體
     } catch (e) { need.serif = 1; }
   }
@@ -1071,6 +1073,7 @@ function textOnly(p){
 const APP_URL = () => location.origin + location.pathname.replace(/index\.html$/,"");
 // 更新紀錄：每版 1–3 行白話。發新版時在最上面加一筆，並把 index.html 開頭的 APP_VERSION 改成同一個號碼
 const CHANGELOG = [
+  {v:"0.11.1", d:"2026-10-20", items:["分享出去的電子名片連結縮短約三成，QR code 也比較好掃；以前發出去的連結照樣能打開"]},
   {v:"0.11.0", d:"2026-10-19", items:["新的互動教學：跟著亮起來的地方做一遍就會用；設定 → 關於可以重看","線上認識的人也能交換：傳連結給對方，收到的連結按「貼上連結」就收進名片夾","可以從相簿的截圖讀 QR code；打開別人的電子名片時，可以直接存進自己的名片夾","iPhone：可以直接用相機掃 QR code；安裝步驟改成 iOS 26 的新位置；在 Safari 裡使用時會提醒加到主畫面"]},
   {v:"0.10.1", d:"2026-10-19", items:["「使用授權」改成直接在 App 裡打開的頁面，不再下載檔案"]},
   {v:"0.10.0", d:"2026-10-17", items:["有個數字，好像有點怕癢","加上使用授權說明"]},
@@ -2035,7 +2038,7 @@ function ocrBox(){
 }
 
 /* ---------- 電子名片 ----------
-   QR code 放的是一個網址：https://…/bizcard/#c=<名片資料>。
+   QR code 放的是一個網址：https://…/bizcard/#d=<名片資料>（舊版是 #c=，仍然認得）。
    名片資料放在 # 後面，瀏覽器不會把這段送到伺服器，GitHub 也看不到；對方的手機打開網頁後，在自己手機上把名片組出來。
    缺點：資料就在網址裡，改了名片之後，之前給出去的 QR code 還是舊內容。 */
 const b64u = {
@@ -2053,12 +2056,27 @@ function ecardUrl(p, style, share){
   const v=visible(p), s=data.settings;
   const o={v:1, n:v.name, t:v.title, o:v.org, g:v.tagline, p:v.phone, e:v.email, l:v.line, w:v.web, a:p.address, i:p.intro,
     k:(p.links||[]).map(x=>[x.label,x.url]), c:colorKey(), f:s.fonts.name, ft:s.fonts.cardText!=="sans"?s.fonts.cardText:"", s:style&&style!=="classic"?style:""};
-  Object.keys(o).forEach(k=>{ if(o[k]==="" || (Array.isArray(o[k]) && !o[k].length)) delete o[k]; });
-  return location.origin + location.pathname.replace(/index\.html$/,"") + (share?EXT:"") + "#c=" + b64u.enc(JSON.stringify(o));
+  return location.origin + location.pathname.replace(/index\.html$/,"") + (share?EXT:"") + "#d=" + b64u.enc(packCard(o));
+}
+// 精簡格式（#d=）：欄位照固定順序排，用控制字元分隔，不寫欄位名稱；預設值和 https:// 省略。比舊的 JSON 格式（#c=）短約三成
+const PACK_KEYS=["n","t","o","g","p","e","l","w","a","i","k","c","f","ft","s"], FS="\u001d", LS="\u001e", US="\u001f";
+const noScheme = u => String(u||"").replace(/^https:\/\//i,"").replace(/\/$/,"");
+function packCard(o){
+  const cl=x=>String(x||"").replace(/[\u001d-\u001f]/g,"");   // 內容裡不能有分隔字元
+  const v={...o, w:noScheme(o.w), c:o.c==="green"?"":o.c, f:o.f==="serif"?"":o.f};
+  const arr=PACK_KEYS.map(k=>k==="k" ? (o.k||[]).map(x=>cl(x[0])+US+cl(noScheme(x[1]))).join(LS) : cl(v[k]));
+  while(arr.length && arr[arr.length-1]==="") arr.pop();
+  return arr.join(FS);
+}
+function unpackCard(str){
+  const a=str.split(FS), o={}; PACK_KEYS.forEach((k,i)=>{ if(a[i]) o[k]=a[i]; });
+  o.k=o.k ? o.k.split(LS).map(x=>x.split(US)) : [];
+  o.c=o.c||"green"; o.f=o.f||"serif";
+  return o;
 }
 function readEcard(hash){
   try{
-    const o=JSON.parse(b64u.dec(hash.slice(3)));
+    const o=hash.startsWith("#d=") ? unpackCard(b64u.dec(hash.slice(3))) : JSON.parse(b64u.dec(hash.slice(3)));   // #c= 是舊格式，已經發出去的連結照樣能開
     const p=cleanMe({name:o.n,title:o.t,org:o.o,tagline:o.g,phone:o.p,email:o.e,line:o.l,web:o.w,address:o.a,intro:o.i,
       links:(Array.isArray(o.k)?o.k:[]).map(x=>({label:Array.isArray(x)?x[0]:"", url:Array.isArray(x)?x[1]:""}))});
     p.web=p.web?safeUrl(p.web):"";
@@ -2450,8 +2468,8 @@ document.addEventListener("visibilitychange", ()=>{ if(document.hidden && scan.s
 // 讀懂 QR code 裡的名片：vCard（大多數數位名片）與 MECARD（部分手機產生的格式）
 function parseContact(raw){
   const t=String(raw).trim(), o={};
-  const ec=t.match(/#c=([A-Za-z0-9_\-+\/=%]+)/);   // 隨身名片夾的電子名片連結
-  if(ec){ const c=readEcard("#c="+decodeURIComponent(ec[1])); if(c && c.p.name){ const q=c.p;
+  const ec=t.match(/#([cd])=([A-Za-z0-9_\-+\/=%]+)/);   // 隨身名片夾的電子名片連結（新舊格式都認得）
+  if(ec){ const c=readEcard("#"+ec[1]+"="+decodeURIComponent(ec[2])); if(c && c.p.name){ const q=c.p;
     ["name","title","org","phone","email","line","web","address"].forEach(k=>{ if(q[k]) o[k]=str(q[k]); });
     if(!o.web && q.links && q.links[0] && q.links[0].url) o.web=str(q.links[0].url);
     o.fromEcard=true; return o; } }
@@ -2808,7 +2826,7 @@ document.addEventListener("change", async e=>{
 
 /* ---------- 啟動：從 IndexedDB 讀資料（舊版 localStorage 會自動搬過來） ---------- */
 (async function boot(){
-  if(location.hash.startsWith("#c=")){
+  if(/^#[cd]=/.test(location.hash)){
     const card=readEcard(location.hash);
     data=normalize(null); data.settings.cardColor=card?card.color:"green"; data.settings.fonts.name=card?card.font:"serif"; data.settings.fonts.cardText=card?card.textFont:"sans"; data.settings.show={phone:true,email:true,line:true,web:true,tagline:true};
     applySettings();
