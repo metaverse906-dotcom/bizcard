@@ -19,7 +19,7 @@
      對方打開電子名片時，只載入那張名片用到的字體，不載入辨識和裁切的程式，打開比較快。 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script>
-window.APP_VERSION = "0.11.1";
+window.APP_VERSION = "0.12.0";
 window.IS_ECARD = /^#[cd]=/.test(location.hash);
 (function(){
   var G = "https://fonts.googleapis.com/css2?family=", F = {
@@ -314,6 +314,66 @@ textarea.grow{min-height:0;resize:none;overflow:hidden;line-height:1.45;display:
 .ownhint{display:block;margin:2px auto 0;text-align:center}
 .ownsteps{margin:0}
 .ownsteps ol{margin:6px 0 0;padding-left:1.3em;line-height:1.7}
+.meet{margin:-4px 2px 0}
+.meet summary{cursor:pointer;color:var(--link);font-size:.92rem;padding:8px 0;list-style:none;display:flex;align-items:center;gap:6px}
+.meet summary::-webkit-details-marker{display:none}
+.meet summary::before{content:"＋";font-weight:700}
+.meet[open] summary::before{content:"－"}
+.meetrow{display:flex;gap:8px;align-items:center}
+.meetrow input{flex:1;min-width:0;min-height:44px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);padding:0 12px;font:inherit}
+.pmeet{text-align:center;margin:0 0 6px;color:var(--muted);font-size:.9rem}
+.sstrip h2{margin:0}
+.sgrid{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;margin:10px -4px 0;padding:2px 4px 6px;scrollbar-width:none}
+.sgrid::-webkit-scrollbar{display:none}
+.sthumb{flex:0 0 40%;scroll-snap-align:start;display:flex;flex-direction:column;align-items:center;gap:6px;background:none;border:0;padding:0;cursor:pointer;color:var(--ink);font:inherit}
+.sbox{display:block;width:100%;aspect-ratio:4/3;border-radius:10px;overflow:hidden;border:2px solid transparent;box-shadow:0 0 0 1px var(--line);position:relative}
+.sthumb[aria-pressed="true"] .sbox{border-color:var(--strong);box-shadow:none}
+.sin{position:absolute;left:8%;right:8%;top:50%;transform:translateY(-50%);display:block;container-type:inline-size}
+.sin.s-paper .art.paper{padding:0}
+.sin.s-vert{left:17%;right:17%}
+.sin.s-illu{left:21%;right:21%}
+.sin .art,.sin .bcard{animation:none!important}
+.sin .stackwrap{padding-top:0}.sin .stackwrap::before,.sin .stackwrap::after{display:none}
+.sin .bcard{border-radius:6px}
+.slbl{font-size:.82rem;display:flex;align-items:center;gap:4px}
+.sck{width:14px;height:14px;border-radius:4px;border:1.5px solid var(--muted);display:inline-block}
+.sthumb[aria-pressed="true"] .sck{background:var(--strong);border-color:var(--strong);box-shadow:inset 0 0 0 2px var(--surface)}
+.meetnote{max-width:330px;margin:4px auto 2px;padding:12px 16px;background:#FFFBEF;color:#4A4232;border-radius:4px;transform:rotate(-1.5deg);box-shadow:0 8px 18px -12px rgba(0,0,0,.45);font-family:var(--f-card);line-height:1.7;display:flex;flex-direction:column}
+.meetnote small{align-self:flex-end;color:#8A7F6A;font-size:.82rem}
+.tiltwrap{position:relative;perspective:1000px;transform:perspective(1000px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));transform-style:preserve-3d;margin:6px 0 0}
+.eflip{position:relative;transform-style:preserve-3d;transition:transform .75s cubic-bezier(.3,.7,.2,1);cursor:pointer;-webkit-tap-highlight-color:transparent;outline-offset:6px}
+.eflip.on{transform:rotateY(180deg)}
+.ef{backface-visibility:hidden;-webkit-backface-visibility:hidden;min-width:0;transition:visibility 0s .3s}
+.ef-back{position:absolute;inset:0;transform:rotateY(180deg);visibility:hidden}
+.eflip.on .ef-front{visibility:hidden}.eflip.on .ef-back{visibility:visible}
+.tiltwrap .bcard{animation:artin .95s cubic-bezier(.2,.8,.2,1) both}
+.s-classic .ef-back{inset:26px 0 0}
+.s-paper .ef-back{inset:12px 4px 20px}
+.bk{position:relative;overflow:hidden;width:100%;height:100%;border-radius:12px;padding:5% 6%;display:flex;flex-direction:column;gap:6px;container-type:inline-size;
+  background:#FBF9F4;color:#2A2A26;box-shadow:0 18px 30px -18px rgba(0,0,0,.45);font-family:var(--f-cardtext)}
+.bk-classic{background:var(--card);color:#F4F1EA;border-radius:16px}
+.bk-vert,.bk-illu{justify-content:center;gap:3cqw;padding:8% 8%}
+.bk-vert .bk-nm,.bk-illu .bk-nm{font-size:7cqw}
+.bk-vert .bk-ab,.bk-illu .bk-ab{font-size:4.4cqw;-webkit-line-clamp:8}
+.bk-vert .bk-ct,.bk-illu .bk-ct{margin:4cqw 0 0;font-size:3.8cqw}
+.bk>*{flex-shrink:0}
+.bk-classic .bk-ab,.bk-paper .bk-ab{-webkit-line-clamp:2}
+.bk-nm{font-family:var(--f-card);font-weight:700;font-size:5.4cqw;display:flex;align-items:baseline;gap:2.4cqw}
+.bk-nm small{font-family:var(--f-cardtext);font-weight:400;font-size:3.2cqw;opacity:.75}
+.bk-ab{margin:0;font-size:3.6cqw;line-height:1.6;opacity:.9;overflow:hidden;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical}
+.bk-ct{margin:auto 0 0;display:grid;grid-template-columns:auto 1fr;gap:.6cqw 3cqw;font-size:3.2cqw}
+.bk-ct dt{opacity:.6}.bk-ct dd{margin:0;overflow-wrap:anywhere}
+.glare{position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:5;mix-blend-mode:soft-light;opacity:var(--ga,.1);
+  background:radial-gradient(circle at var(--gx,50%) var(--gy,50%),rgba(255,255,255,.95),rgba(255,255,255,0) 55%),
+    linear-gradient(115deg,rgba(255,236,190,0) 30%,rgba(255,236,190,.55) 48%,rgba(190,225,255,.45) 54%,rgba(255,255,255,0) 70%) calc(var(--gx,50%)*1.6 - 30%) 0/200% 100% no-repeat}
+.glare::after{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.55) 50%,transparent 65%) -150% 0/60% 100% no-repeat;mix-blend-mode:overlay;animation:sweep 1.6s 1.1s ease-in-out both}
+@keyframes sweep{to{background-position:250% 0}}
+.pp{overflow:hidden}
+.serial{position:absolute;right:2%;top:-6px;z-index:6;transform:rotate(8deg) translateZ(30px);border:1.5px solid var(--acc,var(--link));color:var(--acc,var(--link));border-radius:6px;padding:3px 8px;
+  font-size:.7rem;line-height:1.3;display:flex;flex-direction:column;align-items:center;background:rgba(255,255,255,.75);letter-spacing:.06em;font-variant-numeric:tabular-nums;pointer-events:none}
+.serial b{font-size:.82rem}
+.fliphint{text-align:center;margin:2px 0 6px}
+@media (prefers-reduced-motion:reduce){.eflip{transition:none}.glare::after{animation:none}.tiltwrap{transform:none}}
 .updbar{position:fixed;left:12px;right:12px;top:calc(10px + env(safe-area-inset-top,0px));z-index:20;max-width:520px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:10px;
   background:var(--strong);color:var(--strong-ink);border-radius:16px;padding:10px 10px 10px 16px;font-size:.9rem;box-shadow:0 8px 24px -8px rgba(0,0,0,.35)}
 .updbar .pill{background:var(--surface);color:var(--ink);flex:none}
@@ -614,7 +674,7 @@ const THEMES = {system:"跟隨系統", light:"淺色", dark:"深色"};
 const ESTYLES = {classic:"經典", paper:"紙感", illu:"插畫", vert:"直排"};
 const VIEWS = {box:"卡盒", list:"清單"};
 const SHOW_FIELDS = [["phone","電話"],["email","Email"],["line","LINE ID"],["web","網站"],["tagline","一句話介紹"]];
-const DEFAULT_SETTINGS = {cardColor:"green", fonts:{name:"serif",cardText:"sans",head:"sans",body:"sans"}, theme:"system", bookView:"box", presentFlip:true, qrWork:"vcard", qrPersonal:"ecard", cardColorPersonal:"plum", styleWork:"classic", stylePersonal:["paper","illu","vert"],
+const DEFAULT_SETTINGS = {cardColor:"green", fonts:{name:"serif",cardText:"sans",head:"sans",body:"sans"}, theme:"system", bookView:"box", presentFlip:true, qrWork:"vcard", qrPersonal:"ecard", cardColorPersonal:"plum", styleWork:"classic", stylePersonal:["paper","illu","vert"], stamp:"off",
   show:{phone:true,email:true,line:true,web:true,tagline:true}};
 
 const DEFAULT = {
@@ -728,7 +788,7 @@ function normalize(d){
      learn:cleanLearn(d.learn),
      meta:{cloudConnected:!!mt.cloudConnected, lastCloud:str(mt.lastCloud), lastChange:str(mt.lastChange), supportShown:!!mt.supportShown,
        lastBackup:str(mt.lastBackup), sinceBackup:Number.isFinite(mt.sinceBackup)?mt.sinceBackup:null, snoozeAt:Number.isFinite(mt.snoozeAt)?mt.snoozeAt:0,
-       seenVersion:str(mt.seenVersion), tips:(mt.tips&&typeof mt.tips==="object")?mt.tips:{}}};
+       seenVersion:str(mt.seenVersion), serial:Number.isFinite(mt.serial)?mt.serial:0, tips:(mt.tips&&typeof mt.tips==="object")?mt.tips:{}}};
   if(d.meta.sinceBackup===null) d.meta.sinceBackup = d.meta.lastBackup ? 0 : d.cards.filter(c=>!c.sample).length;   // 舊資料：還沒備份過，就從現有的名片算起
   const s=Object.assign(clone(DEFAULT_SETTINGS), d.settings||{});
   s.show=Object.assign(clone(DEFAULT_SETTINGS.show), (d.settings&&d.settings.show)||{});
@@ -739,6 +799,7 @@ function normalize(d){
   ["qrWork","qrPersonal"].forEach(k=>{ if(s[k]!=="vcard" && s[k]!=="ecard") s[k]=DEFAULT_SETTINGS[k]; });
   delete s.qrMode;
   if(!ESTYLES[s.styleWork]) s.styleWork="classic";
+  if(s.stamp!=="on") s.stamp="off";
   s.stylePersonal=(Array.isArray(s.stylePersonal)?s.stylePersonal:[]).filter((k,i,a)=>ESTYLES[k]&&a.indexOf(k)===i);
   if(!s.stylePersonal.length) s.stylePersonal=DEFAULT_SETTINGS.stylePersonal.slice();
   s.fonts=Object.assign(clone(DEFAULT_SETTINGS.fonts), (d.settings&&d.settings.fonts)||{});
@@ -861,11 +922,33 @@ function renderMe(){
     + editor
     + ocrIntroHTML()
     + (ui.editing?'':'<div class="give2"><button type="button" class="pill strong give" data-act="present">'+ICON.qr+'<span><b>當面遞名片</b><small>對方用相機掃 QR code</small></span></button>'
-      + '<button type="button" class="pill strong give" data-act="shareEcard">'+ICON.share+'<span><b>線上傳連結</b><small>傳到 LINE、Email</small></span></button></div>')
+      + '<button type="button" class="pill strong give" data-act="shareEcard">'+ICON.share+'<span><b>線上傳連結</b><small>傳到 LINE、Email</small></span></button></div>'
+      + meetHTML())
     + '<div class="tiles"><div class="tile qrtile">'+qrSvg(qrPayload(m))+'<span class="sub">'+(qrMode()==="vcard"?"掃描直接存聯絡人":"掃描打開電子名片")+'</span></div>'
     + '<div class="stackcol"><button type="button" class="mini" data-act="copyLink">'+ICON.copy+'<span>複製電子名片連結</span></button>'
     + '<button type="button" class="mini" data-act="copyMe">'+ICON.copy+'<span>複製文字版</span></button></div></div>'
+    + (ui.editing?'':styleStripHTML(m))
     + '<p class="sub" style="text-align:center">名片和 QR code 只包含設定裡打開的欄位，不經過任何伺服器。</p>';
+}
+function meetHTML(){
+  return '<details class="meet"'+(ui.meet?' open':'')+'><summary>'+(ui.meet?'這次相遇：「'+esc(ui.meet)+'」':'加一句這次相遇的話（選填）')+'</summary>'
+    + '<div class="meetrow"><input id="meetText" maxlength="'+MEET_MAX+'" value="'+esc(ui.meet||"")+'" placeholder="例如：很高興在 XX 研討會認識你" aria-label="這次相遇的一句話">'
+    + (ui.meet?'<button type="button" class="pill line small" data-act="meetClear">清除</button>':'')+'</div>'
+    + '<p class="sub">只附在接下來遞出去、傳出去的名片上，對方存下時會記成「在哪裡認識」。關掉 App 就會清掉。</p></details>';
+}
+// 電子名片樣式縮圖：直接在「我的名片」挑，不用進設定
+const ES_BG={classic:"transparent", paper:"#EFEBE3", illu:"#EEF2EE", vert:"#F7F2E7"};
+function styleStripHTML(m){
+  if(!m.name) return "";
+  const s=data.settings, work=data.active==="work", acc=(CARD_COLORS[colorKey()]||CARD_COLORS.green).c;
+  const on=k=>work ? s.styleWork===k : s.stylePersonal.includes(k);
+  const th=k=>'<button type="button" class="sthumb" data-act="pickStyle" data-key="'+k+'" aria-pressed="'+on(k)+'" aria-label="'+ESTYLES[k]+'樣式">'
+    + '<span class="sbox" style="--acc:'+acc+';background:'+ES_BG[k]+'" aria-hidden="true"><span class="sin s-'+k+'">'+(k==="classic"?cardHTML(m):artHTML(visible(m),k))+'</span></span>'
+    + '<span class="slbl">'+(work?'':'<i class="sck" aria-hidden="true"></i>')+ESTYLES[k]+'</span></button>';
+  return '<section class="tile sstrip"><div class="sethead"><h2>電子名片樣式</h2>'
+    + '<button type="button" class="pill line small" data-act="stylePreview" data-prof="'+data.active+'" data-key="'+(work?s.styleWork:s.stylePersonal[0])+'">預覽 ›</button></div>'
+    + '<div class="sgrid">'+Object.keys(ESTYLES).map(th).join("")+'</div>'
+    + '<p class="sub">'+(work?'對方打開電子名片時看到的樣子。':'可以複選；每次遞出去時，從勾選的樣式抽一種。')+'</p></section>';
 }
 
 /* ---------- 名片夾 ---------- */
@@ -1073,6 +1156,7 @@ function textOnly(p){
 const APP_URL = () => location.origin + location.pathname.replace(/index\.html$/,"");
 // 更新紀錄：每版 1–3 行白話。發新版時在最上面加一筆，並把 index.html 開頭的 APP_VERSION 改成同一個號碼
 const CHANGELOG = [
+  {v:"0.12.0", d:"2026-10-20", items:["「我的名片」可以直接看到並挑選電子名片樣式","對方打開電子名片時，拿著手機晃一晃，名片會像燙金一樣反光；點一下可以翻到背面","遞名片前可以加一句這次相遇的話；也可以替遞出去的名片蓋上編號戳（設定 → 電子名片）"]},
   {v:"0.11.1", d:"2026-10-20", items:["分享出去的電子名片連結縮短約三成，QR code 也比較好掃；以前發出去的連結照樣能打開"]},
   {v:"0.11.0", d:"2026-10-19", items:["新的互動教學：跟著亮起來的地方做一遍就會用；設定 → 關於可以重看","線上認識的人也能交換：傳連結給對方，收到的連結按「貼上連結」就收進名片夾","可以從相簿的截圖讀 QR code；打開別人的電子名片時，可以直接存進自己的名片夾","iPhone：可以直接用相機掃 QR code；安裝步驟改成 iOS 26 的新位置；在 Safari 裡使用時會提醒加到主畫面"]},
   {v:"0.10.1", d:"2026-10-19", items:["「使用授權」改成直接在 App 裡打開的頁面，不再下載檔案"]},
@@ -1436,7 +1520,10 @@ function estyleSettingsHTML(){
     + '<div class="frow" style="margin-top:12px"><span class="flbl">個人版</span><span class="sub">遞出去時從勾選的樣式抽一種</span></div>'
     + '<div class="stylechips" role="group" aria-label="個人版的抽獎樣式">'+Object.entries(ESTYLES).map(([k,n])=>'<button type="button" data-act="stylePool" data-key="'+k+'" aria-pressed="'+s.stylePersonal.includes(k)+'">'+n+'</button>').join("")+'</div>'
     + (hasP?prev("personal"):'')
-    + '<p class="sub">只用在 QR code 選「電子名片」或分享連結的時候；同一個人之後再打開，看到的都是他抽到的那張。內容都一樣，只有樣子不同。</p></section>';
+    + '<p class="sub">只用在 QR code 選「電子名片」或分享連結的時候；同一個人之後再打開，看到的都是他抽到的那張。內容都一樣，只有樣子不同。</p></section>'
+    + '<section class="tile set"><h2>編號戳</h2><p class="sub">每遞出一張電子名片，角落蓋一個「No. 042・日期」的小戳，像限量印刷品。編號只記在你的手機裡。</p>'
+    + '<div class="choices two">'+opt("stamp","off","不蓋",s.stamp)+opt("stamp","on","蓋編號戳",s.stamp)+'</div>'
+    + (s.stamp==="on"?'<p class="sub">目前已經遞出 '+(data.meta.serial||0)+' 張。</p>':'')+'</section>';
 }
 function renderSettings(){
   const s=data.settings, nm=esc(me().name||"名字");
@@ -2052,14 +2139,22 @@ function drawStyle(){   // 抽樣式：三種以上時，不連續兩次一樣�
 }
 // 分享出去的連結加上 openExternalBrowser=1：在 LINE 裡點開時會改用手機瀏覽器，下載聯絡人、存圖片才不會失敗
 const EXT = "?openExternalBrowser=1";
-function ecardUrl(p, style, share){
-  const v=visible(p), s=data.settings;
+function ecardUrl(p, style, share, extra){
+  const v=visible(p), s=data.settings, ex=extra||{};
   const o={v:1, n:v.name, t:v.title, o:v.org, g:v.tagline, p:v.phone, e:v.email, l:v.line, w:v.web, a:p.address, i:p.intro,
-    k:(p.links||[]).map(x=>[x.label,x.url]), c:colorKey(), f:s.fonts.name, ft:s.fonts.cardText!=="sans"?s.fonts.cardText:"", s:style&&style!=="classic"?style:""};
+    k:(p.links||[]).map(x=>[x.label,x.url]), c:colorKey(), f:s.fonts.name, ft:s.fonts.cardText!=="sans"?s.fonts.cardText:"", s:style&&style!=="classic"?style:"", m:ex.m||"", x:ex.x||""};
   return location.origin + location.pathname.replace(/index\.html$/,"") + (share?EXT:"") + "#d=" + b64u.enc(packCard(o));
 }
 // 精簡格式（#d=）：欄位照固定順序排，用控制字元分隔，不寫欄位名稱；預設值和 https:// 省略。比舊的 JSON 格式（#c=）短約三成
-const PACK_KEYS=["n","t","o","g","p","e","l","w","a","i","k","c","f","ft","s"], FS="\u001d", LS="\u001e", US="\u001f";
+const MEET_MAX=40;
+// 這次遞出去的名片要附上的東西：相遇的一句話（只存在這次開著的 App 裡）、編號戳
+function giveExtra(bump){ return {m:ui.meet||"", x:bump?nextSerial():(ui.giveX||"")}; }
+function nextSerial(){
+  if(data.settings.stamp!=="on") return "";
+  data.meta.serial=(data.meta.serial||0)+1; save({quiet:true});
+  return data.meta.serial+"."+today().replace(/-/g,"");
+}
+const PACK_KEYS=["n","t","o","g","p","e","l","w","a","i","k","c","f","ft","s","m","x"], FS="\u001d", LS="\u001e", US="\u001f";
 const noScheme = u => String(u||"").replace(/^https:\/\//i,"").replace(/\/$/,"");
 function packCard(o){
   const cl=x=>String(x||"").replace(/[\u001d-\u001f]/g,"");   // 內容裡不能有分隔字元
@@ -2080,7 +2175,9 @@ function readEcard(hash){
     const p=cleanMe({name:o.n,title:o.t,org:o.o,tagline:o.g,phone:o.p,email:o.e,line:o.l,web:o.w,address:o.a,intro:o.i,
       links:(Array.isArray(o.k)?o.k:[]).map(x=>({label:Array.isArray(x)?x[0]:"", url:Array.isArray(x)?x[1]:""}))});
     p.web=p.web?safeUrl(p.web):"";
-    return {p, color:CARD_COLORS[o.c]?o.c:"green", font:FONTS[o.f]?o.f:"serif", textFont:FONTS[o.ft]?o.ft:"sans", style:ESTYLES[o.s]?o.s:"classic"};
+    const ser=/^(\d{1,6})\.(\d{8})$/.exec(String(o.x||""));
+    return {p, color:CARD_COLORS[o.c]?o.c:"green", font:FONTS[o.f]?o.f:"serif", textFont:FONTS[o.ft]?o.ft:"sans", style:ESTYLES[o.s]?o.s:"classic",
+      meet:str(o.m).slice(0,MEET_MAX), serial:ser?{n:+ser[1], d:ser[2].slice(0,4)+"."+ser[2].slice(4,6)+"."+ser[2].slice(6)}:null};
   }catch(e){ return null; }
 }
 const lineUrl = id => /^@/.test(id) ? "https://line.me/R/ti/p/"+encodeURIComponent(id) : "https://line.me/ti/p/~"+encodeURIComponent(id);
@@ -2292,9 +2389,14 @@ function renderEcardView(card){
     const m=document.getElementById("themeColor"); if(m) m.content={paper:"#EFEBE3",illu:"#EEF2EE",vert:"#F7F2E7"}[st];
   }
   ui.ecardCard=card;
+  const front = st==="classic" ? '<div class="stackwrap">'+cardHTML(p)+'</div>' : artHTML(p, st);
   document.getElementById("app").innerHTML=
     '<p class="sub" style="text-align:center">'+esc(p.name||"")+' 的電子名片</p>'
-    + (st==="classic" ? '<div class="stackwrap">'+cardHTML(p)+'</div>' : artHTML(p, st))
+    + (card.meet?'<div class="meetnote"><span>「'+esc(card.meet)+'」</span><small>— '+esc(p.name||"")+'</small></div>':'')
+    + '<div class="tiltwrap s-'+st+'" id="tilt">'
+    + (card.serial?'<div class="serial" aria-label="第 '+card.serial.n+' 張"><b>No. '+String(card.serial.n).padStart(3,"0")+'</b><span>'+card.serial.d+'</span></div>':'')
+    + '<div class="eflip" id="flip" data-act="flipEcard" role="button" tabindex="0" aria-label="翻到背面"><div class="ef ef-front">'+front+'</div><div class="ef ef-back">'+backHTML(p, st)+'</div></div></div>'
+    + '<p class="sub fliphint">點名片翻面・拿起手機晃一晃</p>'
     + '<div id="ownSave"></div>'
     + '<button type="button" class="pill strong big" data-act="ecardSave" id="ecardSaveBtn">'+ICON.addp+'加入聯絡人</button>'
     + (acts.length?'<div class="eacts" style="grid-template-columns:repeat('+Math.min(acts.length,5)+',minmax(0,1fr))">'+acts.join("")+'</div>':'')
@@ -2303,7 +2405,34 @@ function renderEcardView(card){
     + (full && p.links.length ? '<div class="elinks">'+p.links.map(l=>'<a href="'+esc(l.url)+'" target="_blank" rel="noopener"><span>'+esc(l.label||l.url.replace(/^https?:\/\//,""))+'</span><span aria-hidden="true">↗</span></a>').join("")+'</div>' : '')
     + '<p class="sub efoot">這張名片的資料只存在你看到的這個網址裡，沒有經過任何伺服器。<br><a href="'+esc(location.origin+location.pathname)+'">用「隨身名片夾」製作</a></p>';
   ui.ecard=p;
+  document.querySelectorAll("#flip .bcard, #flip .pp, #flip .art.vert, #flip .bk").forEach(el=>el.insertAdjacentHTML("beforeend",'<i class="glare" aria-hidden="true"></i>'));
+  initTilt();
   checkOwnBook();
+}
+// 名片背面：自我介紹（沒有就用一句話介紹）＋聯絡方式
+function backHTML(p, st){
+  const rows=[["電話",p.phone],["Email",p.email],["LINE",p.line],["網站",(p.web||"").replace(/^https?:\/\//,"").replace(/\/$/,"")],["地址",p.address]].filter(r=>r[1]);
+  const about=p.intro||p.tagline||"";
+  return '<div class="bk bk-'+st+'"><div class="bk-nm">'+esc(p.name||"")+(p.title?'<small>'+esc(p.title)+'</small>':'')+'</div>'
+    + (about?'<p class="bk-ab">'+esc(about)+'</p>':'')
+    + '<dl class="bk-ct">'+rows.map(r=>'<dt>'+r[0]+'</dt><dd>'+esc(r[1])+'</dd>').join("")+'</dl></div>';
+}
+// 拿著手機晃：名片跟著傾斜，表面一道光跟著跑（電腦上用滑鼠、手機上也可以用手指滑）
+function initTilt(){
+  const t=document.getElementById("tilt"); if(!t || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  let tx=0, ty=0, cx=0, cy=0, raf=0, base=null;
+  const step=()=>{ cx+=(tx-cx)*.12; cy+=(ty-cy)*.12;
+    t.style.setProperty("--ry",(cx*9).toFixed(2)+"deg"); t.style.setProperty("--rx",(-cy*7).toFixed(2)+"deg");
+    t.style.setProperty("--gx",(50+cx*45).toFixed(1)+"%"); t.style.setProperty("--gy",(50+cy*45).toFixed(1)+"%"); t.style.setProperty("--ga",(Math.min(1,Math.hypot(cx,cy))*.9+.1).toFixed(2));
+    raf = (Math.abs(tx-cx)+Math.abs(ty-cy)>.003) ? requestAnimationFrame(step) : 0; };
+  const set=(x,y)=>{ tx=Math.max(-1,Math.min(1,x)); ty=Math.max(-1,Math.min(1,y)); if(!raf) raf=requestAnimationFrame(step); };
+  t.addEventListener("pointermove", e=>{ const r=t.getBoundingClientRect(); set(((e.clientX-r.left)/r.width-.5)*2, ((e.clientY-r.top)/r.height-.5)*2); });
+  t.addEventListener("pointerleave", ()=>set(0,0));
+  const onOri=e=>{ if(e.beta==null) return; if(!base) base={b:e.beta, g:e.gamma}; set((e.gamma-base.g)/22, (e.beta-base.b)/22); };
+  const start=()=>addEventListener("deviceorientation", onOri);
+  if(typeof DeviceOrientationEvent!=="undefined" && typeof DeviceOrientationEvent.requestPermission==="function")   // iPhone：要對方點一下才能讀傾斜
+    ui.needOri=()=>DeviceOrientationEvent.requestPermission().then(r=>{ if(r==="granted") start(); }).catch(()=>{});
+  else start();
 }
 // 對方的手機（同一個瀏覽器）也有用隨身名片夾時，多一顆「存進我的名片夾」
 async function checkOwnBook(){
@@ -2322,7 +2451,7 @@ async function keepEcard(){
   if(!raw){ toast("找不到你的名片夾"); return; }
   const mine=normalize(raw);
   const fields={name:p.name,title:p.title||"",org:p.org||"",alt:"",phone:p.phone||"",tel:"",fax:"",email:p.email||"",line:p.line||"",web:p.web||((p.links&&p.links[0]&&p.links[0].url)||""),
-    address:p.address||"",note:"",ocrText:"",photo:"",photoBack:""};
+    address:p.address||"",note:(ui.ecardCard&&ui.ecardCard.meet)||"",ocrText:"",photo:"",photoBack:""};
   const keep=data; data=mine; const same=findSame(fields); data=keep;
   const box=document.getElementById("ownSave"), open='<a class="pill line big" href="'+esc(APP_URL())+'">打開我的名片夾</a>';
   if(same){ box.innerHTML='<p class="sub" style="text-align:center">你的名片夾裡已經有「'+esc(same.card.name)+'」了</p>'+open; return; }
@@ -2350,8 +2479,8 @@ function saveEcardContact(){
   toast("已下載聯絡人檔，打開它就能存進通訊錄");
 }
 function qrPayload(p){
-  if(qrMode()==="vcard") return vcard(visible(p));
-  return ecardUrl(p, ui.drawn);
+  if(qrMode()==="vcard") return vcard(Object.assign({}, visible(p), ui.meet?{note:ui.meet}:{}));
+  return ecardUrl(p, ui.drawn, false, giveExtra(false));
 }
 const qrHint = () => qrMode()==="vcard" ? "用手機相機掃描，就能存入聯絡人" : "用手機相機掃描，打開我的電子名片";
 
@@ -2362,7 +2491,7 @@ function drawLine(){
   return '這次抽到：<b>'+ESTYLES[ui.drawn]+'</b>'+(stylePool().length>1?' <button type="button" class="pill line small" data-act="redraw">換一款</button>':'');
 }
 function openPresent(){
-  drawStyle();
+  drawStyle(); ui.giveX=nextSerial();
   const p=document.getElementById("present"), m=me();
   p.innerHTML='<div class="stage"><div class="pcard">'+cardHTML(m)+'</div><div class="pqr" id="pqr">'+qrSvg(qrPayload(m))+'</div><p class="sub" id="pqrHint">'+qrHint()+'</p></div>'
     +'<div class="pctrl"><div class="seg2 qrseg" role="group" aria-label="QR code 類型">'
@@ -2370,6 +2499,7 @@ function openPresent(){
     +'<button type="button" data-act="qrMode" data-key="vcard" aria-pressed="'+(qrMode()==="vcard")+'">直接存聯絡人</button></div>'
     +'<p class="pwho'+(data.active==="personal"?' personal':'')+'">正在遞：'+PROFILE_LABEL[data.active]+(data.active==="personal"?'（不是工作版）':'')+'</p>'
     +'<p class="pdraw" id="pdraw">'+drawLine()+'</p>'
+    +(ui.meet?'<p class="pmeet">附上：「'+esc(ui.meet)+'」</p>':'')
     +tipHTML("present","名片和 QR code 已經轉向對面。請對方用手機相機掃描，就能存下你的聯絡方式。")
     +'<div class="pbtns"><button type="button" class="pill line" data-act="flip" id="flipBtn">'+flipLabel()+'</button><button type="button" class="pill strong" data-act="closePresent">收起</button></div></div>';
   p.classList.remove("flip"); p.hidden=false; document.body.style.overflow="hidden";
@@ -2379,10 +2509,11 @@ function openPresent(){
 }
 function closePresent(){
   const p=document.getElementById("present");
-  p.hidden=true; p.innerHTML=""; p.classList.remove("flip"); document.body.style.overflow="";
+  p.hidden=true; p.innerHTML=""; p.classList.remove("flip"); document.body.style.overflow=""; ui.giveX="";
   try{ ui.lock && ui.lock.release().catch(()=>{}); }catch(e){} ui.lock=null;
 }
 document.addEventListener("keydown", e=>{
+  if((e.key==="Enter"||e.key===" ") && e.target.id==="flip"){ e.preventDefault(); e.target.click(); return; }
   if(e.key==="Enter" && e.target.id==="tokEdit"){ e.preventDefault(); document.querySelector('[data-act="tokSave"]')?.click(); return; }
   if(e.key!=="Escape") return;
   if(ui.tour){ tourEnd(false); return; }
@@ -2472,6 +2603,7 @@ function parseContact(raw){
   if(ec){ const c=readEcard("#"+ec[1]+"="+decodeURIComponent(ec[2])); if(c && c.p.name){ const q=c.p;
     ["name","title","org","phone","email","line","web","address"].forEach(k=>{ if(q[k]) o[k]=str(q[k]); });
     if(!o.web && q.links && q.links[0] && q.links[0].url) o.web=str(q.links[0].url);
+    if(c.meet) o.note=str(c.meet);
     o.fromEcard=true; return o; } }
   const un=s=>s.replace(/\\n/gi,"\n").replace(/\\([,;:\\])/g,"$1").trim();
   const joinName=(fam,giv)=>{ fam=(fam||"").trim(); giv=(giv||"").trim(); return /^[\x00-\x7F]*$/.test(fam+giv) ? [giv,fam].filter(Boolean).join(" ") : fam+giv; };
@@ -2532,10 +2664,21 @@ document.addEventListener("click", e=>{
   else if(a==="flip"){ data.settings.presentFlip=!data.settings.presentFlip; save(); document.getElementById("present").classList.toggle("flip", data.settings.presentFlip); el.textContent=flipLabel(); }
   else if(a==="copyMe"){ copy(plainText(visible(me()))); }
   else if(a==="shareEcard"){
-    const url=ecardUrl(me(), drawStyle(), true), title=(me().name||"")+" 的電子名片";
+    const url=ecardUrl(me(), drawStyle(), true, giveExtra(true)), title=(me().name||"")+" 的電子名片";
     if(navigator.share){ navigator.share({title, text:"這是我的電子名片，點開就能存下我的聯絡方式：", url}).catch(()=>{}); } else copy(url);
   }
-  else if(a==="copyLink"){ copy(ecardUrl(me(), drawStyle(), true)); }
+  else if(a==="copyLink"){ copy(ecardUrl(me(), drawStyle(), true, giveExtra(true))); }
+  else if(a==="meetClear"){ ui.meet=""; keepScroll(render); }
+  else if(a==="pickStyle"){
+    const k=el.dataset.key, s=data.settings;
+    if(data.active==="work") s.styleWork=k;
+    else { const pool=s.stylePersonal, i=pool.indexOf(k); if(i>=0){ if(pool.length===1){ toast("至少要留一種樣式"); return; } pool.splice(i,1); } else pool.push(k); }
+    save({quiet:true}); keepScroll(render);
+  }
+  else if(a==="flipEcard"){
+    if(ui.needOri){ const f=ui.needOri; ui.needOri=null; f(); }
+    const f=document.getElementById("flip"); if(f){ f.classList.toggle("on"); f.setAttribute("aria-label", f.classList.contains("on")?"翻回正面":"翻到背面"); }
+  }
   else if(a==="profile"){ data.active=el.dataset.key; ui.editing=false; save({quiet:true}); applySettings(); render(); }
   else if(a==="setupPersonal"){ data.profiles.personal.name=data.profiles.work.name; ui.editing=true; render(); document.getElementById("me-name")?.focus(); }
   else if(a==="qrMode"){
@@ -2572,7 +2715,7 @@ document.addEventListener("click", e=>{
   else if(a==="numMenu"){ const k=el.dataset.id+el.dataset.key; ui.numMenu = ui.numMenu===k ? null : k; rerenderCards(); }
   else if(a==="cardContact"){ const c=data.cards.find(x=>x.id===el.dataset.id); if(c) contactFile(c); }
   else if(a==="sendMine"){
-    const url=ecardUrl(me(), drawStyle(), true), title=(me().name||"")+" 的電子名片";
+    const url=ecardUrl(me(), drawStyle(), true, giveExtra(true)), title=(me().name||"")+" 的電子名片";
     if(navigator.share){ navigator.share({title, text:"這是我的名片：", url}).catch(()=>{}); } else copy(url);
   }
   else if(a==="add"){ ui.adding=true; ui.editId=null; ui.draft={}; ui.draftPhoto=""; ui.draftBack=""; ui.auto=new Set(); ui.ocrAsk=null; resetReview(); render(); document.getElementById("add-name")?.focus(); }
@@ -2793,6 +2936,7 @@ document.addEventListener("keydown", e=>{
   }
 });
 document.addEventListener("input", e=>{
+  if(e.target.id==="meetText"){ ui.meet=e.target.value.trim().slice(0,MEET_MAX); const sm=e.target.closest("details")?.querySelector("summary"); if(sm) sm.textContent=ui.meet?'這次相遇：「'+ui.meet+'」':'加一句這次相遇的話（選填）'; return; }
   if(e.target.classList && e.target.classList.contains("grow")){ e.target.style.height="auto"; e.target.style.height=e.target.scrollHeight+"px"; }
   if(e.target.id==="q"){ ui.query=e.target.value; rerenderCards(); }
   // 自動填入的欄位，使用者一改就拿掉「請確認」標記
