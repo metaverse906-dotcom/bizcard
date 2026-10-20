@@ -19,7 +19,7 @@
      對方打開電子名片時，只載入那張名片用到的字體，不載入辨識和裁切的程式，打開比較快。 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script>
-window.APP_VERSION = "0.12.0";
+window.APP_VERSION = "0.12.1";
 window.IS_ECARD = /^#[cd]=/.test(location.hash);
 (function(){
   var G = "https://fonts.googleapis.com/css2?family=", F = {
@@ -340,7 +340,7 @@ textarea.grow{min-height:0;resize:none;overflow:hidden;line-height:1.45;display:
 .sthumb[aria-pressed="true"] .sck{background:var(--strong);border-color:var(--strong);box-shadow:inset 0 0 0 2px var(--surface)}
 .meetnote{max-width:330px;margin:4px auto 2px;padding:12px 16px;background:#FFFBEF;color:#4A4232;border-radius:4px;transform:rotate(-1.5deg);box-shadow:0 8px 18px -12px rgba(0,0,0,.45);font-family:var(--f-card);line-height:1.7;display:flex;flex-direction:column}
 .meetnote small{align-self:flex-end;color:#8A7F6A;font-size:.82rem}
-.tiltwrap{position:relative;perspective:1000px;transform:perspective(1000px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));transform-style:preserve-3d;margin:6px 0 0}
+.tiltwrap{position:relative;perspective:1000px;margin:6px 0 0}
 .eflip{position:relative;transform-style:preserve-3d;transition:transform .75s cubic-bezier(.3,.7,.2,1);cursor:pointer;-webkit-tap-highlight-color:transparent;outline-offset:6px}
 .eflip.on{transform:rotateY(180deg)}
 .ef{backface-visibility:hidden;-webkit-backface-visibility:hidden;min-width:0;transition:visibility 0s .3s}
@@ -373,7 +373,7 @@ textarea.grow{min-height:0;resize:none;overflow:hidden;line-height:1.45;display:
   font-size:.7rem;line-height:1.3;display:flex;flex-direction:column;align-items:center;background:rgba(255,255,255,.75);letter-spacing:.06em;font-variant-numeric:tabular-nums;pointer-events:none}
 .serial b{font-size:.82rem}
 .fliphint{text-align:center;margin:2px 0 6px}
-@media (prefers-reduced-motion:reduce){.eflip{transition:none}.glare::after{animation:none}.tiltwrap{transform:none}}
+@media (prefers-reduced-motion:reduce){.eflip{transition:none}.glare::after{animation:none}}
 .updbar{position:fixed;left:12px;right:12px;top:calc(10px + env(safe-area-inset-top,0px));z-index:20;max-width:520px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:10px;
   background:var(--strong);color:var(--strong-ink);border-radius:16px;padding:10px 10px 10px 16px;font-size:.9rem;box-shadow:0 8px 24px -8px rgba(0,0,0,.35)}
 .updbar .pill{background:var(--surface);color:var(--ink);flex:none}
@@ -1156,7 +1156,8 @@ function textOnly(p){
 const APP_URL = () => location.origin + location.pathname.replace(/index\.html$/,"");
 // 更新紀錄：每版 1–3 行白話。發新版時在最上面加一筆，並把 index.html 開頭的 APP_VERSION 改成同一個號碼
 const CHANGELOG = [
-  {v:"0.12.0", d:"2026-10-20", items:["「我的名片」可以直接看到並挑選電子名片樣式","對方打開電子名片時，拿著手機晃一晃，名片會像燙金一樣反光；點一下可以翻到背面","遞名片前可以加一句這次相遇的話；也可以替遞出去的名片蓋上編號戳（設定 → 電子名片）"]},
+  {v:"0.12.1", d:"2026-10-20", items:["電子名片的反光改成像燙金：名片本身不動、字看得清楚，只有反光跟著手機角度走"]},
+  {v:"0.12.0", d:"2026-10-20", items:["「我的名片」可以直接看到並挑選電子名片樣式","對方打開電子名片時，轉一下手機，名片會像燙金一樣反光；點一下可以翻到背面","遞名片前可以加一句這次相遇的話；也可以替遞出去的名片蓋上編號戳（設定 → 電子名片）"]},
   {v:"0.11.1", d:"2026-10-20", items:["分享出去的電子名片連結縮短約三成，QR code 也比較好掃；以前發出去的連結照樣能打開"]},
   {v:"0.11.0", d:"2026-10-19", items:["新的互動教學：跟著亮起來的地方做一遍就會用；設定 → 關於可以重看","線上認識的人也能交換：傳連結給對方，收到的連結按「貼上連結」就收進名片夾","可以從相簿的截圖讀 QR code；打開別人的電子名片時，可以直接存進自己的名片夾","iPhone：可以直接用相機掃 QR code；安裝步驟改成 iOS 26 的新位置；在 Safari 裡使用時會提醒加到主畫面"]},
   {v:"0.10.1", d:"2026-10-19", items:["「使用授權」改成直接在 App 裡打開的頁面，不再下載檔案"]},
@@ -2396,7 +2397,7 @@ function renderEcardView(card){
     + '<div class="tiltwrap s-'+st+'" id="tilt">'
     + (card.serial?'<div class="serial" aria-label="第 '+card.serial.n+' 張"><b>No. '+String(card.serial.n).padStart(3,"0")+'</b><span>'+card.serial.d+'</span></div>':'')
     + '<div class="eflip" id="flip" data-act="flipEcard" role="button" tabindex="0" aria-label="翻到背面"><div class="ef ef-front">'+front+'</div><div class="ef ef-back">'+backHTML(p, st)+'</div></div></div>'
-    + '<p class="sub fliphint">點名片翻面・拿起手機晃一晃</p>'
+    + '<p class="sub fliphint">點名片翻面・稍微轉一下手機看看反光</p>'
     + '<div id="ownSave"></div>'
     + '<button type="button" class="pill strong big" data-act="ecardSave" id="ecardSaveBtn">'+ICON.addp+'加入聯絡人</button>'
     + (acts.length?'<div class="eacts" style="grid-template-columns:repeat('+Math.min(acts.length,5)+',minmax(0,1fr))">'+acts.join("")+'</div>':'')
@@ -2417,18 +2418,20 @@ function backHTML(p, st){
     + (about?'<p class="bk-ab">'+esc(about)+'</p>':'')
     + '<dl class="bk-ct">'+rows.map(r=>'<dt>'+r[0]+'</dt><dd>'+esc(r[1])+'</dd>').join("")+'</dl></div>';
 }
-// 拿著手機晃：名片跟著傾斜，表面一道光跟著跑（電腦上用滑鼠、手機上也可以用手指滑）
+// 像燙金名片：名片本身不動（字才看得清楚），只有表面的反光跟著手機角度走（電腦上用滑鼠、手機上也可以用手指滑）
 function initTilt(){
   const t=document.getElementById("tilt"); if(!t || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
   let tx=0, ty=0, cx=0, cy=0, raf=0, base=null;
   const step=()=>{ cx+=(tx-cx)*.12; cy+=(ty-cy)*.12;
-    t.style.setProperty("--ry",(cx*9).toFixed(2)+"deg"); t.style.setProperty("--rx",(-cy*7).toFixed(2)+"deg");
     t.style.setProperty("--gx",(50+cx*45).toFixed(1)+"%"); t.style.setProperty("--gy",(50+cy*45).toFixed(1)+"%"); t.style.setProperty("--ga",(Math.min(1,Math.hypot(cx,cy))*.9+.1).toFixed(2));
     raf = (Math.abs(tx-cx)+Math.abs(ty-cy)>.003) ? requestAnimationFrame(step) : 0; };
   const set=(x,y)=>{ tx=Math.max(-1,Math.min(1,x)); ty=Math.max(-1,Math.min(1,y)); if(!raf) raf=requestAnimationFrame(step); };
   t.addEventListener("pointermove", e=>{ const r=t.getBoundingClientRect(); set(((e.clientX-r.left)/r.width-.5)*2, ((e.clientY-r.top)/r.height-.5)*2); });
   t.addEventListener("pointerleave", ()=>set(0,0));
-  const onOri=e=>{ if(e.beta==null) return; if(!base) base={b:e.beta, g:e.gamma}; set((e.gamma-base.g)/22, (e.beta-base.b)/22); };
+  const dz=(d,w)=>{ const a=Math.abs(d)<3?0:d-Math.sign(d)*3; return a/w; };   // 3 度以內當作手在微晃，不動；要刻意轉一下光才會跑
+  const onOri=e=>{ if(e.beta==null) return; if(!base) base={b:e.beta, g:e.gamma};
+    set(dz(e.gamma-base.g, 30), dz(e.beta-base.b, 30));
+    base.b+=(e.beta-base.b)*.02; base.g+=(e.gamma-base.g)*.02; };   // 換個姿勢拿著，光會慢慢回到中間
   const start=()=>addEventListener("deviceorientation", onOri);
   if(typeof DeviceOrientationEvent!=="undefined" && typeof DeviceOrientationEvent.requestPermission==="function")   // iPhone：要對方點一下才能讀傾斜
     ui.needOri=()=>DeviceOrientationEvent.requestPermission().then(r=>{ if(r==="granted") start(); }).catch(()=>{});
