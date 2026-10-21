@@ -12,8 +12,13 @@ self.addEventListener("install", (e) => {
   self.skipWaiting();
 });
 
+// 不透明回應（沒有 CORS 的外部檔案）在 Chrome 裡每個會被算成約 7MB 的空間，所以不存；舊版存過的也清掉
+async function purgeOpaque(name){
+  const c=await caches.open(name);
+  for(const req of await c.keys()){ const r=await c.match(req); if(!r || r.type==="opaque") await c.delete(req); }
+}
 self.addEventListener("activate", (e) => {
-  e.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE && k !== OCR_CACHE).map((k) => caches.delete(k)))));
+  e.waitUntil(caches.keys().then((keys) => Promise.all(keys.map((k) => (k !== CACHE && k !== OCR_CACHE) ? caches.delete(k) : purgeOpaque(k)))));
   self.clients.claim();
 });
 
@@ -39,7 +44,7 @@ self.addEventListener("fetch", (e) => {
   e.respondWith(
     caches.match(req).then((hit) => hit || fetch(req).then((res) => {
       // 辨識模型檔很大，由 app 自己下載並存進 OCR_CACHE（才能顯示進度）；這裡不重複存
-      if ((res.ok || res.type === "opaque") && !url.pathname.includes("/ocr-models/")) {
+      if (res.ok && res.type !== "opaque" && !url.pathname.includes("/ocr-models/")) {
         const copy = res.clone(); caches.open(isOcr ? OCR_CACHE : CACHE).then((c) => c.put(req, copy));
       }
       return res;

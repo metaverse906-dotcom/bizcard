@@ -17,15 +17,17 @@
      程式檔網址、離線快取（sw.js）、「關於」裡的版本與更新紀錄都跟著它，改版時只改這一行。
      字體：每個分開載入，一個失敗不影響其他；中文字體依 unicode-range 分片，只下載用到的字。
      對方打開電子名片時，只載入那張名片用到的字體，不載入辨識和裁切的程式，打開比較快。 -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js" crossorigin="anonymous"></script>
 <script>
-window.APP_VERSION = "0.16.0";
+window.APP_VERSION = "0.16.1";
 window.IS_ECARD = /^#[cd]=/.test(location.hash);
 (function(){
   var G = "https://fonts.googleapis.com/css2?family=", F = {
     sans:"Noto+Sans+TC:wght@400;500;700", serif:"Noto+Serif+TC:wght@600;700", wenkai:"LXGW+WenKai+TC:wght@400;700",
     sung:"Chiron+Sung+HK:wght@500;700", hei:"Chiron+Hei+HK:wght@400;500;700"};
-  var need = null;
+  // App 裡只載入使用者選的字體（上次存在 localStorage）；其他字體等到「設定 → 外觀」要預覽時才載入
+  var need = {sans:1, serif:1};
+  try { var saved = JSON.parse(localStorage.getItem("bizcard.fonts") || "null"); if (saved && saved.length) { need = {sans:1}; saved.forEach(function(k){ if (F[k]) need[k] = 1; }); } } catch (e) {}
   if (IS_ECARD) {
     need = {sans:1};
     try {
@@ -37,7 +39,11 @@ window.IS_ECARD = /^#[cd]=/.test(location.hash);
       need[F[o.f] ? o.f : "serif"] = 1; if (F[o.ft]) need[o.ft] = 1;   // 名字和內文用使用者選的字體
     } catch (e) { need.serif = 1; }
   }
-  for (var k in F) if (!need || need[k]) document.write('<link rel="stylesheet" href="' + G + F[k] + '&display=swap">');
+  // crossorigin：讓瀏覽器把它當成一般檔案；沒加的話，離線快取裡的每一個外部檔案會被 Chrome 算成約 7MB
+  window.FONT_LOADED = {};
+  window.loadFont = function(k){ if (!F[k] || FONT_LOADED[k]) return; FONT_LOADED[k] = 1;
+    var l = document.createElement("link"); l.rel = "stylesheet"; l.crossOrigin = "anonymous"; l.href = G + F[k] + "&display=swap"; document.head.appendChild(l); };
+  for (var k in F) if (need[k]) { FONT_LOADED[k] = 1; document.write('<link rel="stylesheet" crossorigin="anonymous" href="' + G + F[k] + '&display=swap">'); }
   if (!IS_ECARD) ["cardparse.js","crop.js","paddle.js"].forEach(function(f){ document.write('<script src="' + f + '?v=' + APP_VERSION + '"><\/script>'); });
 })();
 </script>
@@ -910,6 +916,8 @@ function applySettings(){
   Object.entries(pal.L).forEach(([k,v])=>r.style.setProperty("--L-"+k, v));
   Object.entries(pal.D).forEach(([k,v])=>r.style.setProperty("--D-"+k, v));
   FONT_ROLES.forEach(role=>r.style.setProperty(role.cssVar, FONTS[s.fonts[role.key]].stack));
+  const used=[...new Set(FONT_ROLES.map(role=>s.fonts[role.key]))]; used.forEach(k=>window.loadFont&&loadFont(k));
+  try{ localStorage.setItem("bizcard.fonts", JSON.stringify(used)); }catch(e){}
   if(s.theme==="system"){ hostTheme ? r.setAttribute("data-theme",hostTheme) : r.removeAttribute("data-theme"); }
   else r.setAttribute("data-theme", s.theme);
   // 手機狀態列的顏色跟著底色
@@ -1178,6 +1186,7 @@ const ecTint = c => c.ecard ? ' style="background:'+(CARD_COLORS[c.ecard.color]|
 const ecMark = c => c.ecard ? '<span class="emk" title="電子名片">'+(c.ecard.mark?markSvg(c.ecard.mark):'<svg class="mk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3.5" y="6" width="17" height="12" rx="2"/><path d="M7 10h6M7 13.5h4"/></svg>')+'</span>' : '';
 function ecardBookHTML(c){
   const e=c.ecard, st=e.style, pal=CARD_COLORS[e.color]||CARD_COLORS.green;
+  if(window.loadFont){ loadFont(e.font); loadFont(e.textFont); }   // 對方選的字體
   const p={name:c.name, title:c.title, org:c.org, tagline:e.tagline, phone:c.phone, email:c.email, line:c.line, web:c.web, address:c.address, intro:e.intro, links:e.links, mark:e.mark};
   const front = st==="classic" ? cardHTML(p, true) : artHTML(p, st);
   const f = st==="illu" ? front.replace(/<\/div>$/, stampHTML(p, st)+'</div>') : front + (st==="classic"?stampHTML(p, st):"");
@@ -1255,6 +1264,7 @@ function textOnly(p){
 const APP_URL = () => location.origin + location.pathname.replace(/index\.html$/,"");
 // 更新紀錄：每版 1–3 行白話。發新版時在最上面加一筆，並把 index.html 開頭的 APP_VERSION 改成同一個號碼
 const CHANGELOG = [
+  {v:"0.16.1", d:"2026-10-21", items:["大幅減少佔用的手機空間：修正外部檔案被瀏覽器多算空間的問題","只下載你選的字體，第一次打開更快"]},
   {v:"0.16.0", d:"2026-10-21", items:["第一次打開會先確認你用的是 iPhone、Android 還是電腦：iPhone 會先帶你把 App 放到桌面再開始，填好的資料才不會不見；電腦會顯示 QR code 讓你用手機打開"]},
   {v:"0.15.1", d:"2026-10-20", items:["拿掉編號戳"]},
   {v:"0.15.0", d:"2026-10-20", items:["存進名片夾的電子名片會保留對方的設計：名片詳情直接顯示對方的樣式，點一下翻到背面","名片夾裡，電子名片用對方的名片顏色，角落有他的印記","對方換了新的電子名片再傳給你時，會更新成新的，舊的收進「以前的名片」"]},
@@ -1743,6 +1753,7 @@ function renderSettings(){
 function render(){
   document.getElementById("app").innerHTML = ui.tab==="me" ? renderMe() : ui.tab==="book" ? renderBook() : renderSettings();
   if(ui.tab==="set") refreshOcrUsage();
+  if(ui.tab==="set" && ui.setPage==="look" && window.loadFont) Object.keys(FONTS).forEach(loadFont);   // 外觀頁要預覽每一種字體
   growAll();
   ["me","book","set"].forEach(t=>document.getElementById("tab-"+t).setAttribute("aria-current", ui.tab===t?"page":"false"));
   const ts=document.getElementById("tab-set"), fresh=data.meta.seenVersion!==APP_VERSION;   // 改版後第一次：設定旁邊出現小點
@@ -2031,7 +2042,7 @@ function ocrLangs(){ const o=data.settings.ocr; return ["chi_tra","eng"].concat(
 function loadTesseract(){
   if(window.Tesseract) return Promise.resolve(window.Tesseract);
   if(ocr.lib) return ocr.lib;
-  ocr.lib=new Promise((res,rej)=>{ const s=document.createElement("script"); s.src=OCR_LIB; s.async=true;
+  ocr.lib=new Promise((res,rej)=>{ const s=document.createElement("script"); s.crossOrigin="anonymous"; s.src=OCR_LIB; s.async=true;
     s.onload=()=>res(window.Tesseract); s.onerror=()=>{ ocr.lib=null; rej(new Error("lib")); }; document.head.appendChild(s); });
   return ocr.lib;
 }
@@ -2705,7 +2716,7 @@ async function startScan(){
 }
 // 從相簿的圖片讀 QR code（對方傳來的截圖）。手機支援的話用內建的，不支援才下載解碼程式
 const JSQR_LIB = "https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js";
-function loadScript(src){ return new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src=src; sc.onload=res; sc.onerror=rej; document.head.appendChild(sc); }); }
+function loadScript(src){ return new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.crossOrigin="anonymous"; sc.src=src; sc.onload=res; sc.onerror=rej; document.head.appendChild(sc); }); }
 async function decodeQrFile(file){
   const bmp=await createImageBitmap(file);
   if("BarcodeDetector" in window){ try{ const r=await new BarcodeDetector({formats:["qr_code"]}).detect(bmp); if(r && r.length) return r[0].rawValue; }catch(e){} }
