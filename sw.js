@@ -5,7 +5,7 @@
 const V = new URL(self.location.href).searchParams.get("v") || "0";
 const CACHE = "bizcard-" + V;
 const OCR_CACHE = "bizcard-ocr";
-const SHELL = ["./", "./index.html", "./cardparse.js?v=" + V, "./crop.js?v=" + V, "./paddle.js?v=" + V, "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./apple-touch-icon.png"];
+const SHELL = ["./", "./index.html", "./cardparse.js?v=" + V, "./crop.js?v=" + V, "./paddle.js?v=" + V, "./qrcode.min.js?v=" + V, "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./apple-touch-icon.png"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)));

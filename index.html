@@ -2,6 +2,9 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8">
+<!-- 安全設定：只有 App 自己和下面列出的網站能在這個頁面裡載入程式、連線。
+     cdn.jsdelivr.net：文字辨識引擎與掃描元件；Google：字體、雲端備份登入與 Drive。 -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' blob: https://cdn.jsdelivr.net https://accounts.google.com https://apis.google.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'self' blob: data: https://cdn.jsdelivr.net https://tessdata.projectnaptha.com https://fonts.googleapis.com https://fonts.gstatic.com https://www.googleapis.com https://oauth2.googleapis.com https://accounts.google.com; worker-src 'self' blob:; frame-src https://accounts.google.com; media-src 'self' blob: mediastream:; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>隨身名片夾</title>
 <meta name="author" content="q/6^2">
@@ -17,9 +20,8 @@
      程式檔網址、離線快取（sw.js）、「關於」裡的版本與更新紀錄都跟著它，改版時只改這一行。
      字體：每個分開載入，一個失敗不影響其他；中文字體依 unicode-range 分片，只下載用到的字。
      對方打開電子名片時，只載入那張名片用到的字體，不載入辨識和裁切的程式，打開比較快。 -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js" crossorigin="anonymous"></script>
 <script>
-window.APP_VERSION = "0.17.0";
+window.APP_VERSION = "0.18.0";
 window.IS_ECARD = /^#[cd]=/.test(location.hash);
 (function(){
   var G = "https://fonts.googleapis.com/css2?family=", F = {
@@ -44,6 +46,7 @@ window.IS_ECARD = /^#[cd]=/.test(location.hash);
   window.loadFont = function(k){ if (!F[k] || FONT_LOADED[k]) return; FONT_LOADED[k] = 1;
     var l = document.createElement("link"); l.rel = "stylesheet"; l.crossOrigin = "anonymous"; l.href = G + F[k] + "&display=swap"; document.head.appendChild(l); };
   for (var k in F) if (need[k]) { FONT_LOADED[k] = 1; document.write('<link rel="stylesheet" crossorigin="anonymous" href="' + G + F[k] + '&display=swap">'); }
+  document.write('<script src="qrcode.min.js?v=' + APP_VERSION + '"><\/script>');   // QR code 元件（qrcode-generator 1.4.4，MIT）放在專案裡，不從外部網站載入
   if (!IS_ECARD) ["cardparse.js","crop.js","paddle.js"].forEach(function(f){ document.write('<script src="' + f + '?v=' + APP_VERSION + '"><\/script>'); });
 })();
 </script>
@@ -447,6 +450,7 @@ body.env-on .tiltwrap{--stampd:calc(var(--envd,1.6s) + .6s)}
 .devseg button[aria-pressed="true"]{background:var(--surface);font-weight:700;box-shadow:0 1px 4px rgba(0,0,0,.12)}
 .startqr{width:200px;align-self:center;background:#FFFFFF;padding:10px;border-radius:12px}
 .startqr svg{display:block;width:100%;height:auto}
+.askc{flex-wrap:wrap;margin-bottom:10px}
 .updbar{position:fixed;left:12px;right:12px;top:calc(10px + env(safe-area-inset-top,0px));z-index:20;max-width:520px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:10px;
   background:var(--strong);color:var(--strong-ink);border-radius:16px;padding:10px 10px 10px 16px;font-size:.9rem;box-shadow:0 8px 24px -8px rgba(0,0,0,.35)}
 .updbar .pill{background:var(--surface);color:var(--ink);flex:none}
@@ -1016,6 +1020,7 @@ function renderMe(){
     + (ui.editing?'':'<button type="button" class="pill" data-act="edit">編輯</button>')+'</div>'
     + installHTML()
     + (ui.editing?'':seg)
+    + (data.active==="work" && m.name && !ui.editing && !ui.tour ? tipHTML("profiles","工作版給工作場合；個人版可以放私人電話、IG，給朋友或私人場合用。兩張各自有顏色和樣式，切換就好。") : "")
     + (data.active==="personal" && m.name && !ui.editing ? tipHTML("personal","個人版用不同的顏色。遞出去之前看一眼顏色，就知道現在是哪一張。") : "")
     + '<div class="stackwrap">'+cardHTML(m)+'</div>'
     + editor
@@ -1149,7 +1154,7 @@ async function finishAddInner(fields, mode, targetId){
   else {
     card=Object.assign({id:"c"+Date.now().toString(36), added:today()}, fields); data.cards.push(card); msg="已存入名片夾";
     if(ui.demo){ card.sample=true; msg="已存入名片夾（標成範例，可以在設定裡一起移除）"; }
-    else data.meta.sinceBackup=(data.meta.sinceBackup||0)+1;
+    else { data.meta.sinceBackup=(data.meta.sinceBackup||0)+1; if(!data.meta.tips.askContact) ui.askContact=card.id; }
   }
   ui.demo=false;
   save();
@@ -1198,7 +1203,10 @@ function openHTML(c){
     c.address&&'<a href="https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(c.address)+'" target="_blank" rel="noopener">地圖</a>',
     mine&&'<button type="button" data-act="sendMine">回傳我的名片</button>'].filter(Boolean).join("");
   const hh=histHit(c, ui.query.trim().toLowerCase());
-  return '<div class="open">'+(c.photo||c.photoBack?tipHTML("paper","點名片可以翻面；右下角的按鈕可以放大看。"):"")+(c.photo||c.photoBack||!c.ecard?paperHTML(c):ecardBookHTML(c))+'<div class="top"><div><div class="o">'+esc(c.org)+(hh?'・以前在 '+esc(hh.org||hh.title):'')+'</div><div class="n">'+esc(c.name)+'<small>'+esc(c.title)+'</small>'+(c.sample?'<span class="badge">範例</span>':'')+'</div>'+(c.alt?'<div class="alt">'+esc(c.alt)+'</div>':'')+'</div><span class="sub">'+short(c.added)+'</span></div>'
+  const ask = ui.askContact===c.id ? '<div class="tip askc" role="note"><span>也加進手機通訊錄嗎？之後打電話、傳訊息比較好找。</span><span class="row" style="margin:0">'
+    + '<button type="button" class="pill small" data-act="askContactYes" data-id="'+c.id+'">加入</button><button type="button" class="pill line small" data-act="askContactNo">不用</button>'
+    + '<button type="button" class="textbtn" data-act="askContactNever">以後不要問</button></span></div>' : '';
+  return '<div class="open">'+ask+(c.photo||c.photoBack?tipHTML("paper","點名片可以翻面；右下角的按鈕可以放大看。"):"")+(c.photo||c.photoBack||!c.ecard?paperHTML(c):ecardBookHTML(c))+'<div class="top"><div><div class="o">'+esc(c.org)+(hh?'・以前在 '+esc(hh.org||hh.title):'')+'</div><div class="n">'+esc(c.name)+'<small>'+esc(c.title)+'</small>'+(c.sample?'<span class="badge">範例</span>':'')+'</div>'+(c.alt?'<div class="alt">'+esc(c.alt)+'</div>':'')+'</div><span class="sub">'+short(c.added)+'</span></div>'
     + (kv?'<dl class="kv">'+kv+'</dl>':'')
     + (c.ecard&&c.ecard.links.length?'<div class="elinks">'+c.ecard.links.map(l=>'<a href="'+esc(l.url)+'" target="_blank" rel="noopener"><span>'+esc(l.label||l.url.replace(/^https?:\/\//,""))+'</span><span aria-hidden="true">↗</span></a>').join("")+'</div>':'')
     + (c.note?'<div class="memo">'+esc(c.note)+'</div>':'')
@@ -1292,6 +1300,7 @@ function textOnly(p){
 const APP_URL = () => location.origin + location.pathname.replace(/index\.html$/,"");
 // 更新紀錄：每版 1–3 行白話。發新版時在最上面加一筆，並把 index.html 開頭的 APP_VERSION 改成同一個號碼
 const CHANGELOG = [
+  {v:"0.18.0", d:"2026-10-22", items:["安全性加強：QR code 元件改放在 App 裡、下載的辨識檔案會核對是否被改動、限制只有指定的網站能在 App 裡執行程式","第一次看到工作版和個人版時，有一句說明兩者差別","存好別人的名片後，會問要不要也加進手機通訊錄"]},
   {v:"0.17.0", d:"2026-10-22", items:["「線上傳連結」會先讓你看這次要傳的樣式，可以換一款，也可以加一句這次相遇的話","遞名片畫面也可以直接加一句相遇的話"]},
   {v:"0.16.1", d:"2026-10-21", items:["大幅減少佔用的手機空間：修正外部檔案被瀏覽器多算空間的問題","只下載你選的字體，第一次打開更快"]},
   {v:"0.16.0", d:"2026-10-21", items:["第一次打開會先確認你用的是 iPhone、Android 還是電腦：iPhone 會先帶你把 App 放到桌面再開始，填好的資料才不會不見；電腦會顯示 QR code 讓你用手機打開"]},
@@ -2067,12 +2076,13 @@ function cloudHTML(){
    同一個位置取信心比較高的那一行。Tesseract 不擅長特別大的字，而名片上的姓名通常最大，所以需要第二次。
    拆欄位規則在 cardparse.js。辨識結果只填進還空著的欄位，並標上「請確認」。 */
 const OCR_LIB = "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js";
+const OCR_LIB_SRI = "sha384-GJqSu7vueQ9qN0E9yLPb3Wtpd7OrgK8KmYzC8T1IysG1bcvxvIO4qtYR/D3A991F";   // 檔案指紋：被改過就不執行
 const ocr = {worker:null, langs:"", seq:0, idle:null, lib:null};
 function ocrLangs(){ const o=data.settings.ocr; return ["chi_tra","eng"].concat(o.jpn?["jpn"]:[], o.chi_sim?["chi_sim"]:[]); }
 function loadTesseract(){
   if(window.Tesseract) return Promise.resolve(window.Tesseract);
   if(ocr.lib) return ocr.lib;
-  ocr.lib=new Promise((res,rej)=>{ const s=document.createElement("script"); s.crossOrigin="anonymous"; s.src=OCR_LIB; s.async=true;
+  ocr.lib=new Promise((res,rej)=>{ const s=document.createElement("script"); s.crossOrigin="anonymous"; s.integrity=OCR_LIB_SRI; s.src=OCR_LIB; s.async=true;
     s.onload=()=>res(window.Tesseract); s.onerror=()=>{ ocr.lib=null; rej(new Error("lib")); }; document.head.appendChild(s); });
   return ocr.lib;
 }
@@ -2725,7 +2735,7 @@ async function startScan(){
   let det=null;
   try{ if("BarcodeDetector" in window) det=new BarcodeDetector({formats:["qr_code"]}); }catch(e){}
   if(!det){
-    try{ if(!window.jsQR) await loadScript(JSQR_LIB); }catch(e){ toast("掃描元件沒載入，請確認有連上網路"); return; }
+    try{ if(!window.jsQR) await loadScript(JSQR_LIB, JSQR_SRI); }catch(e){ toast("掃描元件沒載入，請確認有連上網路"); return; }
     const cv=document.createElement("canvas"), g=cv.getContext("2d",{willReadFrequently:true});
     det={detect:async v=>{ const w=v.videoWidth, h=v.videoHeight; if(!w) return [];
       const k=Math.min(1, 720/Math.max(w,h)); cv.width=Math.round(w*k); cv.height=Math.round(h*k); g.drawImage(v,0,0,cv.width,cv.height);
@@ -2745,12 +2755,12 @@ async function startScan(){
   tick();
 }
 // 從相簿的圖片讀 QR code（對方傳來的截圖）。手機支援的話用內建的，不支援才下載解碼程式
-const JSQR_LIB = "https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js";
-function loadScript(src){ return new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.crossOrigin="anonymous"; sc.src=src; sc.onload=res; sc.onerror=rej; document.head.appendChild(sc); }); }
+const JSQR_LIB = "https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js", JSQR_SRI="sha384-b5Ya4Bq3qCyz39m2ISh+4DxjAIljdeFwK/BsXLuj9gugaNwAcj/ia15fxNZL9Nlx";
+function loadScript(src, sri){ return new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.crossOrigin="anonymous"; if(sri) sc.integrity=sri; sc.src=src; sc.onload=res; sc.onerror=rej; document.head.appendChild(sc); }); }
 async function decodeQrFile(file){
   const bmp=await createImageBitmap(file);
   if("BarcodeDetector" in window){ try{ const r=await new BarcodeDetector({formats:["qr_code"]}).detect(bmp); if(r && r.length) return r[0].rawValue; }catch(e){} }
-  if(!window.jsQR) await loadScript(JSQR_LIB);
+  if(!window.jsQR) await loadScript(JSQR_LIB, JSQR_SRI);
   for(const max of [1400, 800]){   // 大圖先縮小；讀不到再換一個尺寸試
     const k=Math.min(1, max/Math.max(bmp.width,bmp.height)), w=Math.round(bmp.width*k), h=Math.round(bmp.height*k);
     const cv=document.createElement("canvas"); cv.width=w; cv.height=h; const g=cv.getContext("2d"); g.drawImage(bmp,0,0,w,h);
@@ -2991,6 +3001,9 @@ document.addEventListener("click", e=>{
   }
   else if(a==="wNext"){ ui.wStep=Math.min((ui.wStep||0)+1, WELCOME.length-1); renderModal(); }
   else if(a==="wPrev"){ ui.wStep=Math.max((ui.wStep||0)-1, 0); renderModal(); }
+  else if(a==="askContactYes"){ ui.askContact=null; const c=data.cards.find(x=>x.id===id); if(c) contactFile(c); keepScroll(rerenderCards); }
+  else if(a==="askContactNo"){ ui.askContact=null; keepScroll(rerenderCards); }
+  else if(a==="askContactNever"){ ui.askContact=null; data.meta.tips.askContact=1; save({quiet:true}); keepScroll(rerenderCards); toast("好，之後不會再問；名片詳情裡隨時可以按「加入聯絡人」"); }
   else if(a==="tipOk"){
     data.meta.tips[el.dataset.key]=1; save({quiet:true});
     if(el.dataset.rerender) keepScroll(render); else el.closest(".tip")?.remove();

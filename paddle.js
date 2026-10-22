@@ -7,24 +7,27 @@
   const ORT_VER="1.22.0", ORT_BASE="https://cdn.jsdelivr.net/npm/onnxruntime-web@"+ORT_VER+"/dist/";
   const MODELS=new URL("./ocr-models/", location.href).href;
   const FILES={
-    ort:{url:ORT_BASE+"ort.wasm.min.js", size:48327},
-    loader:{url:ORT_BASE+"ort-wasm-simd-threaded.mjs", size:20856},
-    wasm:{url:ORT_BASE+"ort-wasm-simd-threaded.wasm", size:11210254},
-    det:{url:MODELS+"det.ort", size:4896928},
-    rec:{url:MODELS+"rec.onnx", size:9219908},
-    dict:{url:MODELS+"dict.txt", size:74014}
+    // sha：檔案指紋（SHA-256）。下載後比對，不一樣就不存、不執行（防止檔案在傳輸或來源網站被改動）
+    ort:{url:ORT_BASE+"ort.wasm.min.js", size:48327, sha:"65e09376df69107e881b5c34d2d37aed333a366b6d941073ec518168e269b87d"},
+    loader:{url:ORT_BASE+"ort-wasm-simd-threaded.mjs", size:20856, sha:"30dd851d9c00622940500f71ddd2ff8820c5cb65270816080175b958705385a8"},
+    wasm:{url:ORT_BASE+"ort-wasm-simd-threaded.wasm", size:11210254, sha:"71aef04959c5c1b6de461b6538e2058e306610034a85aad2742d0c7fd4533fe4"},
+    det:{url:MODELS+"det.ort", size:4896928, sha:"30acfc4e21f2a23669d01a75aaeb92190f96874613108a0f7086bed264420abc"},
+    rec:{url:MODELS+"rec.onnx", size:9219908, sha:"6b8e9f0a346456154361424a1a7652e5909ac40564a4b58e9195bf69e38c7e32"},
+    dict:{url:MODELS+"dict.txt", size:74014, sha:"e5f8ca61ba03d3a247d06b013119982fa6de2bd48a846018b67bca57ffc56de1"}
   };
   const OCR_CACHE="bizcard-ocr";
   const TOTAL=Object.values(FILES).reduce((s,f)=>s+f.size,0);
   const st={det:null, rec:null, chars:null, loading:null};
 
   async function cacheGet(url){ const c=await caches.open(OCR_CACHE); return c.match(url); }
-  async function fetchToCache(url, onBytes){
+  async function sha256(blob){ const h=await crypto.subtle.digest("SHA-256", await blob.arrayBuffer()); return [...new Uint8Array(h)].map(b=>b.toString(16).padStart(2,"0")).join(""); }
+  async function fetchToCache(url, onBytes, sha){
     const res=await fetch(url,{mode:"cors", cache:"no-store"});
     if(!res.ok) throw new Error("下載失敗（"+res.status+"）");
     const reader=res.body.getReader(), parts=[]; let n=0;
     for(;;){ const {done,value}=await reader.read(); if(done) break; parts.push(value); n+=value.length; onBytes&&onBytes(value.length); }
     const blob=new Blob(parts,{type:res.headers.get("Content-Type")||"application/octet-stream"});
+    if(sha && await sha256(blob)!==sha) throw new Error("下載的檔案和預期的不一樣，為了安全已停止，請稍後再試");
     const c=await caches.open(OCR_CACHE);
     await c.put(url, new Response(blob,{headers:{"Content-Type":blob.type,"Content-Length":String(blob.size)}}));
     return blob;
@@ -38,7 +41,7 @@
     for(const f of Object.values(FILES)){
       const hit=await cacheGet(f.url);
       if(hit){ tick(f.size); continue; }
-      await fetchToCache(f.url, tick);
+      await fetchToCache(f.url, tick, f.sha);
     }
     onProgress&&onProgress(1);
   }
