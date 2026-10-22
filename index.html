@@ -19,7 +19,7 @@
      對方打開電子名片時，只載入那張名片用到的字體，不載入辨識和裁切的程式，打開比較快。 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js" crossorigin="anonymous"></script>
 <script>
-window.APP_VERSION = "0.16.1";
+window.APP_VERSION = "0.17.0";
 window.IS_ECARD = /^#[cd]=/.test(location.hash);
 (function(){
   var G = "https://fonts.googleapis.com/css2?family=", F = {
@@ -327,7 +327,17 @@ textarea.grow{min-height:0;resize:none;overflow:hidden;line-height:1.45;display:
 .meet[open] summary::before{content:"－"}
 .meetrow{display:flex;gap:8px;align-items:center}
 .meetrow input{flex:1;min-width:0;min-height:44px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);padding:0 12px;font:inherit}
-.pmeet{text-align:center;margin:0 0 6px;color:var(--muted);font-size:.9rem}
+.pmeetbox{margin:0 0 8px}
+.pmeetbox summary{cursor:pointer;color:var(--link);font-size:.9rem;text-align:center;list-style:none;padding:4px 0}
+.pmeetbox summary::-webkit-details-marker{display:none}
+.pmeetbox[open] summary{display:none}
+.pmeetbox .meethint{display:none}
+.meetlbl{display:flex;flex-direction:column;gap:4px;font-size:.86rem;color:var(--muted)}
+.meetin{min-height:44px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);padding:0 12px;font:inherit;font-size:1rem}
+.meethint{margin:2px 0 0;font-size:.78rem}
+.sharecard{gap:10px}
+.sharecard .sgrid{margin-top:0}
+.sharecard .mbtns .pill .i{margin-right:6px}
 .sstrip h2{margin:0}
 .sgrid{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;margin:10px -4px 0;padding:2px 4px 6px;scrollbar-width:none}
 .sgrid::-webkit-scrollbar{display:none}
@@ -1012,28 +1022,46 @@ function renderMe(){
     + ocrIntroHTML()
     + (ui.editing?'':'<div class="give2"><button type="button" class="pill strong give" data-act="present">'+ICON.qr+'<span><b>當面遞名片</b><small>對方用相機掃 QR code</small></span></button>'
       + '<button type="button" class="pill strong give" data-act="shareEcard">'+ICON.share+'<span><b>線上傳連結</b><small>傳到 LINE、Email</small></span></button></div>'
-      + meetHTML())
+      )
     + '<div class="tiles"><div class="tile qrtile">'+qrSvg(qrPayload(m))+'<span class="sub">'+(qrMode()==="vcard"?"掃描直接存聯絡人":"掃描打開電子名片")+'</span></div>'
     + '<div class="stackcol"><button type="button" class="mini" data-act="copyLink">'+ICON.copy+'<span>複製電子名片連結</span></button>'
     + '<button type="button" class="mini" data-act="copyMe">'+ICON.copy+'<span>複製文字版</span></button></div></div>'
     + (ui.editing?'':styleStripHTML(m))
     + '<p class="sub" style="text-align:center">名片和 QR code 只包含設定裡打開的欄位，不經過任何伺服器。</p>';
 }
-function meetHTML(){
-  return '<details class="meet"'+(ui.meet?' open':'')+'><summary>'+(ui.meet?'這次相遇：「'+esc(ui.meet)+'」':'加一句這次相遇的話（選填）')+'</summary>'
-    + '<div class="meetrow"><input id="meetText" maxlength="'+MEET_MAX+'" value="'+esc(ui.meet||"")+'" placeholder="例如：很高興在 XX 研討會認識你" aria-label="這次相遇的一句話">'
-    + (ui.meet?'<button type="button" class="pill line small" data-act="meetClear">清除</button>':'')+'</div>'
-    + '<p class="sub">只附在接下來遞出去、傳出去的名片上，對方存下時會記成「在哪裡認識」。關掉 App 就會清掉。</p></details>';
+function meetField(id){
+  return '<label class="meetlbl" for="'+id+'"><span>這次相遇的一句話（選填）</span>'
+    + '<input id="'+id+'" class="meetin" maxlength="'+MEET_MAX+'" value="'+esc(ui.meet||"")+'" placeholder="例如：很高興在 XX 研討會認識你" autocomplete="off"></label>'
+    + '<p class="sub meethint">對方存下你的名片時，會記成「在哪裡認識」。</p>';
 }
+// 樣式縮圖（「我的名片」和「線上傳連結」共用）
+function styleThumb(m, k, pressed, act, check){
+  const acc=(CARD_COLORS[colorKey()]||CARD_COLORS.green).c;
+  return '<button type="button" class="sthumb" data-act="'+act+'" data-key="'+k+'" aria-pressed="'+pressed+'" aria-label="'+ESTYLES[k]+'樣式">'
+    + '<span class="sbox" style="--acc:'+acc+';background:'+ES_BG[k]+'" aria-hidden="true"><span class="sin s-'+k+'">'+(k==="classic"?cardHTML(m):artHTML(visible(m),k))+'</span></span>'
+    + '<span class="slbl">'+(check?'<i class="sck" aria-hidden="true"></i>':'')+ESTYLES[k]+'</span></button>';
+}
+// 線上傳連結：先看這次要傳的樣式（可以換）、加一句相遇的話，再傳
+function shareHTML(){
+  const m=me(), st=ui.shareStyle||"classic";
+  return '<div class="mcard sharecard" role="dialog" aria-modal="true" aria-labelledby="m-t"><div class="mtop"><h2 id="m-t" class="mtitle">傳電子名片給對方</h2>'
+    + '<button type="button" class="pill line small" data-act="modalClose">取消</button></div>'
+    + '<p class="sub" style="margin:0">這次要傳的樣式'+(data.active==="personal"?'（幫你抽好了，可以換）':'')+'：</p>'
+    + '<div class="sgrid">'+Object.keys(ESTYLES).map(k=>styleThumb(m,k,st===k,"shareStyle")).join("")+'</div>'
+    + meetField("meetText")
+    + '<div class="mbtns"><button type="button" class="pill strong big" data-act="shareGo">'+ICON.share+'傳送</button>'
+    + '<button type="button" class="pill line" data-act="shareCopy">'+ICON.copy+'複製連結</button></div></div>';
+}
+function openShare(text){ drawStyle(); ui.shareStyle=ui.drawn; ui.shareText=text; openModal("share");
+  const box=document.querySelector(".sharecard .sgrid"), on=box&&box.querySelector('[aria-pressed="true"]');
+  if(on) box.scrollLeft=on.offsetLeft-(box.clientWidth-on.offsetWidth)/2; }   // 抽到的那款捲到看得見的地方
 // 電子名片樣式縮圖：直接在「我的名片」挑，不用進設定
 const ES_BG={classic:"transparent", paper:"#EFEBE3", illu:"#EEF2EE", vert:"#F7F2E7"};
 function styleStripHTML(m){
   if(!m.name) return "";
   const s=data.settings, work=data.active==="work", acc=(CARD_COLORS[colorKey()]||CARD_COLORS.green).c;
   const on=k=>work ? s.styleWork===k : s.stylePersonal.includes(k);
-  const th=k=>'<button type="button" class="sthumb" data-act="pickStyle" data-key="'+k+'" aria-pressed="'+on(k)+'" aria-label="'+ESTYLES[k]+'樣式">'
-    + '<span class="sbox" style="--acc:'+acc+';background:'+ES_BG[k]+'" aria-hidden="true"><span class="sin s-'+k+'">'+(k==="classic"?cardHTML(m):artHTML(visible(m),k))+'</span></span>'
-    + '<span class="slbl">'+(work?'':'<i class="sck" aria-hidden="true"></i>')+ESTYLES[k]+'</span></button>';
+  const th=k=>styleThumb(m, k, on(k), "pickStyle", !work);
   return '<section class="tile sstrip"><div class="sethead"><h2>電子名片樣式</h2>'
     + '<button type="button" class="pill line small" data-act="stylePreview" data-prof="'+data.active+'" data-key="'+(work?s.styleWork:s.stylePersonal[0])+'">預覽 ›</button></div>'
     + '<div class="sgrid">'+Object.keys(ESTYLES).map(th).join("")+'</div>'
@@ -1264,6 +1292,7 @@ function textOnly(p){
 const APP_URL = () => location.origin + location.pathname.replace(/index\.html$/,"");
 // 更新紀錄：每版 1–3 行白話。發新版時在最上面加一筆，並把 index.html 開頭的 APP_VERSION 改成同一個號碼
 const CHANGELOG = [
+  {v:"0.17.0", d:"2026-10-22", items:["「線上傳連結」會先讓你看這次要傳的樣式，可以換一款，也可以加一句這次相遇的話","遞名片畫面也可以直接加一句相遇的話"]},
   {v:"0.16.1", d:"2026-10-21", items:["大幅減少佔用的手機空間：修正外部檔案被瀏覽器多算空間的問題","只下載你選的字體，第一次打開更快"]},
   {v:"0.16.0", d:"2026-10-21", items:["第一次打開會先確認你用的是 iPhone、Android 還是電腦：iPhone 會先帶你把 App 放到桌面再開始，填好的資料才不會不見；電腦會顯示 QR code 讓你用手機打開"]},
   {v:"0.15.1", d:"2026-10-20", items:["拿掉編號戳"]},
@@ -1414,6 +1443,7 @@ function startHTML(){
 function modalHTML(){
   const m=ui.modal;
   if(m==="start") return startHTML();
+  if(m==="share") return shareHTML();
   if(m==="welcome"){
     const i=ui.wStep||0, w=WELCOME[i], last=i===WELCOME.length-1;
     return '<div class="mcard welcomecard" role="dialog" aria-modal="true" aria-labelledby="m-t">'
@@ -2657,7 +2687,7 @@ function openPresent(){
     +'<button type="button" data-act="qrMode" data-key="vcard" aria-pressed="'+(qrMode()==="vcard")+'">直接存聯絡人</button></div>'
     +'<p class="pwho'+(data.active==="personal"?' personal':'')+'">正在遞：'+PROFILE_LABEL[data.active]+(data.active==="personal"?'（不是工作版）':'')+'</p>'
     +'<p class="pdraw" id="pdraw">'+drawLine()+'</p>'
-    +(ui.meet?'<p class="pmeet">附上：「'+esc(ui.meet)+'」</p>':'')
+    +'<details class="pmeetbox"'+(ui.meet?' open':'')+'><summary>＋ 加一句這次相遇的話</summary>'+meetField("presentMeet")+'</details>'
     +tipHTML("present","名片和 QR code 已經轉向對面。請對方用手機相機掃描，就能存下你的聯絡方式。")
     +'<div class="pbtns"><button type="button" class="pill line" data-act="flip" id="flipBtn">'+flipLabel()+'</button><button type="button" class="pill strong" data-act="closePresent">收起</button></div></div>';
   p.classList.remove("flip"); p.hidden=false; document.body.style.overflow="hidden";
@@ -2822,9 +2852,13 @@ document.addEventListener("click", e=>{
   else if(a==="closePresent"){ closePresent(); }
   else if(a==="flip"){ data.settings.presentFlip=!data.settings.presentFlip; save(); document.getElementById("present").classList.toggle("flip", data.settings.presentFlip); el.textContent=flipLabel(); }
   else if(a==="copyMe"){ copy(plainText(visible(me()))); }
-  else if(a==="shareEcard"){
-    const url=ecardUrl(me(), drawStyle(), true, giveExtra()), title=(me().name||"")+" 的電子名片";
-    if(navigator.share){ navigator.share({title, text:"這是我的電子名片，點開就能存下我的聯絡方式：", url}).catch(()=>{}); } else copy(url);
+  else if(a==="shareEcard"){ openShare("這是我的電子名片，點開就能存下我的聯絡方式："); }
+  else if(a==="shareStyle"){ ui.shareStyle=el.dataset.key; const box=document.querySelector(".sharecard .sgrid"), x=box?box.scrollLeft:0;
+    document.querySelectorAll('.sharecard [data-act="shareStyle"]').forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.key===ui.shareStyle))); if(box) box.scrollLeft=x; }
+  else if(a==="shareGo" || a==="shareCopy"){
+    const url=ecardUrl(me(), ui.shareStyle, true, giveExtra()), title=(me().name||"")+" 的電子名片";
+    closeModal();
+    if(a==="shareGo" && navigator.share) navigator.share({title, text:ui.shareText||"", url}).catch(()=>{}); else copy(url);
   }
   else if(a==="copyLink"){ copy(ecardUrl(me(), drawStyle(), true, giveExtra())); }
   else if(a==="meetClear"){ ui.meet=""; keepScroll(render); }
@@ -2874,10 +2908,7 @@ document.addEventListener("click", e=>{
   else if(a==="copy"){ copy(el.dataset.text); }
   else if(a==="numMenu"){ const k=el.dataset.id+el.dataset.key; ui.numMenu = ui.numMenu===k ? null : k; rerenderCards(); }
   else if(a==="cardContact"){ const c=data.cards.find(x=>x.id===el.dataset.id); if(c) contactFile(c); }
-  else if(a==="sendMine"){
-    const url=ecardUrl(me(), drawStyle(), true, giveExtra()), title=(me().name||"")+" 的電子名片";
-    if(navigator.share){ navigator.share({title, text:"這是我的名片：", url}).catch(()=>{}); } else copy(url);
-  }
+  else if(a==="sendMine"){ openShare("這是我的名片："); }
   else if(a==="add"){ ui.adding=true; ui.editId=null; ui.draft={}; ui.draftPhoto=""; ui.draftBack=""; ui.auto=new Set(); ui.ocrAsk=null; resetReview(); render(); document.getElementById("add-name")?.focus(); }
   else if(a==="cancelAdd"){ ui.demo=false; cropKeep.src={}; ui.newFor=null; ui.same=null; ocrCancel(); resetReview(); ui.adding=false; ui.editId=null; ui.draft=null; ui.draftPhoto=""; ui.draftBack=""; ui.auto=new Set(); ui.ocrAsk=null; render(); }
   else if(a==="ocrYes"){ const ask=ui.ocrAsk; ui.ocrAsk=null; data.settings.ocr.consented=true; save({quiet:true}); if(ask) runOCR(ask.side, ask.file); }
@@ -3101,6 +3132,8 @@ document.addEventListener("keydown", e=>{
   }
 });
 document.addEventListener("input", e=>{
+  if(e.target.id==="presentMeet"){ ui.meet=e.target.value.trim().slice(0,MEET_MAX);
+    clearTimeout(ui.meetT); ui.meetT=setTimeout(()=>{ const q=document.getElementById("pqr"); if(q) q.innerHTML=qrSvg(qrPayload(me())); }, 350); return; }
   if(e.target.id==="meetText"){ ui.meet=e.target.value.trim().slice(0,MEET_MAX); const sm=e.target.closest("details")?.querySelector("summary"); if(sm) sm.textContent=ui.meet?'這次相遇：「'+ui.meet+'」':'加一句這次相遇的話（選填）'; return; }
   if(e.target.classList && e.target.classList.contains("grow")){ e.target.style.height="auto"; e.target.style.height=e.target.scrollHeight+"px"; }
   if(e.target.id==="q"){ ui.query=e.target.value; rerenderCards(); }
